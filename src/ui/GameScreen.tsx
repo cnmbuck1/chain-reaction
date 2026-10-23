@@ -9,6 +9,8 @@ interface Props {
   number: number;
   hasNext: boolean;
   reducedMotion: boolean;
+  showIntro: boolean;
+  onIntroDone: () => void;
   onSolved: (attempts: number) => void;
   onNext: () => void;
   onLevels: () => void;
@@ -19,6 +21,8 @@ export function GameScreen({
   number,
   hasNext,
   reducedMotion,
+  showIntro,
+  onIntroDone,
   onSolved,
   onNext,
   onLevels,
@@ -147,6 +151,35 @@ export function GameScreen({
           Run
         </button>
       </div>
+
+      {showIntro && (
+        <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+          <div className="card">
+            <p className="eyebrow">How it works</p>
+            <h2 id="intro-title">Get the ball to the goal</h2>
+            <ol className="steps">
+              <li>
+                <strong>Switches send power</strong> down their wires. Lit wires carry power; each
+                switch has its own color.
+              </li>
+              <li>
+                <strong>Gates show what they need.</strong> <em>ON</em> opens with power.{' '}
+                <em>OFF</em> opens only without power. The letters on a gate are the switches
+                feeding it.
+              </li>
+              <li>
+                <strong>Press Run.</strong> The ball rolls until it reaches the goal or a closed
+                gate. Changes are limited, so plan first.
+              </li>
+            </ol>
+            <div className="card-actions single">
+              <button type="button" className="run" autoFocus onClick={onIntroDone}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {won && (
         <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="solved-title">

@@ -1,6 +1,8 @@
 import { Application, Graphics } from 'pixi.js';
+import { evaluate } from '../engine/evaluate';
 import { indexLevel } from '../engine/graph';
-import type { LevelDef, NodeId, RunEvent } from '../engine/types';
+import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
+import { signalColor, toHex } from './colors';
 import {
   buildTimeline,
   edgeKey,
@@ -49,6 +51,9 @@ export class Board {
   private visual: VisualState = emptyVisual(null);
   private resolvePlay: (() => void) | null = null;
   private dirty = true;
+  private reducedMotion = false;
+  /** True while any wire carries power, so the flow animation keeps drawing. */
+  private flowing = false;
 
   init(host: HTMLElement): Promise<void> {
     this.initPromise ??= (async () => {
@@ -71,14 +76,30 @@ export class Board {
 
   setLevel(level: LevelDef) {
     this.level = level;
-    this.showIdle();
+    this.dirty = true;
   }
 
-  /** The unpowered machine: ball at the start, gates unresolved. */
-  showIdle() {
+  setReducedMotion(reduced: boolean) {
+    this.reducedMotion = reduced;
+    this.dirty = true;
+  }
+
+  /**
+   * Before a run: wires show live power for the current switch positions so the
+   * player can trace it, while gates stay unresolved and the ball waits at the start.
+   */
+  showIdle(switches: SwitchStates) {
     this.finishPlayback();
     this.timeline = null;
-    this.visual = emptyVisual(this.level ? indexLevel(this.level).ballStart : null);
+    const visual = emptyVisual(this.level ? indexLevel(this.level).ballStart : null);
+    if (this.level) {
+      const { signals } = evaluate(indexLevel(this.level), switches);
+      for (const edge of this.level.signalEdges) {
+        const live = (signals.get(edge.from) ?? false) !== (edge.invert ?? false);
+        if (live) visual.wires.set(edgeKey(edge.from, edge.to), 1);
+      }
+    }
+    this.visual = visual;
     this.dirty = true;
   }
 
@@ -116,6 +137,7 @@ export class Board {
       this.dirty = true;
       if (t >= this.timeline.duration) this.finishPlayback();
     }
+    if (this.flowing && !this.reducedMotion) this.dirty = true;
     if (!this.dirty || !this.level) return;
     this.dirty = false;
     this.draw(this.level, this.visual);
@@ -149,20 +171,33 @@ export class Board {
       g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: 3, color: COLORS.rail, cap: 'round' });
     }
 
-    // Wires, with energy pulses running along the ones carrying power.
+    // Wires take their switch's color: dim when dead, bright with flowing sparks when live.
+    this.flowing = false;
+    const now = performance.now();
     for (const edge of level.signalEdges) {
       const a = at(edge.from);
       const b = wireEnd(index.nodes.get(edge.to)!.type, at(edge.to));
+      const color = toHex(signalColor(level, edge.from));
       g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: 3, color: COLORS.wire, cap: 'round' });
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: 3, color, alpha: 0.3, cap: 'round' });
       const p = visual.wires.get(edgeKey(edge.from, edge.to));
       if (p !== undefined && p > 0) {
         const c = { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p };
-        g.moveTo(a.x, a.y)
-          .lineTo(c.x, c.y)
-          .stroke({ width: 10, color: COLORS.energy, alpha: 0.18, cap: 'round' });
-        g.moveTo(a.x, a.y)
-          .lineTo(c.x, c.y)
-          .stroke({ width: 3.5, color: COLORS.energy, cap: 'round' });
+        g.moveTo(a.x, a.y).lineTo(c.x, c.y).stroke({ width: 11, color, alpha: 0.2, cap: 'round' });
+        g.moveTo(a.x, a.y).lineTo(c.x, c.y).stroke({ width: 4, color, cap: 'round' });
+        if (p >= 1) {
+          this.flowing = true;
+          const len = Math.hypot(b.x - a.x, b.y - a.y);
+          const sparks = Math.max(1, Math.round(len / 45));
+          const phase = this.reducedMotion ? 0.5 : (now / 1100) % 1;
+          for (let i = 0; i < sparks; i++) {
+            const q = (phase + i / sparks) % 1;
+            g.circle(a.x + (b.x - a.x) * q, a.y + (b.y - a.y) * q, 2.2).fill({
+              color: 0xffffff,
+              alpha: 0.85,
+            });
+          }
+        }
       }
       if (edge.invert) {
         const n = { x: b.x - (b.x - a.x) * 0.12, y: b.y - (b.y - a.y) * 0.12 };

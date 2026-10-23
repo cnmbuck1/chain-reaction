@@ -38,11 +38,12 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(() => firstScreen(progress));
   const reducedMotion = usePrefersReducedMotion();
 
-  const solved = (levelId: string, attempts: number) => {
-    const next = recordWin(progress, levelId, attempts);
+  const update = (next: Progress) => {
     setProgress(next);
     saveProgress(next);
   };
+  const solved = (levelId: string, attempts: number) =>
+    update(recordWin(progress, levelId, attempts));
 
   if (screen.kind === 'select') {
     return (
@@ -63,6 +64,8 @@ export function App() {
       number={screen.index + 1}
       hasNext={hasNext}
       reducedMotion={reducedMotion}
+      showIntro={screen.index === 0 && !progress.seenIntro}
+      onIntroDone={() => update({ ...progress, seenIntro: true })}
       onSolved={(attempts) => solved(level.id, attempts)}
       onNext={() => setScreen({ kind: 'game', index: screen.index + 1 })}
       onLevels={() => setScreen({ kind: 'select' })}

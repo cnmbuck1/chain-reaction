@@ -9,6 +9,8 @@ export interface LevelRecord {
 export interface Progress {
   version: 1;
   completed: Record<string, LevelRecord>;
+  /** The how-it-works card has been dismissed. */
+  seenIntro?: boolean;
 }
 
 export const STORAGE_KEY = 'chain-reaction/progress';
@@ -46,7 +48,11 @@ export function saveProgress(progress: Progress, store: KeyValueStore | null = d
 /** Accepts any stored value and returns valid current-version progress. */
 export function migrate(data: unknown): Progress {
   if (typeof data !== 'object' || data === null) return emptyProgress();
-  const { version, completed } = data as { version?: unknown; completed?: unknown };
+  const { version, completed, seenIntro } = data as {
+    version?: unknown;
+    completed?: unknown;
+    seenIntro?: unknown;
+  };
   if (version !== 1 || typeof completed !== 'object' || completed === null) return emptyProgress();
   const clean: Record<string, LevelRecord> = {};
   for (const [id, record] of Object.entries(completed)) {
@@ -54,7 +60,9 @@ export function migrate(data: unknown): Progress {
     if (typeof best === 'number' && Number.isInteger(best) && best >= 1)
       clean[id] = { bestAttempts: best };
   }
-  return { version: 1, completed: clean };
+  return seenIntro === true
+    ? { version: 1, completed: clean, seenIntro }
+    : { version: 1, completed: clean };
 }
 
 export function recordWin(progress: Progress, levelId: string, attempts: number): Progress {

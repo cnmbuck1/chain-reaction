@@ -55,6 +55,15 @@ describe('progress storage', () => {
     expect(() => saveProgress(emptyProgress(), broken)).not.toThrow();
   });
 
+  it('keeps the intro flag', () => {
+    expect(migrate({ version: 1, completed: {}, seenIntro: true })).toEqual({
+      version: 1,
+      completed: {},
+      seenIntro: true,
+    });
+    expect(migrate({ version: 1, completed: {}, seenIntro: 'yes' })).toEqual(emptyProgress());
+  });
+
   it('keeps the best attempt count', () => {
     let p = recordWin(emptyProgress(), 'level-01', 3);
     p = recordWin(p, 'level-01', 5);

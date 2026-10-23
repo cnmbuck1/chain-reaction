@@ -4,6 +4,11 @@ const board = (page: Page) => page.locator('.board[data-ready="true"]');
 const run = (page: Page) => page.getByRole('button', { name: 'Run', exact: true });
 const status = (page: Page) => page.getByRole('status');
 
+async function dismissIntro(page: Page) {
+  await expect(page.getByRole('dialog', { name: 'Get the ball to the goal' })).toBeVisible();
+  await page.getByRole('button', { name: 'Got it' }).click();
+}
+
 async function solve(page: Page, switches: string[]) {
   await expect(board(page)).toBeVisible();
   for (const name of switches)
@@ -18,6 +23,7 @@ test.describe('with reduced motion', () => {
   test('a new player opens on level 1 and can play all three levels', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
+    await dismissIntro(page);
     await solve(page, ['A']);
     await page.getByRole('button', { name: 'Next level' }).click();
     await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
@@ -33,6 +39,7 @@ test.describe('with reduced motion', () => {
     page,
   }) => {
     await page.goto('/');
+    await dismissIntro(page);
     await expect(board(page)).toBeVisible();
     await run(page).click();
     await expect(status(page)).toHaveText('Stopped at Gate 1: it needs power but got no power.');
@@ -45,11 +52,15 @@ test.describe('with reduced motion', () => {
 
   test('progress survives a reload', async ({ page }) => {
     await page.goto('/');
+    await dismissIntro(page);
     await solve(page, ['A']);
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
     await page.getByRole('button', { name: '‹ Levels' }).click();
     await expect(page.getByText('1 of 3 solved')).toBeVisible();
+    await page.getByRole('button', { name: 'Level 1, First Spark, solved' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: '‹ Levels' }).click();
     await expect(page.getByRole('button', { name: 'Level 1, First Spark, solved' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Level 3, Double Duty, locked' })).toBeDisabled();
   });
@@ -84,6 +95,7 @@ test('the full animation plays and ends on the success card', async ({ page }) =
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
+  await dismissIntro(page);
   await expect(board(page)).toBeVisible();
   await page.getByRole('button', { name: /^Switch A,/ }).click();
   await run(page).click();
