@@ -3,7 +3,7 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **Stage 2, S2: fifteen levels, with NOT wires and forks.** The game has:
+Status: **Stage 2, S2: fifteen levels, with forks from level 11.** The game has:
 
 - a brushed-metal machine drawn in PixiJS (cable wires, brass parts, portcullis gates, glowing
   energy) and lever switches;
@@ -43,7 +43,8 @@ the Playwright suite, on every push.
 - **Gates.** `combine` is `single`, `and` or `or`. A gate is open when the combined input equals
   `requiredSignal`, so `false` makes a normally-open gate.
 - **NOT wires.** A wire with `invert` flips its signal. The board draws a NOT part on the wire,
-  lit before it when the switch is live and after it when not.
+  lit before it when the switch is live and after it when not. Playtesting found NOT hard this
+  early, so no level uses it before level 21; a test enforces that.
 - **Forks (junctions).** Route the ball to `whenTrue` (ON lane) or `whenFalse` (OFF lane) from one
   signal input. The board shows a pointer aimed down the lane the fork will take.
 - **Ball.** Follows the track from the start. It stops at the first closed gate or dead end.
@@ -100,15 +101,15 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 8   | Split Signal     | One switch feeds three; choose which branches stay dark    | 3      | 3   |
 | 9   | Interlock        | A forbidden route forces you to build the other one        | 3      | 3   |
 | 10  | Master Circuit   | Chains, splits, ALL/ANY gates and a false friend together  | 4      | 4   |
-| 11  | Flip Side        | A NOT flips a wire, so a gate can need a switch off        | 2      | 2   |
-| 12  | Fork in the Road | A fork picks the lane; change the route, not the gates     | 1      | 1   |
-| 13  | Double Negative  | NOTs on a shared gate decide which switch you can give up  | 3      | 3   |
+| 11  | Fork in the Road | A fork picks the lane; change the route, not the gates     | 1      | 1   |
+| 12  | Dead Lane        | A lane whose gates contradict each other can never open    | 2      | 2   |
+| 13  | Long Way Round   | Count what each lane costs; rerouting can be cheaper       | 2      | 2   |
 | 14  | Switchyard       | One switch both picks the lane and guards the other one    | 2      | 2   |
-| 15  | Grand Junction   | Rule out a lane before spending changes on it              | 3      | 3   |
+| 15  | Grand Junction   | Rule out a lane, then follow a chain on the other one      | 3      | 3   |
 
 Each of levels 4 to 15 has exactly one winning position within its budget, and turning every
 switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
-fails, except on the `easy` levels 4, 11 and 12, which introduce a new idea.
+fails, except on the `easy` levels 4 and 11, which introduce a new idea.
 
 ## Board layout
 

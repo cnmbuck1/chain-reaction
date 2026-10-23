@@ -12,8 +12,32 @@ import {
   wireRoutes,
 } from '../../src/render/layout';
 import { levels } from '../../src/levels';
+import { makeLevel } from '../fixtures';
 
 const byName = (name: string) => levels.find((l) => l.name === name)!;
+
+/** NOT wires wait until after level 20, so the layout tests build their own board. */
+const withNot = makeLevel({
+  nodes: [
+    { id: 'source', type: 'source', x: 0.5, y: 0.05 },
+    { id: 'a', type: 'switch', x: 0.3, y: 0.35, initialOn: true },
+    { id: 'b', type: 'switch', x: 0.7, y: 0.35, initialOn: false },
+    { id: 'g1', type: 'gate', x: 0.3, y: 0.85, combine: 'single', requiredSignal: true },
+    { id: 'g2', type: 'gate', x: 0.5, y: 0.85, combine: 'single', requiredSignal: true },
+    { id: 'g3', type: 'gate', x: 0.7, y: 0.85, combine: 'and', requiredSignal: true },
+    { id: 'ball', type: 'ballStart', x: 0.05, y: 0.85 },
+    { id: 'goal', type: 'goal', x: 0.95, y: 0.85 },
+  ],
+  signalEdges: [
+    { from: 'source', to: 'a' },
+    { from: 'source', to: 'b' },
+    { from: 'a', to: 'g1', invert: true },
+    { from: 'b', to: 'g2' },
+    { from: 'a', to: 'g3', invert: true },
+    { from: 'b', to: 'g3', invert: true },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+});
 const signalsOf = (level: (typeof levels)[number], on: Record<string, boolean> = {}) =>
   evaluate(indexLevel(level), { ...initialSwitches(level), ...on }).signals;
 
@@ -45,24 +69,26 @@ describe('board layout', () => {
     expect(boardPoint(0, 0)).toEqual({ x: 28, y: 28 });
     expect(boardPoint(1, 1).x).toBe(332);
     expect(boardHeight(byName('First Spark'))).toBe(BOARD_HEIGHT);
+    expect(boardHeight(withNot)).toBe(BOARD_HEIGHT);
     expect(boardHeight(byName('Fork in the Road'))).toBeGreaterThan(BOARD_HEIGHT);
     expect(boardPoint(0.5, 1, 470).y).toBeGreaterThan(boardPoint(0.5, 1).y);
   });
 
   it('marks a NOT only on inverted wires, partway along them', () => {
-    const level = byName('Flip Side');
-    const routes = wireRoutes(level);
+    const routes = wireRoutes(withNot);
     expect(routes.get('a>g1')!.flip!.at).toBeGreaterThan(0);
     expect(routes.get('a>g1')!.flip!.at).toBeLessThan(1);
     expect(routes.get('b>g2')!.flip).toBeNull();
   });
 
-  it('lands several wires into one gate side by side', () => {
-    const routes = wireRoutes(byName('Double Negative'));
-    const a = routes.get('a>g1')!.points.at(-1)!;
-    const b = routes.get('b>g1')!.points.at(-1)!;
-    expect(a.y).toBe(b.y);
-    expect(Math.abs(a.x - b.x)).toBeGreaterThanOrEqual(8);
+  it('lands several wires into one gate side by side, and keeps their NOTs apart', () => {
+    const routes = wireRoutes(withNot);
+    const a = routes.get('a>g3')!;
+    const b = routes.get('b>g3')!;
+    expect(a.points.at(-1)!.y).toBe(b.points.at(-1)!.y);
+    expect(Math.abs(a.points.at(-1)!.x - b.points.at(-1)!.x)).toBeGreaterThanOrEqual(8);
+    const [p, q] = [a.flip!.point, b.flip!.point];
+    expect(Math.abs(p.x - q.x) >= 38 || Math.abs(p.y - q.y) >= 22).toBe(true);
   });
 
   it('brings a fork wire in level from the right', () => {
@@ -96,8 +122,12 @@ describe('fork exits', () => {
   });
 
   it('read a NOT on the fork wire', () => {
-    const level = byName('Switchyard');
-    expect(forkExits(level, signalsOf(level)).get('fork')).toBe('g2');
-    expect(forkExits(level, signalsOf(level, { f: false })).get('fork')).toBe('g1');
+    const base = byName('Fork in the Road');
+    const level = {
+      ...base,
+      signalEdges: base.signalEdges.map((e) => (e.to === 'fork' ? { ...e, invert: true } : e)),
+    };
+    expect(forkExits(level, signalsOf(level)).get('fork')).toBe('g1');
+    expect(forkExits(level, signalsOf(level, { f: true })).get('fork')).toBe('g2');
   });
 });

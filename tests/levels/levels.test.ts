@@ -38,9 +38,9 @@ describe('the curated set', () => {
       'Split Signal',
       'Interlock',
       'Master Circuit',
-      'Flip Side',
       'Fork in the Road',
-      'Double Negative',
+      'Dead Lane',
+      'Long Way Round',
       'Switchyard',
       'Grand Junction',
     ]);
@@ -58,12 +58,16 @@ describe('the curated set', () => {
     }
   });
 
-  it('introduces NOT wires at level 11 and forks at level 12', () => {
-    const firstWith = (has: (l: (typeof levels)[number]) => boolean) => levels.findIndex(has) + 1;
-    expect(firstWith((l) => l.signalEdges.some((e) => e.invert))).toBe(11);
-    expect(firstWith((l) => l.nodes.some((n) => n.type === 'junction'))).toBe(12);
-    expect(levels[10]!.meta.prompt).toMatch(/NOT/);
-    expect(levels[11]!.meta.prompt).toMatch(/fork/);
+  it('introduces forks at level 11 and saves NOT wires for after level 20', () => {
+    const firstFork = levels.findIndex((l) => l.nodes.some((n) => n.type === 'junction')) + 1;
+    expect(firstFork).toBe(11);
+    expect(levels[10]!.meta.prompt).toMatch(/fork/);
+    for (const level of levels.slice(0, 20)) {
+      expect(
+        level.signalEdges.some((e) => e.invert),
+        level.id,
+      ).toBe(false);
+    }
   });
 
   it('gets harder: budgets never shrink below the solution and grow overall', () => {

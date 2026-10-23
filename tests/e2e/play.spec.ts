@@ -21,9 +21,9 @@ const SOLUTIONS = [
   { name: 'Split Signal', switches: ['A', 'B', 'D'] },
   { name: 'Interlock', switches: ['A', 'B', 'D'] },
   { name: 'Master Circuit', switches: ['A', 'B', 'C', 'D'] },
-  { name: 'Flip Side', switches: ['A', 'B'] },
   { name: 'Fork in the Road', switches: ['F'] },
-  { name: 'Double Negative', switches: ['B', 'C', 'D'] },
+  { name: 'Dead Lane', switches: ['A', 'F'] },
+  { name: 'Long Way Round', switches: ['A', 'F'] },
   { name: 'Switchyard', switches: ['C', 'F'] },
   { name: 'Grand Junction', switches: ['F', 'B', 'C'] },
 ];
