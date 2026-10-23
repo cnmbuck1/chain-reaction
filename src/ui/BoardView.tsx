@@ -79,7 +79,8 @@ export function BoardView({
     if (!frame) return;
     const fit = () => {
       const k = Math.min(frame.clientWidth / BOARD_WIDTH, frame.clientHeight / height);
-      if (k > 0) setScale(Math.min(k, MAX_SCALE));
+      // Rounded so sub-pixel jitter can't keep re-scaling the board.
+      if (k > 0) setScale(Math.round(Math.min(k, MAX_SCALE) * 1000) / 1000);
     };
     fit();
     const observer = new ResizeObserver(fit);

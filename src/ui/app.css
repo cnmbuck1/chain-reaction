@@ -152,12 +152,14 @@ h2 {
 }
 /* Laid out at a fixed size (BOARD_WIDTH x BOARD_HEIGHT) and scaled to fit the frame. */
 .board-stage {
-  position: relative;
-  flex: none;
+  /* Out of flow, so the frame's size never depends on the scale it is used to compute. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 360px;
   height: var(--h, 400px);
+  margin: calc(var(--h, 400px) / -2) 0 0 -180px;
   transform: scale(var(--k, 1));
-  margin: calc((var(--k, 1) - 1) * var(--h, 400px) / 2) calc((var(--k, 1) - 1) * 180px);
 }
 .board-stage > canvas {
   position: absolute;
