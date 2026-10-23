@@ -3,23 +3,29 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **M1, logic-first vertical slice.** The engine, level validator, solver and Level 1 are
-done, with a plain functional UI. The animated board, sound and levels 2 to 10 come in M2 to M4.
+Status: **M2, playable first three levels.** An animated PixiJS board, tappable switches,
+Run/Undo/Reset, tutorial prompts, hints, a level select and saved progress. Sound, settings and
+polish come in M3; levels 4 to 10 in M4.
 
 ## Commands
 
-| Command             | What it does                                                           |
-| ------------------- | ---------------------------------------------------------------------- |
-| `npm install`       | Install dependencies (Node 22+)                                        |
-| `npm run dev`       | Start the dev server                                                   |
-| `npm test`          | Run unit, determinism and level tests (Vitest)                         |
-| `npm run levels`    | Print the solver report for every level; fails if any level is invalid |
-| `npm run lint`      | ESLint                                                                 |
-| `npm run typecheck` | TypeScript, strict                                                     |
-| `npm run build`     | Typecheck and build to `dist/`                                         |
+| Command                | What it does                                                           |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `npm install`          | Install dependencies (Node 22+)                                        |
+| `npm run dev`          | Start the dev server                                                   |
+| `npm test`             | Run unit, determinism, level, timeline and storage tests (Vitest)      |
+| `npm run e2e`          | Play the levels in Chromium at iPhone and desktop sizes (Playwright)   |
+| `npm run levels`       | Print the solver report for every level; fails if any level is invalid |
+| `npm run lint`         | ESLint                                                                 |
+| `npm run typecheck`    | TypeScript, strict                                                     |
+| `npm run build`        | Typecheck and build to `dist/`                                         |
+| `npm run build:single` | Build one bundled script to `dist-single/` for a shareable single page |
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests, the level report and the build on
-every push.
+Run `npx playwright install chromium` once before `npm run e2e`. After `build:single`,
+`node scripts/single-page.mjs out.html` packs the build into one HTML page.
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests, the level report and the build, plus
+the Playwright suite, on every push.
 
 ## Rules (summary)
 
@@ -36,29 +42,34 @@ every push.
 - **Run** keeps switch positions after a failure and clears Undo. **Undo** reverses the last toggle
   since the last run. **Reset** restores the starting positions.
 - **Events.** Each run returns one ordered event list: signals and wires, then gates, then ball
-  moves, then the outcome. Rendering only plays events back; it never decides the result.
+  moves, then the outcome.
+
+**Animation never decides outcomes.** The engine computes the run; `buildTimeline` turns its events
+into timed cues and `sampleTimeline` gives the frame at any moment. Reduced motion uses zero-length
+cues, which land on the same final frame. Before a run, the board shows the machine unpowered with
+gates unresolved, so the player has to reason from the wiring.
 
 ## Layout
 
 ```
 src/engine/   pure rules: types, graph index, evaluate, simulate, reducer, solver (no UI imports)
 src/levels/   level data, schema validator, level checker
-src/ui/       React screens (plain functional UI in M1)
-tests/        Vitest: engine, determinism and properties, schema, every curated level
-scripts/      level-report.ts
+src/render/   PixiJS board and the animation timeline built from RUN events
+src/storage/  versioned local progress with safe fallbacks
+src/ui/       React screens: game and level select; switches and labels are DOM over the canvas
+tests/        Vitest: engine, determinism, schema, levels, timeline, storage; e2e/ for Playwright
+scripts/      level-report.ts, single-page.mjs
 ```
-
-Planned for later milestones: `src/render/` (PixiJS board and animation timeline) and
-`src/storage/` (versioned local progress).
 
 ## Level format
 
 Levels are typed data (`LevelDef` in `src/engine/types.ts`). The track is a list of paths; each
 consecutive pair is a directed link, and junction exits live on the junction node.
-`meta.minChanges` must match what the solver finds; tests enforce it. The validator reports every
-problem with a code: `DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`,
-`SWITCH_NO_INPUT`, `GATE_NO_INPUT`, `GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`,
-`BAD_POSITION`, `BAD_BUDGET`, plus the solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
+`meta.minChanges` must match what the solver finds; tests enforce it. `meta.prompt` is an optional
+coaching line for tutorial levels. The validator reports every problem with a code:
+`DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`, `SWITCH_NO_INPUT`, `GATE_NO_INPUT`,
+`GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`, plus the
+solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 
 ## Solver report
 

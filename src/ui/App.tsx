@@ -1,116 +1,71 @@
-import { useState } from 'react';
-import { canToggle, changesUsed, initialState, step } from '../engine/reducer';
-import type { GameAction, GameState, RejectReason } from '../engine/types';
+import { useEffect, useState } from 'react';
 import { levels } from '../levels';
-import { describeEvent, describeOutcome, describeWire, nodeName, rejectMessage } from './describe';
+import {
+  isUnlocked,
+  loadProgress,
+  recordWin,
+  saveProgress,
+  type Progress,
+} from '../storage/progress';
+import { GameScreen } from './GameScreen';
+import { LevelSelect } from './LevelSelect';
 
-/** M1 functional slice: plain controls over the engine, no board rendering yet. */
+type Screen = { kind: 'select' } | { kind: 'game'; index: number };
+
+const ids = levels.map((l) => l.id);
+
+/** Opens on the first unsolved level so a new player is playing in one tap. */
+function firstScreen(progress: Progress): Screen {
+  const index = ids.findIndex((id) => !(id in progress.completed));
+  return index === -1 ? { kind: 'select' } : { kind: 'game', index };
+}
+
+function usePrefersReducedMotion() {
+  const query = '(prefers-reduced-motion: reduce)';
+  const [reduced, setReduced] = useState(() => window.matchMedia?.(query).matches ?? false);
+  useEffect(() => {
+    const media = window.matchMedia?.(query);
+    if (!media) return;
+    const update = () => setReduced(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return reduced;
+}
+
 export function App() {
-  const level = levels[0]!;
-  const [state, setState] = useState<GameState>(() => initialState(level));
-  const [notice, setNotice] = useState<RejectReason | null>(null);
+  const [progress, setProgress] = useState(loadProgress);
+  const [screen, setScreen] = useState<Screen>(() => firstScreen(progress));
+  const reducedMotion = usePrefersReducedMotion();
 
-  const dispatch = (action: GameAction) => {
-    const result = step(level, state, action);
-    setNotice(result.rejected ?? null);
-    setState(result.state);
+  const solved = (levelId: string, attempts: number) => {
+    const next = recordWin(progress, levelId, attempts);
+    setProgress(next);
+    saveProgress(next);
   };
 
-  const switches = level.nodes.filter((n) => n.type === 'switch');
-  const used = changesUsed(level, state.switches);
-  const won = state.phase === 'won';
+  if (screen.kind === 'select') {
+    return (
+      <LevelSelect
+        levels={levels}
+        progress={progress}
+        onPlay={(index) => isUnlocked(ids, progress, index) && setScreen({ kind: 'game', index })}
+      />
+    );
+  }
 
+  const level = levels[screen.index]!;
+  const hasNext = screen.index + 1 < levels.length;
   return (
-    <main className="app">
-      <header>
-        <p className="eyebrow">Level 1 · {level.difficulty}</p>
-        <h1>{level.name}</h1>
-        <p className="hint">{level.meta.hint}</p>
-      </header>
-
-      <section aria-labelledby="wiring">
-        <h2 id="wiring">Wiring</h2>
-        <ul className="wires">
-          {level.signalEdges.map((edge) => (
-            <li key={`${edge.from}>${edge.to}`}>{describeWire(level, edge)}</li>
-          ))}
-        </ul>
-        <p className="track">
-          Track:{' '}
-          {level.track.map((path) => path.map((id) => nodeName(level, id)).join(' → ')).join('; ')}
-        </p>
-      </section>
-
-      <section aria-labelledby="switches">
-        <h2 id="switches">
-          Switches{' '}
-          <span className="budget">
-            Changes {used}/{level.maxToggles}
-          </span>
-        </h2>
-        <div className="switches">
-          {switches.map((node) => {
-            const on = state.switches[node.id] ?? false;
-            const locked = !canToggle(level, state, node.id);
-            return (
-              <button
-                key={node.id}
-                type="button"
-                className={`switch ${on ? 'on' : 'off'}`}
-                aria-pressed={on}
-                aria-disabled={locked}
-                onClick={() => dispatch({ type: 'toggle', switchId: node.id })}
-              >
-                {node.label ?? node.id}: {on ? 'ON' : 'OFF'}
-                {locked && !won ? ' (locked)' : ''}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="controls">
-        <button
-          type="button"
-          className="primary"
-          onClick={() => dispatch({ type: 'run' })}
-          disabled={won}
-        >
-          Run
-        </button>
-        <button
-          type="button"
-          onClick={() => dispatch({ type: 'undo' })}
-          disabled={won || state.undoStack.length === 0}
-        >
-          Undo
-        </button>
-        <button type="button" onClick={() => dispatch({ type: 'reset' })}>
-          Reset
-        </button>
-      </div>
-
-      <p className="status" role="status" aria-live="polite">
-        {notice
-          ? rejectMessage[notice]
-          : state.lastRun
-            ? describeOutcome(level, state.lastRun.outcome)
-            : `Attempt ${state.attempt}. Set the switches, then Run.`}
-      </p>
-
-      {state.lastRun && (
-        <section aria-labelledby="log">
-          <h2 id="log">Last run</h2>
-          <ol className="log">
-            {state.lastRun.events
-              .map((event) => describeEvent(level, event))
-              .filter((line): line is string => line !== null)
-              .map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-          </ol>
-        </section>
-      )}
-    </main>
+    <GameScreen
+      key={level.id}
+      level={level}
+      number={screen.index + 1}
+      hasNext={hasNext}
+      reducedMotion={reducedMotion}
+      onSolved={(attempts) => solved(level.id, attempts)}
+      onNext={() => setScreen({ kind: 'game', index: screen.index + 1 })}
+      onLevels={() => setScreen({ kind: 'select' })}
+    />
   );
 }

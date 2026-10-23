@@ -1,70 +1,38 @@
 import { indexLevel } from '../engine/graph';
-import type {
-  LevelDef,
-  NodeId,
-  RejectReason,
-  RunEvent,
-  RunOutcome,
-  SignalEdge,
-} from '../engine/types';
-
-// Plain-text descriptions for the M1 functional UI. The Pixi board replaces most of this in M2/M3.
+import type { LevelDef, NodeId, RejectReason, RunResult } from '../engine/types';
 
 export function nodeName(level: LevelDef, id: NodeId): string {
+  return indexLevel(level).nodes.get(id)?.label ?? id;
+}
+
+/** Short requirement label shown under a gate. */
+export function gateRequirement(level: LevelDef, id: NodeId): string {
   const node = indexLevel(level).nodes.get(id);
-  return node?.label ?? id;
+  if (node?.type !== 'gate') return '';
+  const need = node.requiredSignal ? 'ON' : 'OFF';
+  return node.combine === 'single' ? need : `${need} · ${node.combine.toUpperCase()}`;
 }
 
-export function describeWire(level: LevelDef, edge: SignalEdge): string {
-  const to = indexLevel(level).nodes.get(edge.to)!;
-  let target = nodeName(level, edge.to);
-  if (to.type === 'gate') {
-    const rule = to.requiredSignal ? 'opens on power' : 'opens with no power';
-    target += to.combine === 'single' ? ` (${rule})` : ` (${to.combine.toUpperCase()}, ${rule})`;
-  }
-  return `${nodeName(level, edge.from)} → ${edge.invert ? 'NOT → ' : ''}${target}`;
-}
-
-export function describeEvent(level: LevelDef, event: RunEvent): string | null {
-  const name = (id: NodeId) => nodeName(level, id);
-  switch (event.type) {
-    case 'signal':
-      if (indexLevel(level).nodes.get(event.nodeId)?.type === 'source') {
-        return `${name(event.nodeId)} is on`;
-      }
-      return `${name(event.nodeId)} is ${event.value ? 'powered' : 'unpowered'}`;
-    case 'wire':
-      return null;
-    case 'gate':
-      return `${name(event.gateId)} ${event.open ? 'opens' : 'stays closed'}`;
-    case 'ballMove':
-      return `Ball rolls to ${name(event.to)}`;
-    case 'junction':
-      return `${name(event.nodeId)} routes the ball to ${name(event.to)}`;
-    case 'ballBlocked':
-      return `Ball stopped at ${name(event.gateId)}`;
-    case 'ballDeadEnd':
-      return `Ball hit a dead end at ${name(event.nodeId)}`;
-    case 'ballGoal':
-      return 'Ball reached the goal!';
-    case 'attemptEnd':
-      return null;
-  }
-}
-
-export function describeOutcome(level: LevelDef, outcome: RunOutcome): string {
+/** Says where and why the ball stopped, without giving away the solution. */
+export function explainRun(level: LevelDef, run: RunResult): string {
+  const { outcome } = run;
   switch (outcome.kind) {
     case 'goal':
-      return 'Solved! The ball reached the goal.';
-    case 'blocked':
-      return `The ball stopped at ${nodeName(level, outcome.gateId)}, which was closed.`;
+      return 'The ball reached the goal.';
     case 'deadEnd':
-      return `The ball was routed into a dead end at ${nodeName(level, outcome.nodeId)}.`;
+      return `A junction sent the ball into a dead end.`;
+    case 'blocked': {
+      const node = indexLevel(level).nodes.get(outcome.gateId);
+      const gate = run.events.find((e) => e.type === 'gate' && e.gateId === outcome.gateId);
+      const got = gate?.type === 'gate' && gate.input ? 'got power' : 'got no power';
+      const needs = node?.type === 'gate' && node.requiredSignal ? 'needs power' : 'needs no power';
+      return `Stopped at ${nodeName(level, outcome.gateId)}: it ${needs} but ${got}.`;
+    }
   }
 }
 
 export const rejectMessage: Record<RejectReason, string> = {
-  budget: 'No changes left. Flip a changed switch back, or Reset.',
+  budget: 'No changes left. Switch a changed switch back, or Reset.',
   notASwitch: 'That is not a switch.',
   nothingToUndo: 'Nothing to undo since the last run.',
   levelWon: 'Level already solved.',
