@@ -3,24 +3,30 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **M3, polished first three levels.** A brushed-metal machine drawn in PixiJS (cable
-wires, brass parts, portcullis gates, glowing energy), lever switches, synthesized sound with a
-mute button, vibration on supporting phones, a settings screen (sound, vibration, motion, reset
-progress), and fallbacks when graphics fail to start. Levels 4 to 10 come in M4.
+Status: **M4, all ten Phase 1 levels.** The game has:
+
+- a brushed-metal machine drawn in PixiJS (cable wires, brass parts, portcullis gates, glowing
+  energy) and lever switches;
+- synthesized sound with a mute button, and vibration on phones that support it;
+- a settings screen for sound, vibration, motion and resetting progress;
+- saved progress, a level select, and a completion card after level 10;
+- fallbacks when graphics fail to start.
+
+The solver checks every level.
 
 ## Commands
 
-| Command                | What it does                                                           |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `npm install`          | Install dependencies (Node 22+)                                        |
-| `npm run dev`          | Start the dev server                                                   |
-| `npm test`             | Run unit, determinism, level, timeline and storage tests (Vitest)      |
-| `npm run e2e`          | Play the levels in Chromium at iPhone and desktop sizes (Playwright)   |
-| `npm run levels`       | Print the solver report for every level; fails if any level is invalid |
-| `npm run lint`         | ESLint                                                                 |
-| `npm run typecheck`    | TypeScript, strict                                                     |
-| `npm run build`        | Typecheck and build to `dist/`                                         |
-| `npm run build:single` | Build one bundled script to `dist-single/` for a shareable single page |
+| Command                | What it does                                                            |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `npm install`          | Install dependencies (Node 22+)                                         |
+| `npm run dev`          | Start the dev server                                                    |
+| `npm test`             | Run unit, determinism, level, timeline and storage tests (Vitest)       |
+| `npm run e2e`          | Play all ten levels in Chromium at phone and desktop sizes (Playwright) |
+| `npm run levels`       | Print the solver report for every level; fails if any level is invalid  |
+| `npm run lint`         | ESLint                                                                  |
+| `npm run typecheck`    | TypeScript, strict                                                      |
+| `npm run build`        | Typecheck and build to `dist/`                                          |
+| `npm run build:single` | Build one bundled script to `dist-single/` for a shareable single page  |
 
 Run `npx playwright install chromium` once before `npm run e2e`. After `build:single`,
 `node scripts/single-page.mjs out.html` packs the build into one HTML page.
@@ -47,8 +53,9 @@ the Playwright suite, on every push.
 
 **Animation never decides outcomes.** The engine computes the run; `buildTimeline` turns its events
 into timed cues and `sampleTimeline` gives the frame at any moment. Reduced motion uses zero-length
-cues, which land on the same final frame. Before a run, the board shows the machine unpowered with
-gates unresolved, so the player has to reason from the wiring.
+cues, which land on the same final frame. Before a run, the wires show live power for the current
+switch positions, but gates stay unresolved until Run, so the player still reasons about what
+each gate will do.
 
 ## Layout
 
@@ -73,6 +80,56 @@ coaching line for tutorial levels. The validator reports every problem with a co
 `DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`, `SWITCH_NO_INPUT`, `GATE_NO_INPUT`,
 `GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`, plus the
 solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
+
+## Levels
+
+| #   | Name           | Teaches                                                    | Budget | Min |
+| --- | -------------- | ---------------------------------------------------------- | ------ | --- |
+| 1   | First Spark    | A powered switch opens the gate it feeds                   | 1      | 1   |
+| 2   | Reverse Logic  | OFF gates open only without power                          | 1      | 1   |
+| 3   | Double Duty    | One switch can feed two gates                              | 2      | 2   |
+| 4   | The Tradeoff   | Switch chains: B only has power if A does                  | 2      | 2   |
+| 5   | Two Conditions | ALL ON gates need every wire powered                       | 3      | 3   |
+| 6   | False Friend   | ANY ON gates; the obvious fix blocks a later gate          | 2      | 2   |
+| 7   | Minimal Moves  | The step-by-step route costs 3; one switch fixes two gates | 2      | 2   |
+| 8   | Split Signal   | One switch feeds three; choose which branches stay dark    | 3      | 3   |
+| 9   | Interlock      | A forbidden route forces you to build the other one        | 3      | 3   |
+| 10  | Master Circuit | Chains, splits, ALL/ANY gates and a false friend together  | 4      | 4   |
+
+Each of levels 4 to 10 has exactly one winning position within its budget, and turning every
+switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
+fails. Level 4 is marked `easy` and still allows it.
+
+## Known limitations
+
+- The engine supports junctions (branching tracks) and inverted (NOT) wires, but no level uses
+  them yet. Both were left out to keep the Phase 1 rule set small. The board draws them
+  plainly, and they would need UI work before use.
+- Boards are laid out for at most five switches and three gates on one straight track. More
+  gates would crowd the labels at phone width.
+- Tested in Chromium only, emulating iPhone 14, iPhone SE and desktop. Real iOS Safari and
+  Android Chrome have not been checked. Vibration does nothing on iPhones, because Safari
+  has no vibration API.
+- Fonts come from Google Fonts. Offline, the game falls back to system fonts.
+- Progress and settings live in this browser's local storage, with no sync between devices.
+- The greedy-player check is a heuristic. A level passing it can still feel easy to some
+  players, so playtesting is the real test.
+
+## Questions for playtesters
+
+Observe without coaching, as the build sheet asks.
+
+1. Without the intro card, can players say what a lit wire means and what ON/OFF under a gate
+   means? How long does it take before their first deliberate toggle?
+2. On level 4, do players notice that B gets its power from A? Do they need the prompt?
+3. Are "ALL ON", "ANY ON" and "ALL OFF" understood at a glance, or do players read them as a
+   single switch requirement?
+4. On level 7, do players hit the change limit on their first try? Does that feel fair or
+   frustrating?
+5. Where do players open Hint, and does the hint unblock them without giving the answer away?
+6. Which level takes the longest, and do players say they would like to keep going after level
+   10?
+7. Is the sound welcome or quickly muted? Does anyone change the motion setting?
 
 ## Solver report
 

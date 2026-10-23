@@ -40,7 +40,15 @@ export function LevelSelect({ levels, progress, onPlay, onSettings }: Props) {
               >
                 <span className="level-num">{String(i + 1).padStart(2, '0')}</span>
                 <span className="level-name">{level.name}</span>
-                <span className="level-state">{record ? 'Solved' : open ? 'Play' : 'Locked'}</span>
+                <span className="level-state">
+                  {record
+                    ? record.bestAttempts === 1
+                      ? 'First run'
+                      : 'Solved'
+                    : open
+                      ? 'Play'
+                      : 'Locked'}
+                </span>
               </button>
             </li>
           );

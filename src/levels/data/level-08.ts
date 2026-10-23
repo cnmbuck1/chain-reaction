@@ -1,0 +1,127 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level08: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-08',
+  name: 'Split Signal',
+  difficulty: 'medium',
+  maxToggles: 3,
+  nodes: [
+    {
+      id: 'source',
+      type: 'source',
+      x: 0.5,
+      y: 0.08,
+      label: 'Power',
+    },
+    {
+      id: 'a',
+      type: 'switch',
+      x: 0.5,
+      y: 0.28,
+      initialOn: false,
+      label: 'A',
+    },
+    {
+      id: 'b',
+      type: 'switch',
+      x: 0.18,
+      y: 0.54,
+      initialOn: false,
+      label: 'B',
+    },
+    {
+      id: 'c',
+      type: 'switch',
+      x: 0.5,
+      y: 0.56,
+      initialOn: true,
+      label: 'C',
+    },
+    {
+      id: 'd',
+      type: 'switch',
+      x: 0.82,
+      y: 0.54,
+      initialOn: true,
+      label: 'D',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.26,
+      y: 0.84,
+      combine: 'single',
+      requiredSignal: true,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.5,
+      y: 0.84,
+      combine: 'single',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.74,
+      y: 0.84,
+      combine: 'single',
+      requiredSignal: false,
+      label: 'Gate 3',
+    },
+    {
+      id: 'ball',
+      type: 'ballStart',
+      x: 0.06,
+      y: 0.84,
+      label: 'Start',
+    },
+    {
+      id: 'goal',
+      type: 'goal',
+      x: 0.94,
+      y: 0.84,
+      label: 'Goal',
+    },
+  ],
+  signalEdges: [
+    {
+      from: 'source',
+      to: 'a',
+    },
+    {
+      from: 'a',
+      to: 'b',
+    },
+    {
+      from: 'a',
+      to: 'c',
+    },
+    {
+      from: 'a',
+      to: 'd',
+    },
+    {
+      from: 'b',
+      to: 'g1',
+    },
+    {
+      from: 'c',
+      to: 'g2',
+    },
+    {
+      from: 'd',
+      to: 'g3',
+    },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint: 'One switch can feed several others; each branch still has its own switch.',
+    hint: 'A powers B, C and D at once. Decide which branches should stay dark.',
+    minChanges: 3,
+  },
+};

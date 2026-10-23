@@ -159,10 +159,7 @@ export function BoardView({
                     </span>
                   ))}
                 </span>
-                <span className={`need ${node.requiredSignal ? 'need-on' : 'need-off'}`}>
-                  <BoltIcon crossed={!node.requiredSignal} />
-                  {gateRequirement(level, node.id)}
-                </span>
+                <NeedBadge label={gateRequirement(level, node.id)} on={node.requiredSignal} />
               </div>
             );
           }
@@ -189,6 +186,22 @@ export function BoardView({
         }
       })}
     </div>
+  );
+}
+
+/** What a gate needs. Multi-input gates put ALL/ANY on its own line to stay narrow. */
+function NeedBadge({ label, on }: { label: string; on: boolean }) {
+  const words = label.split(' ');
+  const state = words.pop()!;
+  const mode = words.join(' ');
+  return (
+    <span className={`need ${on ? 'need-on' : 'need-off'}${mode ? ' multi' : ''}`}>
+      {mode && <span className="need-mode">{mode}</span>}
+      <span className="need-state">
+        <BoltIcon crossed={!on} />
+        {state}
+      </span>
+    </span>
   );
 }
 

@@ -9,6 +9,20 @@ async function dismissIntro(page: Page) {
   await page.getByRole('button', { name: 'Got it' }).click();
 }
 
+/** One shortest solution per level, by switch label (the solver's, checked in unit tests). */
+const SOLUTIONS = [
+  { name: 'First Spark', switches: ['A'] },
+  { name: 'Reverse Logic', switches: ['A'] },
+  { name: 'Double Duty', switches: ['A', 'B'] },
+  { name: 'The Tradeoff', switches: ['A', 'B'] },
+  { name: 'Two Conditions', switches: ['A', 'B', 'C'] },
+  { name: 'False Friend', switches: ['B', 'C'] },
+  { name: 'Minimal Moves', switches: ['A', 'D'] },
+  { name: 'Split Signal', switches: ['A', 'B', 'D'] },
+  { name: 'Interlock', switches: ['A', 'B', 'D'] },
+  { name: 'Master Circuit', switches: ['A', 'B', 'C', 'D'] },
+];
+
 async function solve(page: Page, switches: string[]) {
   await expect(board(page)).toBeVisible();
   for (const name of switches)
@@ -20,19 +34,19 @@ async function solve(page: Page, switches: string[]) {
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('a new player opens on level 1 and can play all three levels', async ({ page }) => {
+  test('a new player opens on level 1 and can play all ten levels', async ({ page }) => {
+    test.setTimeout(120_000);
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await dismissIntro(page);
-    await solve(page, ['A']);
-    await page.getByRole('button', { name: 'Next level' }).click();
-    await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
-    await solve(page, ['A']);
-    await page.getByRole('button', { name: 'Next level' }).click();
-    await expect(page.getByRole('heading', { name: 'Double Duty' })).toBeVisible();
-    await solve(page, ['A', 'B']);
+    for (const [i, { name, switches }] of SOLUTIONS.entries()) {
+      await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+      await solve(page, switches);
+      if (i < SOLUTIONS.length - 1) await page.getByRole('button', { name: 'Next level' }).click();
+    }
+    await expect(page.getByRole('dialog')).toContainText('Every machine solved. 10 of 10 on the');
     await page.getByRole('button', { name: 'Done' }).click();
-    await expect(page.getByText('3 of 3 solved')).toBeVisible();
+    await expect(page.getByText('10 of 10 solved')).toBeVisible();
   });
 
   test('a failed run explains where the ball stopped and keeps switch positions', async ({
@@ -57,7 +71,7 @@ test.describe('with reduced motion', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
-    await expect(page.getByText('1 of 3 solved')).toBeVisible();
+    await expect(page.getByText('1 of 10 solved')).toBeVisible();
     await page.getByRole('button', { name: 'Level 1, First Spark, solved' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
@@ -113,7 +127,7 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await dismissIntro(page);
   await solve(page, ['A']);
   await page.getByRole('dialog').getByRole('button', { name: 'Levels' }).click();
-  await expect(page.getByText('1 of 3 solved')).toBeVisible();
+  await expect(page.getByText('1 of 10 solved')).toBeVisible();
   await page.getByRole('button', { name: 'Settings' }).click();
 
   await page.getByRole('switch', { name: 'Sound' }).click();
@@ -137,7 +151,7 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await page.getByRole('dialog').getByRole('button', { name: 'Reset' }).click();
   await expect(page.getByText('Progress cleared.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '‹ Levels' }).click();
-  await expect(page.getByText('0 of 3 solved')).toBeVisible();
+  await expect(page.getByText('0 of 10 solved')).toBeVisible();
 });
 
 test('the sound button mutes from the game screen', async ({ page }) => {
