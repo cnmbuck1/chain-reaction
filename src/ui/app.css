@@ -1,0 +1,103 @@
+:root {
+  --bg: #12161f;
+  --panel: #1b2130;
+  --text: #e6e8ee;
+  --muted: #9aa3b5;
+  --gold: #c9a45c;
+  --cyan: #4fd6e8;
+  --amber: #f0a43a;
+  color-scheme: dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+}
+h1 {
+  margin: 0 0 4px;
+  color: var(--gold);
+}
+h2 {
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.eyebrow,
+.hint,
+.track {
+  color: var(--muted);
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  margin: 0;
+}
+.budget {
+  color: var(--gold);
+  font-weight: 600;
+}
+.wires {
+  padding-left: 1.2em;
+}
+.switches,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.controls {
+  margin-top: 16px;
+}
+button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #39425a;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+button:disabled,
+button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.switch.on {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 0 1px var(--cyan);
+}
+.primary {
+  background: var(--gold);
+  color: #1a1408;
+  border-color: var(--gold);
+  font-weight: 700;
+}
+.status {
+  min-height: 1.5em;
+  color: var(--amber);
+}
+.log {
+  color: var(--muted);
+  padding-left: 1.4em;
+}
