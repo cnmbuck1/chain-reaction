@@ -191,6 +191,8 @@ test('the game fits a small phone without sideways scrolling', async ({ page }) 
 test('hints: two free moves, then the demo shop, and they last across reloads', async ({
   page,
 }) => {
+  // Three page loads plus the demo shop: slower CI runners need more than the default.
+  test.setTimeout(60_000);
   const completed = Object.fromEntries(
     [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`level-0${n}`, { bestAttempts: 1 }]),
   );
