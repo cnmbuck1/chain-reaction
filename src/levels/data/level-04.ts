@@ -88,5 +88,6 @@ export const level04: LevelDef = {
     hint: 'Powering A also powers B. Gate 2 wants B dark.',
     prompt: 'B gets its power from A, not from the source. Turning A on reaches B too.',
     minChanges: 2,
+    keySwitch: 'b',
   },
 };

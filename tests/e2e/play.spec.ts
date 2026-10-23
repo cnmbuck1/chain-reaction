@@ -57,9 +57,10 @@ test.describe('with reduced motion', () => {
     await expect(board(page)).toBeVisible();
     await run(page).click();
     await expect(status(page)).toHaveText('Stopped at Gate 1: it needs power but got no power.');
-    await page.getByRole('button', { name: 'Hint' }).click();
-    await expect(page.getByText('The gate opens only when power reaches it.')).toBeVisible();
-    await page.getByRole('button', { name: /^Switch A,/ }).click();
+    await page.getByRole('button', { name: /^Hint, free/ }).click();
+    await page.getByRole('button', { name: 'Make a free move' }).click();
+    await expect(page.locator('.switch.is-hinted')).toHaveAttribute('aria-label', /^Switch A,/);
+    await expect(page.getByLabel('Changes used 0 of 1')).toBeVisible();
     await run(page).click();
     await expect(page.getByRole('dialog')).toContainText('Solved in 2 runs.');
   });
@@ -178,4 +179,54 @@ test('the game fits a small phone without sideways scrolling', async ({ page }) 
   );
   expect(overflow).toBeLessThanOrEqual(0);
   await expect(run(page)).toBeInViewport();
+});
+
+test('hints: two free moves, then the demo shop, and they last across reloads', async ({
+  page,
+}) => {
+  const completed = Object.fromEntries(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`level-0${n}`, { bestAttempts: 1 }]),
+  );
+  await page.goto('/');
+  await page.evaluate(
+    (done) =>
+      localStorage.setItem(
+        'chain-reaction/progress',
+        JSON.stringify({ version: 1, completed: done, seenIntro: true }),
+      ),
+    completed,
+  );
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Master Circuit' })).toBeVisible();
+  await expect(board(page)).toBeVisible();
+  const hinted = page.locator('.switch.is-hinted');
+
+  await page.getByRole('button', { name: 'Hint, 2 left' }).click();
+  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+  await expect(hinted).toHaveCount(1);
+  await expect(hinted).toHaveAttribute('aria-label', /^Switch D,.*set by a hint/);
+  await expect(page.getByLabel('Changes used 0 of 4')).toBeVisible();
+  await hinted.click({ force: true });
+  await expect(hinted).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Hint, 1 left' }).click();
+  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+  await expect(hinted).toHaveCount(2);
+
+  await page.getByRole('button', { name: 'Hint, 0 left' }).click();
+  await page.getByRole('button', { name: 'Get more hints' }).click();
+  await expect(page.getByText(/^Demo: nothing is shown or charged/)).toBeVisible();
+  await page.getByRole('button', { name: /Watch a short ad/ }).click();
+  await expect(page.getByText('1 hint added.')).toBeVisible();
+  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+  await expect(hinted).toHaveCount(3);
+
+  await page.getByRole('button', { name: 'Hint, 0 left' }).click();
+  await expect(page.getByText('The last step is yours.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeVisible();
+  await expect(hinted).toHaveCount(3);
+  await expect(page.getByLabel('Changes used 0 of 4')).toBeVisible();
 });

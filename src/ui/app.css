@@ -736,3 +736,96 @@ button:disabled {
 .card .finale strong {
   color: var(--gold);
 }
+
+/* ---------- Hints ---------- */
+.hint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.hint-badge {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+  color: var(--gold);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hint-card {
+  display: grid;
+  gap: 12px;
+}
+.hint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card .hint-notice {
+  color: var(--energy);
+}
+.card .demo-note {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--amber) 70%, transparent);
+  color: var(--amber);
+  font-size: 0.9rem;
+}
+.shop-list {
+  display: grid;
+  gap: 8px;
+}
+.shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--edge);
+  background: var(--bg-raise);
+  font-weight: 600;
+  cursor: pointer;
+}
+.shop-price {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.switch.is-hinted {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gold) 70%, transparent),
+    0 0 14px color-mix(in srgb, var(--gold) 45%, transparent);
+  cursor: default;
+}
+.hint-pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+}
+.switch.just-hinted {
+  animation: hinted 900ms ease-out;
+}
+@keyframes hinted {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 90%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--gold) 0%, transparent);
+  }
+}

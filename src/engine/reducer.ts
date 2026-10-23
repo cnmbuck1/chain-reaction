@@ -33,7 +33,7 @@ export function changesUsed(level: LevelDef, switches: SwitchStates): number {
 export function canToggle(level: LevelDef, state: GameState, switchId: string): boolean {
   if (state.phase === 'won') return false;
   const node = indexLevel(level).nodes.get(switchId);
-  if (node?.type !== 'switch') return false;
+  if (node?.type !== 'switch' || node.locked) return false;
   const isChanged = state.switches[switchId] !== node.initialOn;
   return isChanged || changesUsed(level, state.switches) < level.maxToggles;
 }
@@ -48,6 +48,7 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
       const node = indexLevel(level).nodes.get(action.switchId);
       if (node?.type !== 'switch') return { state, events: [], rejected: 'notASwitch' };
       if (state.phase === 'won') return { state, events: [], rejected: 'levelWon' };
+      if (node.locked) return { state, events: [], rejected: 'locked' };
       if (!canToggle(level, state, action.switchId)) {
         return { state, events: [], rejected: 'budget' };
       }

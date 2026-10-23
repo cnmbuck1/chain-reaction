@@ -45,6 +45,7 @@ export function explainRun(level: LevelDef, run: RunResult): string {
 
 export const rejectMessage: Record<RejectReason, string> = {
   budget: 'No changes left. Switch a changed switch back, or Reset.',
+  locked: 'A hint set that switch, so it stays put.',
   notASwitch: 'That is not a switch.',
   nothingToUndo: 'Nothing to undo since the last run.',
   levelWon: 'Level already solved.',

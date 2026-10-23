@@ -123,5 +123,6 @@ export const level08: LevelDef = {
     teachingPoint: 'One switch can feed several others; each branch still has its own switch.',
     hint: 'A powers B, C and D at once. Decide which branches should stay dark.',
     minChanges: 3,
+    keySwitch: 'd',
   },
 };

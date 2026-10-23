@@ -100,6 +100,26 @@ Each of levels 4 to 10 has exactly one winning position within its budget, and t
 switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
 fails. Level 4 is marked `easy` and still allows it.
 
+## Hints
+
+A hint is a free move. The game sets one switch to where every solution needs it, locks it
+there and marks it with a HINT pin. The move doesn't count against the level's changes:
+`withFreeMoves` (`src/hints/freeMoves.ts`) rebuilds the level with that switch's start moved
+to its target, so the engine needs no special case beyond refusing to toggle a locked switch.
+
+The first move is always `meta.keySwitch`, then the rest of the solver's solution. A level
+gives at most one fewer move than its minimum changes, so the player always makes the last
+change, except on one-change levels. `checkLevel` reports `BAD_HINT` when the key switch
+doesn't need to change or solutions disagree on it.
+
+Players start with 2 hints, stored in `chain-reaction/hints` apart from progress, so resetting
+progress doesn't refill them. Hints on levels 1 to 3 are free. Moves already made stay made,
+including on replays.
+
+When hints run out, "Get more hints" calls a `HintShop` (`src/monetize/hintShop.ts`). The
+current one is a demo that grants hints without showing an ad or charging anything. AdMob and
+App Store / Google Play in-app purchases replace it in the native-app milestone.
+
 ## Known limitations
 
 - The engine supports junctions (branching tracks) and inverted (NOT) wires, but no level uses

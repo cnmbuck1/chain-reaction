@@ -103,5 +103,6 @@ export const level06: LevelDef = {
     hint: 'A opens Gate 1 but also feeds Gate 2. Is there another way into Gate 1?',
     prompt: 'An ANY ON gate opens when at least one of its wires carries power.',
     minChanges: 2,
+    keySwitch: 'c',
   },
 };

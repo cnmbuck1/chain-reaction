@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Sound } from '../audio/sound';
+import { FREE_HINT_LEVELS, freeMovePlan } from '../hints/freeMoves';
+import { demoHintShop } from '../monetize/hintShop';
 import { levels } from '../levels';
 import {
   emptyProgress,
@@ -9,6 +11,14 @@ import {
   saveProgress,
   type Progress,
 } from '../storage/progress';
+import {
+  grantHints,
+  loadHints,
+  saveHints,
+  freeMovesUsed,
+  spendFreeMove,
+  type HintWallet,
+} from '../storage/hints';
 import { loadSettings, saveSettings, type Settings } from '../storage/settings';
 import { GameScreen } from './GameScreen';
 import { LevelSelect } from './LevelSelect';
@@ -40,6 +50,8 @@ function usePrefersReducedMotion() {
 export function App() {
   const [progress, setProgress] = useState(loadProgress);
   const [settings, setSettings] = useState(loadSettings);
+  const [wallet, setWallet] = useState(loadHints);
+  const shop = useMemo(() => demoHintShop(), []);
   const [screen, setScreen] = useState<Screen>(() => firstScreen(progress));
   const systemReduced = usePrefersReducedMotion();
   const reducedMotion = settings.motion === 'reduce' || systemReduced;
@@ -51,6 +63,10 @@ export function App() {
   const update = (next: Progress) => {
     setProgress(next);
     saveProgress(next);
+  };
+  const updateWallet = (next: HintWallet) => {
+    setWallet(next);
+    saveHints(next);
   };
   const changeSettings = (next: Settings) => {
     setSettings(next);
@@ -101,6 +117,24 @@ export function App() {
       soundOn={settings.sound}
       haptics={settings.haptics}
       onToggleSound={() => changeSettings({ ...settings, sound: !settings.sound })}
+      hints={{
+        balance: wallet.balance,
+        used: freeMovesUsed(wallet, level.id),
+        free: screen.index < FREE_HINT_LEVELS,
+        shop,
+        onUse: () => {
+          const free = screen.index < FREE_HINT_LEVELS;
+          const result = spendFreeMove(wallet, level.id, freeMovePlan(level).length, free);
+          if (result.ok) updateWallet(result.wallet);
+          return result.ok;
+        },
+        onGrant: (count) =>
+          setWallet((w) => {
+            const next = grantHints(w, count);
+            saveHints(next);
+            return next;
+          }),
+      }}
       showIntro={screen.index === 0 && !progress.seenIntro}
       onIntroDone={() => update({ ...progress, seenIntro: true })}
       onSolved={(attempts) => solved(level.id, attempts)}

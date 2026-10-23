@@ -18,6 +18,8 @@ interface Props {
   playback: RunPlayback | null;
   reducedMotion: boolean;
   locked: boolean;
+  /** The switch a hint just set, for a one-off flourish. */
+  justHinted?: string | null;
   onToggle: (switchId: string) => void;
   onPlayed: (id: number) => void;
 }
@@ -32,6 +34,7 @@ export function BoardView({
   playback,
   reducedMotion,
   locked,
+  justHinted,
   onToggle,
   onPlayed,
 }: Props) {
@@ -117,16 +120,17 @@ export function BoardView({
           case 'switch': {
             const on = state.switches[node.id] ?? false;
             const changed = on !== node.initialOn;
-            const blocked = !locked && !canToggle(level, state, node.id);
+            const hinted = node.locked === true;
+            const blocked = !locked && !hinted && !canToggle(level, state, node.id);
             return (
               <button
                 key={node.id}
                 type="button"
-                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}`}
+                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${hinted ? ' is-hinted' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
                 style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                 aria-pressed={on}
-                aria-disabled={locked || blocked}
-                aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${blocked ? ', no changes left' : ''}`}
+                aria-disabled={locked || blocked || hinted}
+                aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${blocked ? ', no changes left' : ''}`}
                 onClick={() => !locked && onToggle(node.id)}
               >
                 <span className="switch-name">{nodeName(level, node.id)}</span>
@@ -140,6 +144,11 @@ export function BoardView({
                   {on ? 'ON' : 'OFF'}
                 </span>
                 {changed && <span className="changed-dot" aria-hidden="true" />}
+                {hinted && (
+                  <span className="hint-pin" aria-hidden="true">
+                    HINT
+                  </span>
+                )}
               </button>
             );
           }

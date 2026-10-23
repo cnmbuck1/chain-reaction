@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { runSounds } from '../audio/cues';
 import { buzz, type Sound } from '../audio/sound';
 import { changesUsed, initialState, step } from '../engine/reducer';
 import type { GameAction, GameState, LevelDef, RejectReason } from '../engine/types';
+import { freeMovePlan, withFreeMoves } from '../hints/freeMoves';
+import type { HintShop } from '../monetize/hintShop';
 import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, rejectMessage } from './describe';
+import { HintPanel } from './HintPanel';
 
 interface Props {
   level: LevelDef;
@@ -18,6 +21,16 @@ interface Props {
   soundOn: boolean;
   haptics: boolean;
   onToggleSound: () => void;
+  hints: {
+    balance: number;
+    /** Free moves already used on this level. */
+    used: number;
+    free: boolean;
+    shop: HintShop;
+    /** Spends a hint on the next free move; false if it could not. */
+    onUse: () => boolean;
+    onGrant: (hints: number) => void;
+  };
   showIntro: boolean;
   onIntroDone: () => void;
   onSolved: (attempts: number) => void;
@@ -26,7 +39,7 @@ interface Props {
 }
 
 export function GameScreen({
-  level,
+  level: baseLevel,
   number,
   hasNext,
   finale,
@@ -35,17 +48,38 @@ export function GameScreen({
   soundOn,
   haptics,
   onToggleSound,
+  hints,
   showIntro,
   onIntroDone,
   onSolved,
   onNext,
   onLevels,
 }: Props) {
+  // Free moves from hints are baked into the level: hinted switches start set and locked.
+  const level = useMemo(() => withFreeMoves(baseLevel, hints.used), [baseLevel, hints.used]);
+  const plan = freeMovePlan(baseLevel);
   const [state, setState] = useState<GameState>(() => initialState(level));
+  const [justHinted, setJustHinted] = useState<string | null>(null);
   const [playback, setPlayback] = useState<RunPlayback | null>(null);
   const [playing, setPlaying] = useState(false);
   const [notice, setNotice] = useState<RejectReason | null>(null);
-  const [showHint, setShowHint] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
+
+  const useHint = () => {
+    const move = plan[hints.used];
+    if (!move || playing || !hints.onUse()) return;
+    setState((s) => ({
+      ...s,
+      switches: { ...s.switches, [move.switchId]: move.on },
+      undoStack: s.undoStack.filter((id) => id !== move.switchId),
+    }));
+    setPlayback(null);
+    setNotice(null);
+    setHintOpen(false);
+    setJustHinted(move.switchId);
+    sound.play('chime');
+    if (haptics) buzz([12, 60, 12]);
+  };
   const runId = useRef(0);
   const nextButton = useRef<HTMLButtonElement>(null);
 
@@ -152,6 +186,7 @@ export function GameScreen({
         playback={playback}
         reducedMotion={reducedMotion}
         locked={playing || state.phase === 'won'}
+        justHinted={justHinted}
         onToggle={(switchId) => dispatch({ type: 'toggle', switchId })}
         onPlayed={onPlayed}
       />
@@ -164,13 +199,21 @@ export function GameScreen({
         >
           {status}
         </p>
-        {lastRun && !lastRun.won && !playing && (
-          <button type="button" className="ghost small" onClick={() => setShowHint((v) => !v)}>
-            {showHint ? 'Hide hint' : 'Hint'}
+        {!won && (
+          <button
+            type="button"
+            className="ghost small hint-button"
+            onClick={() => setHintOpen(true)}
+            disabled={playing}
+            aria-label={`Hint, ${hints.free ? 'free on this level' : `${hints.balance} left`}`}
+          >
+            Hint
+            <span className="hint-badge" aria-hidden="true">
+              {hints.free ? 'free' : hints.balance}
+            </span>
           </button>
         )}
       </div>
-      {showHint && <p className="hint">{level.meta.hint}</p>}
 
       <div className="controls">
         <button
@@ -220,6 +263,18 @@ export function GameScreen({
             </div>
           </div>
         </div>
+      )}
+
+      {hintOpen && !won && (
+        <HintPanel
+          remaining={plan.length - hints.used}
+          free={hints.free}
+          balance={hints.balance}
+          shop={hints.shop}
+          onUse={useHint}
+          onGrant={hints.onGrant}
+          onClose={() => setHintOpen(false)}
+        />
       )}
 
       {won && (
