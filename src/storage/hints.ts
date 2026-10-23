@@ -1,23 +1,23 @@
-// The hint wallet: how many hints the player holds and which hint steps each level has
-// unlocked. Stored apart from progress so resetting progress never refills free hints.
+// The hint wallet: how many hints the player holds and how many free moves each level
+// has used. Stored apart from progress so resetting progress never refills free hints.
 // Reads never throw: anything missing or malformed falls back to a fresh wallet.
 
 export const FREE_HINTS = 2;
-/** Nudge, focus, one move. */
-export const HINT_STEPS = 3;
+/** Upper bound on free moves per level when reading stored data. */
+const MAX_MOVES = 10;
 
 export interface HintWallet {
   version: 1;
   balance: number;
-  /** Steps unlocked per level id, 0..HINT_STEPS. Unlocked steps stay unlocked. */
-  unlocked: Record<string, number>;
+  /** Free moves used per level id. They stay applied, including on replays. */
+  used: Record<string, number>;
 }
 
 export const HINTS_KEY = 'chain-reaction/hints';
 
 type KeyValueStore = Pick<Storage, 'getItem' | 'setItem'>;
 
-export const freshWallet = (): HintWallet => ({ version: 1, balance: FREE_HINTS, unlocked: {} });
+export const freshWallet = (): HintWallet => ({ version: 1, balance: FREE_HINTS, used: {} });
 
 function defaultStore(): KeyValueStore | null {
   try {
@@ -49,33 +49,40 @@ const isCount = (n: unknown, max = Number.MAX_SAFE_INTEGER): n is number =>
 
 export function migrateHints(data: unknown): HintWallet {
   if (typeof data !== 'object' || data === null) return freshWallet();
-  const { version, balance, unlocked } = data as Record<string, unknown>;
+  const { version, balance, used } = data as Record<string, unknown>;
   if (version !== 1 || !isCount(balance)) return freshWallet();
   const clean: Record<string, number> = {};
-  if (typeof unlocked === 'object' && unlocked !== null) {
-    for (const [id, steps] of Object.entries(unlocked)) {
-      if (isCount(steps, HINT_STEPS) && steps > 0) clean[id] = steps;
+  if (typeof used === 'object' && used !== null) {
+    for (const [id, moves] of Object.entries(used)) {
+      if (isCount(moves, MAX_MOVES) && moves > 0) clean[id] = moves;
     }
   }
-  return { version: 1, balance, unlocked: clean };
+  return { version: 1, balance, used: clean };
 }
 
-export const stepsUnlocked = (wallet: HintWallet, levelId: string) => wallet.unlocked[levelId] ?? 0;
+export const freeMovesUsed = (wallet: HintWallet, levelId: string) => wallet.used[levelId] ?? 0;
 
-export type UnlockResult =
-  { ok: true; wallet: HintWallet } | { ok: false; reason: 'empty' | 'done' };
+export type HintResult = { ok: true; wallet: HintWallet } | { ok: false; reason: 'empty' | 'done' };
 
-/** Unlocks the next hint step for a level, spending one hint unless the level's hints are free. */
-export function unlockNextStep(wallet: HintWallet, levelId: string, free: boolean): UnlockResult {
-  const steps = stepsUnlocked(wallet, levelId);
-  if (steps >= HINT_STEPS) return { ok: false, reason: 'done' };
+/**
+ * Spends a hint on the next free move for a level. `available` is how many free moves the
+ * level offers; `free` levels cost nothing.
+ */
+export function spendFreeMove(
+  wallet: HintWallet,
+  levelId: string,
+  available: number,
+  free: boolean,
+): HintResult {
+  const used = freeMovesUsed(wallet, levelId);
+  if (used >= available) return { ok: false, reason: 'done' };
   if (!free && wallet.balance < 1) return { ok: false, reason: 'empty' };
   return {
     ok: true,
     wallet: {
       ...wallet,
       balance: free ? wallet.balance : wallet.balance - 1,
-      unlocked: { ...wallet.unlocked, [levelId]: steps + 1 },
+      used: { ...wallet.used, [levelId]: used + 1 },
     },
   };
 }

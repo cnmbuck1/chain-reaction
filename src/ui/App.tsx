@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Sound } from '../audio/sound';
-import { FREE_HINT_LEVELS } from '../hints/steps';
+import { FREE_HINT_LEVELS, freeMovePlan } from '../hints/freeMoves';
 import { demoHintShop } from '../monetize/hintShop';
 import { levels } from '../levels';
 import {
@@ -15,8 +15,8 @@ import {
   grantHints,
   loadHints,
   saveHints,
-  stepsUnlocked,
-  unlockNextStep,
+  freeMovesUsed,
+  spendFreeMove,
   type HintWallet,
 } from '../storage/hints';
 import { loadSettings, saveSettings, type Settings } from '../storage/settings';
@@ -119,12 +119,14 @@ export function App() {
       onToggleSound={() => changeSettings({ ...settings, sound: !settings.sound })}
       hints={{
         balance: wallet.balance,
-        unlocked: stepsUnlocked(wallet, level.id),
+        used: freeMovesUsed(wallet, level.id),
         free: screen.index < FREE_HINT_LEVELS,
         shop,
-        onUnlock: () => {
-          const result = unlockNextStep(wallet, level.id, screen.index < FREE_HINT_LEVELS);
+        onUse: () => {
+          const free = screen.index < FREE_HINT_LEVELS;
+          const result = spendFreeMove(wallet, level.id, freeMovePlan(level).length, free);
           if (result.ok) updateWallet(result.wallet);
+          return result.ok;
         },
         onGrant: (count) =>
           setWallet((w) => {

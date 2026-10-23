@@ -131,7 +131,6 @@ export const level09: LevelDef = {
     teachingPoint: 'When a gate forbids your easy route, build the other one.',
     hint: 'Gate 1 rules out A, and with it C. Gate 2 then needs the B branch.',
     minChanges: 3,
-    focus: 'g2',
     keySwitch: 'd',
   },
 };

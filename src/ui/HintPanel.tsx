@@ -1,40 +1,22 @@
 import { useState } from 'react';
-import type { HintStep } from '../hints/steps';
 import type { HintShop } from '../monetize/hintShop';
 
 interface Props {
-  steps: readonly HintStep[];
-  unlocked: number;
+  /** Free moves this level still has to give. */
+  remaining: number;
   free: boolean;
   balance: number;
   shop: HintShop;
-  onUnlock: () => void;
+  onUse: () => void;
   onGrant: (hints: number) => void;
   onClose: () => void;
 }
 
-const STEP_TITLES: Record<HintStep['kind'], string> = {
-  nudge: 'Nudge',
-  focus: 'Focus',
-  move: 'One move',
-};
-
-/** The hint sheet: unlocked steps, the next one, and a way to get more hints. */
-export function HintPanel({
-  steps,
-  unlocked,
-  free,
-  balance,
-  shop,
-  onUnlock,
-  onGrant,
-  onClose,
-}: Props) {
-  const [view, setView] = useState<'hints' | 'shop'>('hints');
+/** Spend a hint on a free move, or get more hints. */
+export function HintPanel({ remaining, free, balance, shop, onUse, onGrant, onClose }: Props) {
+  const [view, setView] = useState<'hint' | 'shop'>('hint');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const shown = steps.slice(0, unlocked);
-  const next = steps[unlocked];
   const canAfford = free || balance > 0;
 
   const get = async (action: () => Promise<number>) => {
@@ -45,7 +27,7 @@ export function HintPanel({
       if (earned > 0) {
         onGrant(earned);
         setNotice(`${earned} ${earned === 1 ? 'hint' : 'hints'} added.`);
-        setView('hints');
+        setView('hint');
       } else {
         setNotice('No hints were added. Try again in a moment.');
       }
@@ -70,39 +52,32 @@ export function HintPanel({
           </button>
         </div>
 
-        {view === 'hints' ? (
+        {view === 'hint' ? (
           <>
-            <h2 id="hint-title">Hints</h2>
-            {shown.length > 0 ? (
-              <ol className="hint-steps">
-                {shown.map((step) => (
-                  <li key={step.kind}>
-                    <span className="hint-step-title">{STEP_TITLES[step.kind]}</span>
-                    {step.text}
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p>Each hint shows a little more: a nudge, then where to look, then one move.</p>
-            )}
+            <h2 id="hint-title">Free move</h2>
+            <p>
+              {remaining > 0
+                ? 'A hint sets one switch to where the solution needs it and locks it there. It doesn’t use up any of your changes.'
+                : 'That’s every free move for this level. The last step is yours.'}
+            </p>
             {notice && (
               <p className="hint-notice" role="status">
                 {notice}
               </p>
             )}
-            <div className="card-actions single">
-              {!next ? (
-                <p className="fine">That's every hint for this level.</p>
-              ) : canAfford ? (
-                <button type="button" className="run" autoFocus onClick={onUnlock}>
-                  {STEP_TITLES[next.kind]} · {free ? 'free' : 'use 1 hint'}
-                </button>
-              ) : (
-                <button type="button" className="run" autoFocus onClick={() => setView('shop')}>
-                  Get more hints
-                </button>
-              )}
-            </div>
+            {remaining > 0 && (
+              <div className="card-actions single">
+                {canAfford ? (
+                  <button type="button" className="run" autoFocus onClick={onUse}>
+                    {free ? 'Make a free move' : 'Use 1 hint'}
+                  </button>
+                ) : (
+                  <button type="button" className="run" autoFocus onClick={() => setView('shop')}>
+                    Get more hints
+                  </button>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -136,14 +111,9 @@ export function HintPanel({
                 </button>
               ))}
             </div>
-            {busy && (
+            {(busy || notice) && (
               <p className="hint-notice" role="status">
-                Working…
-              </p>
-            )}
-            {notice && !busy && (
-              <p className="hint-notice" role="status">
-                {notice}
+                {busy ? 'Working…' : notice}
               </p>
             )}
             <div className="card-actions single">
@@ -151,9 +121,9 @@ export function HintPanel({
                 type="button"
                 className="ghost"
                 disabled={busy}
-                onClick={() => setView('hints')}
+                onClick={() => setView('hint')}
               >
-                Back to hints
+                Back
               </button>
             </div>
           </>

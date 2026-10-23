@@ -18,9 +18,8 @@ interface Props {
   playback: RunPlayback | null;
   reducedMotion: boolean;
   locked: boolean;
-  /** Hint highlights. */
-  focusGate?: string;
-  keySwitch?: string;
+  /** The switch a hint just set, for a one-off flourish. */
+  justHinted?: string | null;
   onToggle: (switchId: string) => void;
   onPlayed: (id: number) => void;
 }
@@ -35,8 +34,7 @@ export function BoardView({
   playback,
   reducedMotion,
   locked,
-  focusGate,
-  keySwitch,
+  justHinted,
   onToggle,
   onPlayed,
 }: Props) {
@@ -93,8 +91,6 @@ export function BoardView({
     };
   }, [ready, level, playback, reducedMotion]);
 
-  const focusNode = focusGate ? level.nodes.find((n) => n.id === focusGate) : undefined;
-
   if (failed) {
     return (
       <div className="board board-failed" role="alert">
@@ -124,16 +120,17 @@ export function BoardView({
           case 'switch': {
             const on = state.switches[node.id] ?? false;
             const changed = on !== node.initialOn;
-            const blocked = !locked && !canToggle(level, state, node.id);
+            const hinted = node.locked === true;
+            const blocked = !locked && !hinted && !canToggle(level, state, node.id);
             return (
               <button
                 key={node.id}
                 type="button"
-                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${node.id === keySwitch ? ' is-key' : ''}`}
+                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${hinted ? ' is-hinted' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
                 style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                 aria-pressed={on}
-                aria-disabled={locked || blocked}
-                aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${blocked ? ', no changes left' : ''}`}
+                aria-disabled={locked || blocked || hinted}
+                aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${blocked ? ', no changes left' : ''}`}
                 onClick={() => !locked && onToggle(node.id)}
               >
                 <span className="switch-name">{nodeName(level, node.id)}</span>
@@ -147,18 +144,18 @@ export function BoardView({
                   {on ? 'ON' : 'OFF'}
                 </span>
                 {changed && <span className="changed-dot" aria-hidden="true" />}
+                {hinted && (
+                  <span className="hint-pin" aria-hidden="true">
+                    HINT
+                  </span>
+                )}
               </button>
             );
           }
           case 'gate': {
             const feeders = level.signalEdges.filter((e) => e.to === node.id);
             return (
-              <div
-                key={node.id}
-                className={`tag gate-tag${node.id === focusGate ? ' is-focus' : ''}`}
-                style={style}
-                aria-hidden="true"
-              >
+              <div key={node.id} className="tag gate-tag" style={style} aria-hidden="true">
                 <span className="feeders">
                   {feeders.map((e) => (
                     <span
@@ -197,9 +194,6 @@ export function BoardView({
             return null;
         }
       })}
-      {focusNode && (
-        <div className="focus-ring" style={place(focusNode.x, focusNode.y)} aria-hidden="true" />
-      )}
     </div>
   );
 }

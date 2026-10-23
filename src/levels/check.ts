@@ -45,13 +45,12 @@ export function checkLevel(level: LevelDef): LevelCheck {
   return { level, errors, warnings, report };
 }
 
-/** The hint steps must point at real things, and the "one move" must hold for every solution. */
+/** The first hinted switch must be one every solution changes the same way. */
 function checkHints(level: LevelDef, report: SolveReport): LevelCheck['errors'] {
   const errors: LevelCheck['errors'] = [];
   const bad = (message: string) => errors.push({ code: 'BAD_HINT', message });
   const node = (id: string) => level.nodes.find((n) => n.id === id);
-  const { focus, keySwitch } = level.meta;
-  if (focus !== undefined && node(focus)?.type !== 'gate') bad(`meta.focus ${focus} is not a gate`);
+  const { keySwitch } = level.meta;
   if (keySwitch === undefined) return errors;
   if (node(keySwitch)?.type !== 'switch') {
     bad(`meta.keySwitch ${keySwitch} is not a switch`);

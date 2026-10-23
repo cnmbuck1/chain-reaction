@@ -103,7 +103,6 @@ export const level05: LevelDef = {
     hint: 'Gate 1 needs both A and B. Then check what B powers next.',
     prompt: 'Gate 1 is an ALL ON gate: every wire into it must carry power.',
     minChanges: 3,
-    focus: 'g2',
     keySwitch: 'c',
   },
 };

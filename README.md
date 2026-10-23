@@ -102,17 +102,19 @@ fails. Level 4 is marked `easy` and still allows it.
 
 ## Hints
 
+A hint is a free move. The game sets one switch to where every solution needs it, locks it
+there and marks it with a HINT pin. The move doesn't count against the level's changes:
+`withFreeMoves` (`src/hints/freeMoves.ts`) rebuilds the level with that switch's start moved
+to its target, so the engine needs no special case beyond refusing to toggle a locked switch.
+
+The first move is always `meta.keySwitch`, then the rest of the solver's solution. A level
+gives at most one fewer move than its minimum changes, so the player always makes the last
+change, except on one-change levels. `checkLevel` reports `BAD_HINT` when the key switch
+doesn't need to change or solutions disagree on it.
+
 Players start with 2 hints, stored in `chain-reaction/hints` apart from progress, so resetting
-progress doesn't refill them. Each level has three steps, each costing one hint:
-
-1. **Nudge:** the level's hint text.
-2. **Focus:** rings `meta.focus` on the board.
-3. **One move:** names `meta.keySwitch` and the position every solution needs. The solver
-   supplies that position.
-
-Hints on levels 1 to 3 are free. Unlocked steps stay unlocked. `checkLevel` reports `BAD_HINT`
-in three cases: the focus isn't a gate, the key switch doesn't need to change, or solutions
-disagree on it.
+progress doesn't refill them. Hints on levels 1 to 3 are free. Moves already made stay made,
+including on replays.
 
 When hints run out, "Get more hints" calls a `HintShop` (`src/monetize/hintShop.ts`). The
 current one is a demo that grants hints without showing an ad or charging anything. AdMob and

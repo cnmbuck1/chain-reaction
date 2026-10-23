@@ -147,7 +147,6 @@ export const level10: LevelDef = {
     teachingPoint: 'Chains, splits, ALL and ANY gates, and a tight budget, all at once.',
     hint: 'E is the easy way into Gate 1, but Gate 3 wants it dark. A reaches C and D, and both need switching on.',
     minChanges: 4,
-    focus: 'g3',
     keySwitch: 'd',
   },
 };

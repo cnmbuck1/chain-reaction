@@ -131,7 +131,6 @@ export const level07: LevelDef = {
     teachingPoint: 'Look for the one switch that solves two problems at once.',
     hint: 'Count the changes before you make them. Which switch reaches two gates?',
     minChanges: 2,
-    focus: 'g2',
     keySwitch: 'd',
   },
 };

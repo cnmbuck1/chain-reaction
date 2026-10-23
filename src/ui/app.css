@@ -765,29 +765,6 @@ button:disabled {
   justify-content: space-between;
   gap: 12px;
 }
-.hint-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-}
-.hint-steps li {
-  display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--bg-raise);
-  border: 1px solid var(--edge);
-  line-height: 1.4;
-}
-.hint-step-title {
-  font-family: var(--font-label);
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
 .card .hint-notice {
   color: var(--energy);
 }
@@ -819,29 +796,36 @@ button:disabled {
   letter-spacing: 0.06em;
   color: var(--gold);
 }
-.gate-tag.is-focus .need,
-.gate-tag.is-focus .feeder {
-  box-shadow: 0 0 0 2px var(--gold);
-}
-.focus-ring {
-  position: absolute;
-  left: calc(var(--pad) + var(--x) * (100% - 2 * var(--pad)));
-  top: calc(var(--pad) + var(--y) * (100% - 2 * var(--pad)));
-  width: 74px;
-  height: 74px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 2px dashed var(--gold);
-  pointer-events: none;
-  animation: focus-pulse 1.6s ease-in-out infinite;
-}
-.switch.is-key {
+.switch.is-hinted {
+  border-color: var(--gold);
   box-shadow:
-    0 0 0 3px var(--gold),
-    0 0 18px color-mix(in srgb, var(--gold) 60%, transparent);
+    0 0 0 2px color-mix(in srgb, var(--gold) 70%, transparent),
+    0 0 14px color-mix(in srgb, var(--gold) 45%, transparent);
+  cursor: default;
 }
-@keyframes focus-pulse {
-  50% {
-    opacity: 0.45;
+.hint-pin {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+}
+.switch.just-hinted {
+  animation: hinted 900ms ease-out;
+}
+@keyframes hinted {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 90%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--gold) 0%, transparent);
   }
 }

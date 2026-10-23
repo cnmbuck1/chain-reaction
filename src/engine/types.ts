@@ -17,6 +17,8 @@ export interface SourceNode extends NodeBase {
 export interface SwitchNode extends NodeBase {
   type: 'switch';
   initialOn: boolean;
+  /** Fixed in place, as when a hint has set it. Locked switches cannot be toggled. */
+  locked?: boolean;
 }
 
 export interface GateNode extends NodeBase {
@@ -79,9 +81,7 @@ export interface LevelDef {
     prompt?: string;
     /** Minimum switch changes to win, as computed by the solver (checked in tests). */
     minChanges: number;
-    /** Hint step 2: the gate to look at. */
-    focus?: NodeId;
-    /** Hint step 3: a switch every in-budget solution changes (its target comes from the solver). */
+    /** The first switch a hint sets: one every in-budget solution changes. */
     keySwitch?: NodeId;
   };
 }
@@ -127,7 +127,7 @@ export interface GameState {
 export type GameAction =
   { type: 'toggle'; switchId: NodeId } | { type: 'undo' } | { type: 'run' } | { type: 'reset' };
 
-export type RejectReason = 'budget' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
+export type RejectReason = 'budget' | 'locked' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
 
 export interface StepResult {
   state: GameState;
