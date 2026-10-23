@@ -3,9 +3,10 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **M2, playable first three levels.** An animated PixiJS board, tappable switches,
-Run/Undo/Reset, tutorial prompts, hints, a level select and saved progress. Sound, settings and
-polish come in M3; levels 4 to 10 in M4.
+Status: **M3, polished first three levels.** A brushed-metal machine drawn in PixiJS (cable
+wires, brass parts, portcullis gates, glowing energy), lever switches, synthesized sound with a
+mute button, vibration on supporting phones, a settings screen (sound, vibration, motion, reset
+progress), and fallbacks when graphics fail to start. Levels 4 to 10 come in M4.
 
 ## Commands
 
@@ -54,10 +55,12 @@ gates unresolved, so the player has to reason from the wiring.
 ```
 src/engine/   pure rules: types, graph index, evaluate, simulate, reducer, solver (no UI imports)
 src/levels/   level data, schema validator, level checker
-src/render/   PixiJS board and the animation timeline built from RUN events
-src/storage/  versioned local progress with safe fallbacks
-src/ui/       React screens: game and level select; switches and labels are DOM over the canvas
-tests/        Vitest: engine, determinism, schema, levels, timeline, storage; e2e/ for Playwright
+src/render/   PixiJS board, wire geometry, panel texture, and the timeline built from RUN events
+src/audio/    WebAudio synth and the run's sound cues, read off the same timeline
+src/storage/  versioned local progress and settings with safe fallbacks
+src/ui/       React screens: game, level select, settings; switches and labels are DOM over the canvas
+tests/        Vitest: engine, determinism, schema, levels, timeline, geometry, audio cues, storage;
+              e2e/ for Playwright (iPhone 14, iPhone SE, desktop)
 scripts/      level-report.ts, single-page.mjs
 ```
 

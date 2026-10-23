@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { runSounds } from '../audio/cues';
+import { buzz, type Sound } from '../audio/sound';
 import { changesUsed, initialState, step } from '../engine/reducer';
 import type { GameAction, GameState, LevelDef, RejectReason } from '../engine/types';
+import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, rejectMessage } from './describe';
 
@@ -9,6 +12,10 @@ interface Props {
   number: number;
   hasNext: boolean;
   reducedMotion: boolean;
+  sound: Sound;
+  soundOn: boolean;
+  haptics: boolean;
+  onToggleSound: () => void;
   showIntro: boolean;
   onIntroDone: () => void;
   onSolved: (attempts: number) => void;
@@ -21,6 +28,10 @@ export function GameScreen({
   number,
   hasNext,
   reducedMotion,
+  sound,
+  soundOn,
+  haptics,
+  onToggleSound,
   showIntro,
   onIntroDone,
   onSolved,
@@ -40,13 +51,29 @@ export function GameScreen({
     if (won) nextButton.current?.focus();
   }, [won]);
 
+  // Leaving the level silences any run still sounding.
+  useEffect(() => () => sound.stopAll(), [sound]);
+
   const dispatch = (action: GameAction) => {
     if (playing) return;
+    sound.unlock();
     const result = step(level, state, action);
     setNotice(result.rejected ?? null);
-    if (result.rejected) return;
+    if (result.rejected) {
+      sound.play('deny');
+      if (haptics) buzz([30, 40, 30]);
+      return;
+    }
     setState(result.state);
+    if (action.type === 'toggle') {
+      sound.play('click');
+      if (haptics) buzz(12);
+    } else if (action.type !== 'run') {
+      sound.play('click');
+    }
     if (action.type === 'run') {
+      const timing = reducedMotion ? INSTANT_TIMING : NORMAL_TIMING;
+      sound.schedule(runSounds(buildTimeline(result.events, timing)));
       runId.current += 1;
       setPlayback({ id: runId.current, events: result.events });
       setPlaying(true);
@@ -82,9 +109,20 @@ export function GameScreen({
   return (
     <main className="game">
       <header className="topbar">
-        <button type="button" className="ghost" onClick={onLevels}>
-          ‹ Levels
-        </button>
+        <div className="topbar-left">
+          <button type="button" className="ghost back" onClick={onLevels} aria-label="Levels">
+            ‹ <span className="back-text">Levels</span>
+          </button>
+          <button
+            type="button"
+            className="ghost icon"
+            onClick={onToggleSound}
+            aria-pressed={soundOn}
+            aria-label={soundOn ? 'Sound on' : 'Sound off'}
+          >
+            <SpeakerIcon muted={!soundOn} />
+          </button>
+        </div>
         <div className="title">
           <span className="eyebrow">Level {number}</span>
           <h1>{level.name}</h1>
@@ -213,5 +251,30 @@ export function GameScreen({
         </div>
       )}
     </main>
+  );
+}
+
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
+      {muted ? (
+        <path
+          d="M16 9l5 6M21 9l-5 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      ) : (
+        <path
+          d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      )}
+    </svg>
   );
 }
