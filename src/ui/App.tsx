@@ -85,12 +85,17 @@ export function App() {
 
   const level = levels[screen.index]!;
   const hasNext = screen.index + 1 < levels.length;
+  const records = Object.values(progress.completed);
+  const finale = hasNext
+    ? null
+    : { firstTry: records.filter((r) => r.bestAttempts === 1).length, total: levels.length };
   return (
     <GameScreen
       key={level.id}
       level={level}
       number={screen.index + 1}
       hasNext={hasNext}
+      finale={finale}
       reducedMotion={reducedMotion}
       sound={sound}
       soundOn={settings.sound}

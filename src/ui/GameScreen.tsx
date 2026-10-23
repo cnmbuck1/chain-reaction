@@ -11,6 +11,8 @@ interface Props {
   level: LevelDef;
   number: number;
   hasNext: boolean;
+  /** Set on the last level: how the whole run of levels went, for the closing card. */
+  finale: { firstTry: number; total: number } | null;
   reducedMotion: boolean;
   sound: Sound;
   soundOn: boolean;
@@ -27,6 +29,7 @@ export function GameScreen({
   level,
   number,
   hasNext,
+  finale,
   reducedMotion,
   sound,
   soundOn,
@@ -244,8 +247,14 @@ export function GameScreen({
                 </button>
               )}
             </div>
-            {!hasNext && (
-              <p className="fine">That's every level in this build. More are on the way.</p>
+            {finale && (
+              <p className="finale">
+                <strong>Every machine solved.</strong> {finale.firstTry} of {finale.total} on the
+                first run.{' '}
+                {finale.firstTry === finale.total
+                  ? 'Flawless.'
+                  : 'Replay any level to try for a first-run solve.'}
+              </p>
             )}
           </div>
         </div>

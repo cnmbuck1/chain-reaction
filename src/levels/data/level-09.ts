@@ -1,0 +1,135 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level09: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-09',
+  name: 'Interlock',
+  difficulty: 'hard',
+  maxToggles: 3,
+  nodes: [
+    {
+      id: 'source',
+      type: 'source',
+      x: 0.5,
+      y: 0.08,
+      label: 'Power',
+    },
+    {
+      id: 'a',
+      type: 'switch',
+      x: 0.2,
+      y: 0.3,
+      initialOn: true,
+      label: 'A',
+    },
+    {
+      id: 'b',
+      type: 'switch',
+      x: 0.62,
+      y: 0.3,
+      initialOn: false,
+      label: 'B',
+    },
+    {
+      id: 'c',
+      type: 'switch',
+      x: 0.36,
+      y: 0.54,
+      initialOn: true,
+      label: 'C',
+    },
+    {
+      id: 'd',
+      type: 'switch',
+      x: 0.84,
+      y: 0.54,
+      initialOn: false,
+      label: 'D',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.26,
+      y: 0.84,
+      combine: 'single',
+      requiredSignal: false,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.5,
+      y: 0.84,
+      combine: 'or',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.74,
+      y: 0.84,
+      combine: 'and',
+      requiredSignal: true,
+      label: 'Gate 3',
+    },
+    {
+      id: 'ball',
+      type: 'ballStart',
+      x: 0.06,
+      y: 0.84,
+      label: 'Start',
+    },
+    {
+      id: 'goal',
+      type: 'goal',
+      x: 0.94,
+      y: 0.84,
+      label: 'Goal',
+    },
+  ],
+  signalEdges: [
+    {
+      from: 'source',
+      to: 'a',
+    },
+    {
+      from: 'source',
+      to: 'b',
+    },
+    {
+      from: 'a',
+      to: 'c',
+    },
+    {
+      from: 'b',
+      to: 'd',
+    },
+    {
+      from: 'a',
+      to: 'g1',
+    },
+    {
+      from: 'c',
+      to: 'g2',
+    },
+    {
+      from: 'd',
+      to: 'g2',
+    },
+    {
+      from: 'b',
+      to: 'g3',
+    },
+    {
+      from: 'd',
+      to: 'g3',
+    },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint: 'When a gate forbids your easy route, build the other one.',
+    hint: 'Gate 1 rules out A, and with it C. Gate 2 then needs the B branch.',
+    minChanges: 3,
+  },
+};

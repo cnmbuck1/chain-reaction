@@ -24,3 +24,37 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s', (_id, level) => {
     expect(levels.filter((l) => l.id === level.id)).toHaveLength(1);
   });
 });
+
+describe('the curated set', () => {
+  it('has the ten planned levels in order', () => {
+    expect(levels.map((l) => l.name)).toEqual([
+      'First Spark',
+      'Reverse Logic',
+      'Double Duty',
+      'The Tradeoff',
+      'Two Conditions',
+      'False Friend',
+      'Minimal Moves',
+      'Split Signal',
+      'Interlock',
+      'Master Circuit',
+    ]);
+  });
+
+  it('asks for real deduction from level 4 on', () => {
+    for (const level of levels.slice(3)) {
+      const report = checkLevel(level).report!;
+      expect(report.allOnWins, level.id).toBe(false);
+      expect(report.zeroChangeWin, level.id).toBe(false);
+    }
+    for (const level of levels.slice(4)) {
+      expect(checkLevel(level).report!.greedySolves, level.id).toBe(false);
+    }
+  });
+
+  it('gets harder: budgets never shrink below the solution and grow overall', () => {
+    const mins = levels.map((l) => l.meta.minChanges);
+    expect(mins.at(-1)).toBeGreaterThan(mins[0]!);
+    expect(levels.every((l) => l.meta.minChanges <= l.maxToggles)).toBe(true);
+  });
+});

@@ -1,0 +1,151 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level10: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-10',
+  name: 'Master Circuit',
+  difficulty: 'hard',
+  maxToggles: 4,
+  nodes: [
+    {
+      id: 'source',
+      type: 'source',
+      x: 0.5,
+      y: 0.08,
+      label: 'Power',
+    },
+    {
+      id: 'a',
+      type: 'switch',
+      x: 0.3,
+      y: 0.28,
+      initialOn: false,
+      label: 'A',
+    },
+    {
+      id: 'b',
+      type: 'switch',
+      x: 0.62,
+      y: 0.28,
+      initialOn: true,
+      label: 'B',
+    },
+    {
+      id: 'e',
+      type: 'switch',
+      x: 0.88,
+      y: 0.28,
+      initialOn: false,
+      label: 'E',
+    },
+    {
+      id: 'c',
+      type: 'switch',
+      x: 0.14,
+      y: 0.54,
+      initialOn: false,
+      label: 'C',
+    },
+    {
+      id: 'd',
+      type: 'switch',
+      x: 0.44,
+      y: 0.56,
+      initialOn: false,
+      label: 'D',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.26,
+      y: 0.84,
+      combine: 'or',
+      requiredSignal: true,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.5,
+      y: 0.84,
+      combine: 'and',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.74,
+      y: 0.84,
+      combine: 'or',
+      requiredSignal: false,
+      label: 'Gate 3',
+    },
+    {
+      id: 'ball',
+      type: 'ballStart',
+      x: 0.06,
+      y: 0.84,
+      label: 'Start',
+    },
+    {
+      id: 'goal',
+      type: 'goal',
+      x: 0.94,
+      y: 0.84,
+      label: 'Goal',
+    },
+  ],
+  signalEdges: [
+    {
+      from: 'source',
+      to: 'a',
+    },
+    {
+      from: 'source',
+      to: 'b',
+    },
+    {
+      from: 'source',
+      to: 'e',
+    },
+    {
+      from: 'a',
+      to: 'c',
+    },
+    {
+      from: 'a',
+      to: 'd',
+    },
+    {
+      from: 'c',
+      to: 'g1',
+    },
+    {
+      from: 'e',
+      to: 'g1',
+    },
+    {
+      from: 'c',
+      to: 'g2',
+    },
+    {
+      from: 'd',
+      to: 'g2',
+    },
+    {
+      from: 'b',
+      to: 'g3',
+    },
+    {
+      from: 'e',
+      to: 'g3',
+    },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint: 'Chains, splits, ALL and ANY gates, and a tight budget, all at once.',
+    hint: 'E is the easy way into Gate 1, but Gate 3 wants it dark. A reaches C and D, and both need switching on.',
+    minChanges: 4,
+  },
+};

@@ -200,6 +200,22 @@ h2 {
   font-size: 0.95rem;
   line-height: 1.15;
 }
+.need-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.need.multi {
+  display: inline-grid;
+  justify-items: center;
+  padding: 1px 6px 2px;
+}
+.need-mode {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  opacity: 0.85;
+}
 .need-on {
   color: var(--energy);
 }
@@ -707,4 +723,16 @@ button:disabled {
 .crash .run {
   min-height: 48px;
   border-radius: 12px;
+}
+
+/* ---------- Completion ---------- */
+.card .finale {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--text);
+}
+.card .finale strong {
+  color: var(--gold);
 }
