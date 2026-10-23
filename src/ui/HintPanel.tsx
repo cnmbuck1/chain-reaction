@@ -65,19 +65,23 @@ export function HintPanel({ remaining, free, balance, shop, onUse, onGrant, onCl
                 {notice}
               </p>
             )}
-            {remaining > 0 && (
-              <div className="card-actions single">
-                {canAfford ? (
-                  <button type="button" className="run" autoFocus onClick={onUse}>
-                    {free ? 'Make a free move' : 'Use 1 hint'}
-                  </button>
-                ) : (
-                  <button type="button" className="run" autoFocus onClick={() => setView('shop')}>
-                    Get more hints
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="card-actions single">
+              {remaining > 0 && canAfford && (
+                <button type="button" className="run" autoFocus onClick={onUse}>
+                  {free ? 'Make a free move' : 'Use 1 hint'}
+                </button>
+              )}
+              {!free && (
+                <button
+                  type="button"
+                  className={remaining > 0 && canAfford ? 'ghost' : 'run'}
+                  autoFocus={!(remaining > 0 && canAfford)}
+                  onClick={() => setView('shop')}
+                >
+                  Get more hints
+                </button>
+              )}
+            </div>
           </>
         ) : (
           <>

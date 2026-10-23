@@ -30,6 +30,13 @@ describe('animation timeline', () => {
     expect(end.wires.has(edgeKey('b', 'g2'))).toBe(false);
   });
 
+  it('tracks how far power got along every wire, dark ones too, for NOT wires', () => {
+    const timeline = buildTimeline(win.events, NORMAL_TIMING);
+    const end = sampleTimeline(timeline, timeline.duration);
+    expect(end.reached.get(edgeKey('b', 'g2'))).toBe(1);
+    expect(sampleTimeline(timeline, 0).reached.get(edgeKey('source', 'a'))).toBe(0);
+  });
+
   it('the final frame matches the engine outcome', () => {
     const timeline = buildTimeline(blocked.events, NORMAL_TIMING);
     const end = sampleTimeline(timeline, timeline.duration);

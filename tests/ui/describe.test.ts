@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { simulateRun } from '../../src/engine/simulate';
 import { levels } from '../../src/levels';
+import { fork } from '../fixtures';
 import { explainRun, gateRequirement } from '../../src/ui/describe';
 
 const byName = (name: string) => levels.find((l) => l.name === name)!;
@@ -34,6 +35,18 @@ describe('gate wording', () => {
     const nearly = { a: true, b: true, c: true, d: true, e: false };
     expect(explainRun(level, simulateRun(level, nearly, 1))).toBe(
       'Stopped at Gate 3: it needs every wire dark, but 1 had power.',
+    );
+  });
+});
+
+describe('fork wording', () => {
+  it('names the fork that sent the ball into a dead end', () => {
+    const level = {
+      ...fork,
+      nodes: fork.nodes.map((n) => (n.id === 'j' ? { ...n, label: 'The fork' } : n)),
+    };
+    expect(explainRun(level, simulateRun(level, { a: true }, 1))).toBe(
+      'The fork sent the ball into a dead end.',
     );
   });
 });

@@ -82,6 +82,10 @@ h2 {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
+.embedded .game,
+.embedded .select {
+  padding-top: 12px;
+}
 .topbar {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -139,20 +143,30 @@ h2 {
 .board {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1.02;
-  max-height: 58vh;
-  margin-inline: auto;
+  flex: 1 1 auto;
+  min-height: 260px;
+  max-height: calc(min(100vw - 32px, 448px) * var(--aspect, 1.111));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
 }
-.board > canvas {
+/* Laid out at a fixed size (BOARD_WIDTH x BOARD_HEIGHT) and scaled to fit the frame. */
+.board-stage {
+  position: relative;
+  flex: none;
+  width: 360px;
+  height: var(--h, 400px);
+  transform: scale(var(--k, 1));
+  margin: calc((var(--k, 1) - 1) * var(--h, 400px) / 2) calc((var(--k, 1) - 1) * 180px);
+}
+.board-stage > canvas {
   position: absolute;
   inset: 0;
   display: block;
 }
-.board > .switch,
-.board > .tag {
+.board-stage > .switch,
+.board-stage > .tag {
   position: absolute;
-  left: calc(var(--pad) + var(--x) * (100% - 2 * var(--pad)));
-  top: calc(var(--pad) + var(--y) * (100% - 2 * var(--pad)));
   transform: translate(-50%, -50%);
 }
 .tag {
@@ -169,6 +183,21 @@ h2 {
 }
 .tag.above {
   margin-top: -34px;
+}
+.not-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+.fork-tag {
+  margin-top: -30px;
+  margin-left: -38px;
+}
+.lane-tag .need {
+  font-size: 0.72rem;
+  padding: 0 4px 0 2px;
+  background: var(--bg);
 }
 .gate-tag {
   margin-top: 60px;
@@ -570,6 +599,11 @@ button:disabled {
 }
 .ghost.icon[aria-pressed='true'] {
   color: var(--energy);
+}
+@media (max-width: 360px) {
+  .title h1 {
+    font-size: 1.2rem;
+  }
 }
 @media (max-width: 380px) {
   .back-text {

@@ -1,19 +1,27 @@
 import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 'pixi.js';
 import { evaluate } from '../engine/evaluate';
 import { indexLevel } from '../engine/graph';
-import type { LevelDef, NodeId, RunEvent, SignalEdge, SwitchStates } from '../engine/types';
+import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
 import { signalColor, toHex } from './colors';
 import {
   GATE_HALF_HEIGHT,
   partialPath,
   pathLength,
   pointAlong,
-  port,
-  routeWire,
   SOURCE_RADIUS,
+  slicePath,
   SWITCH_HALF_HEIGHT,
   type Point,
 } from './geometry';
+import {
+  boardHeight,
+  boardPoint,
+  forkExits,
+  FORK_RADIUS,
+  trackRoute,
+  wireRoutes,
+  type WireRoute,
+} from './layout';
 import { drawPanel } from './panel';
 import {
   buildTimeline,
@@ -49,13 +57,10 @@ const C = {
   lampOff: 0x2b3140,
 };
 
-/** Board padding in CSS pixels; BoardView uses the same value to place overlays. */
-export const BOARD_PAD = 28;
+const MAX_RESOLUTION = 3;
 
-interface Wire {
-  points: Point[];
+interface Wire extends WireRoute {
   color: number;
-  edge: SignalEdge;
 }
 
 export class Board {
@@ -79,6 +84,9 @@ export class Board {
   /** True while something idles in motion (sparks, gear), so frames keep drawing. */
   private animatedIdle = false;
   private wires = new Map<string, Wire>();
+  /** Switch and source signals for the current picture; NOT wires and forks read them. */
+  private signals: ReadonlyMap<NodeId, boolean> = new Map();
+  private forks = new Map<NodeId, NodeId>();
 
   init(host: HTMLElement): Promise<void> {
     this.initPromise ??= (async () => {
@@ -103,6 +111,23 @@ export class Board {
     return this.initPromise;
   }
 
+  /** Renders sharply at the on-screen scale the board is shown at. */
+  setScale(scale: number) {
+    const resolution = Math.min(
+      Math.min(window.devicePixelRatio || 1, 2) * Math.max(scale, 1),
+      MAX_RESOLUTION,
+    );
+    if (Math.abs(resolution - this.app.renderer.resolution) < 0.01) return;
+    this.app.renderer.resize(this.app.screen.width, this.app.screen.height, resolution);
+    this.layoutDirty = true;
+    this.dirty = true;
+  }
+
+  private setSignals(level: LevelDef, signals: ReadonlyMap<NodeId, boolean>) {
+    this.signals = signals;
+    this.forks = forkExits(level, signals);
+  }
+
   setLevel(level: LevelDef) {
     this.level = level;
     this.layoutDirty = true;
@@ -123,9 +148,12 @@ export class Board {
     const visual = emptyVisual(this.level ? indexLevel(this.level).ballStart : null);
     if (this.level) {
       const { signals } = evaluate(indexLevel(this.level), switches);
+      this.setSignals(this.level, signals);
       for (const edge of this.level.signalEdges) {
+        const key = edgeKey(edge.from, edge.to);
+        visual.reached.set(key, 1);
         const live = (signals.get(edge.from) ?? false) !== (edge.invert ?? false);
-        if (live) visual.wires.set(edgeKey(edge.from, edge.to), 1);
+        if (live) visual.wires.set(key, 1);
       }
     }
     this.visual = visual;
@@ -135,6 +163,11 @@ export class Board {
   /** Plays a RUN. Resolves when the last cue has finished. */
   play(events: readonly RunEvent[], timing: Timing): Promise<void> {
     this.finishPlayback();
+    if (this.level) {
+      const signals = new Map<NodeId, boolean>();
+      for (const e of events) if (e.type === 'signal') signals.set(e.nodeId, e.value);
+      this.setSignals(this.level, signals);
+    }
     this.timeline = buildTimeline(events, timing);
     this.startedAt = performance.now();
     this.dirty = true;
@@ -200,17 +233,12 @@ export class Board {
 
   private at(level: LevelDef, id: NodeId): Point {
     const node = indexLevel(level).nodes.get(id)!;
-    const { width, height } = this.app.screen;
-    return {
-      x: BOARD_PAD + node.x * (width - 2 * BOARD_PAD),
-      y: BOARD_PAD + node.y * (height - 2 * BOARD_PAD),
-    };
+    return boardPoint(node.x, node.y, boardHeight(level));
   }
 
   /** Rebuilds everything that only changes with size or level. */
   private layout(level: LevelDef) {
     const { width, height } = this.app.screen;
-    const index = indexLevel(level);
     const at = (id: NodeId) => this.at(level, id);
 
     this.panelTexture?.destroy(true);
@@ -219,19 +247,9 @@ export class Board {
     this.panel.width = width;
     this.panel.height = height;
 
-    // Wire routes, laned by the switch they come from so horizontal runs never overlap.
     this.wires.clear();
-    for (const edge of level.signalEdges) {
-      const from = index.nodes.get(edge.from)!;
-      const to = index.nodes.get(edge.to)!;
-      const a0 = at(edge.from);
-      const b0 = at(edge.to);
-      const lane = from.type === 'switch' ? index.switchIds.indexOf(from.id) + 1 : 0;
-      this.wires.set(edgeKey(edge.from, edge.to), {
-        points: routeWire(port(from.type, a0, b0), port(to.type, b0, a0), lane),
-        color: toHex(signalColor(level, edge.from)),
-        edge,
-      });
+    for (const [key, route] of wireRoutes(level)) {
+      this.wires.set(key, { ...route, color: toHex(signalColor(level, route.edge.from)) });
     }
 
     const g = this.fixed;
@@ -239,54 +257,14 @@ export class Board {
 
     // Track: a recessed channel with two rails.
     for (const [from, to] of trackLinks(level)) {
-      const a = at(from);
-      const b = at(to);
-      line(g, [a, b], 22, C.recess);
-      line(g, [a, b], 17, C.channel);
-      const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-      const nx = (-(b.y - a.y) / len) * 5;
-      const ny = ((b.x - a.x) / len) * 5;
-      line(
-        g,
-        [
-          { x: a.x + nx, y: a.y + ny },
-          { x: b.x + nx, y: b.y + ny },
-        ],
-        2,
-        C.rail,
-      );
-      line(
-        g,
-        [
-          { x: a.x - nx, y: a.y - ny },
-          { x: b.x - nx, y: b.y - ny },
-        ],
-        2,
-        C.rail,
-      );
-      line(
-        g,
-        [
-          { x: a.x - nx, y: a.y - ny - 1 },
-          { x: b.x - nx, y: b.y - ny - 1 },
-        ],
-        1,
-        C.railLight,
-        0.45,
-      );
+      const route = trackRoute(level, from, to);
+      for (let i = 1; i < route.length; i++) this.drawTrack(g, route[i - 1]!, route[i]!);
     }
 
     // Cable runs: a dark sheath with the switch's color showing through.
-    for (const { points, color, edge } of this.wires.values()) {
+    for (const { points, color } of this.wires.values()) {
       line(g, points, 7, C.cable, 0.9);
       line(g, points, 3, color, 0.32);
-      if (edge.invert) {
-        const n = pointAlong(points, 0.86);
-        g.circle(n.x, n.y, 7).fill(C.recess).stroke({ width: 2.5, color: C.gold });
-        g.moveTo(n.x - 4, n.y)
-          .lineTo(n.x + 4, n.y)
-          .stroke({ width: 2, color: C.gold });
-      }
     }
 
     for (const node of level.nodes) {
@@ -324,14 +302,58 @@ export class Board {
           }
           break;
         case 'junction':
-          g.poly([p.x, p.y - 16, p.x + 16, p.y, p.x, p.y + 16, p.x - 16, p.y])
+          // Turntable plate; the pointer showing where it sends the ball moves with power.
+          g.circle(p.x + 2, p.y + 3, 18).fill({ color: 0x000000, alpha: 0.35 });
+          g.circle(p.x, p.y, FORK_RADIUS)
             .fill(this.gradients.metal)
             .stroke({ width: 2, color: C.metalDark });
+          g.circle(p.x, p.y, 12).fill(C.channel);
           break;
         case 'gate':
           break;
       }
     }
+  }
+
+  /** A recessed channel with two rails, extended past its ends so bends join cleanly. */
+  private drawTrack(g: Graphics, a0: Point, b0: Point) {
+    const len = Math.hypot(b0.x - a0.x, b0.y - a0.y) || 1;
+    const ex = ((b0.x - a0.x) / len) * 5;
+    const ey = ((b0.y - a0.y) / len) * 5;
+    const a = { x: a0.x - ex, y: a0.y - ey };
+    const b = { x: b0.x + ex, y: b0.y + ey };
+    line(g, [a, b], 22, C.recess);
+    line(g, [a, b], 17, C.channel);
+    const nx = (-(b.y - a.y) / (len + 10)) * 5;
+    const ny = ((b.x - a.x) / (len + 10)) * 5;
+    line(
+      g,
+      [
+        { x: a.x + nx, y: a.y + ny },
+        { x: b.x + nx, y: b.y + ny },
+      ],
+      2,
+      C.rail,
+    );
+    line(
+      g,
+      [
+        { x: a.x - nx, y: a.y - ny },
+        { x: b.x - nx, y: b.y - ny },
+      ],
+      2,
+      C.rail,
+    );
+    line(
+      g,
+      [
+        { x: a.x - nx, y: a.y - ny - 1 },
+        { x: b.x - nx, y: b.y - ny - 1 },
+      ],
+      1,
+      C.railLight,
+      0.45,
+    );
   }
 
   /** Draws everything that moves: energy, the gear, gates, ball and effects. */
@@ -344,23 +366,45 @@ export class Board {
     glow.clear();
     this.animatedIdle = false;
 
-    // Energy along live wires, with sparks flowing once the wire is fully lit.
+    // Energy along live wires, with sparks flowing once the wire is fully lit. A NOT wire
+    // lights before the NOT when the switch is live, and after it when the switch is not.
+    const energize = (points: Point[], color: number, done: boolean) => {
+      if (points.length < 2) return;
+      line(glow, points, 12, color, 0.18);
+      line(g, points, 3.5, color);
+      if (!done) return;
+      this.animatedIdle = true;
+      const sparks = Math.max(1, Math.round(pathLength(points) / 42));
+      const phase = still ? 0.5 : (now / 1200) % 1;
+      for (let i = 0; i < sparks; i++) {
+        const s = pointAlong(points, (phase + i / sparks) % 1);
+        glow.circle(s.x, s.y, 4).fill({ color, alpha: 0.35 });
+        g.circle(s.x, s.y, 1.8).fill({ color: 0xffffff, alpha: 0.9 });
+      }
+    };
     for (const [key, wire] of this.wires) {
+      if (wire.flip) {
+        const r = visual.reached.get(key) ?? 0;
+        if (r <= 0) continue;
+        const f = wire.flip.at;
+        if (this.signals.get(wire.edge.from)) {
+          energize(slicePath(wire.points, 0, Math.min(r, f)), wire.color, r >= 1);
+        } else if (r > f) {
+          energize(slicePath(wire.points, f, r), wire.color, r >= 1);
+        }
+        continue;
+      }
       const p = visual.wires.get(key);
       if (p === undefined || p <= 0) continue;
-      const lit = partialPath(wire.points, p);
-      line(glow, lit, 12, wire.color, 0.18);
-      line(g, lit, 3.5, wire.color);
-      if (p >= 1) {
-        this.animatedIdle = true;
-        const sparks = Math.max(1, Math.round(pathLength(wire.points) / 42));
-        const phase = still ? 0.5 : (now / 1200) % 1;
-        for (let i = 0; i < sparks; i++) {
-          const s = pointAlong(wire.points, (phase + i / sparks) % 1);
-          glow.circle(s.x, s.y, 4).fill({ color: wire.color, alpha: 0.35 });
-          g.circle(s.x, s.y, 1.8).fill({ color: 0xffffff, alpha: 0.9 });
-        }
-      }
+      energize(partialPath(wire.points, p), wire.color, p >= 1);
+    }
+    // NOT housings sit over the energy so the flip reads as a part. The word is a DOM tag.
+    for (const { flip } of this.wires.values()) {
+      if (!flip) continue;
+      const n = flip.point;
+      g.roundRect(n.x - 17, n.y - 9, 34, 18, 5)
+        .fill(C.recess)
+        .stroke({ width: 1.5, color: C.gold });
     }
 
     for (const node of level.nodes) {
@@ -372,6 +416,27 @@ export class Board {
         g.circle(p.x, p.y, 4).fill(C.recess);
         const pulse = still ? 0.2 : 0.16 + 0.06 * Math.sin(now / 400);
         glow.circle(p.x, p.y, SOURCE_RADIUS + 10).fill({ color: C.energy, alpha: pulse });
+      } else if (node.type === 'junction') {
+        const exit = this.forks.get(node.id);
+        if (exit) {
+          const lane = trackRoute(level, node.id, exit);
+          const q = lane[1]!;
+          const len = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+          const ux = (q.x - p.x) / len;
+          const uy = (q.y - p.y) / len;
+          // Glow along the chosen lane, and a brass pointer aimed down it.
+          line(glow, lane, 10, C.gold, 0.16);
+          const tip = { x: p.x + ux * 13, y: p.y + uy * 13 };
+          g.poly([
+            tip.x,
+            tip.y,
+            p.x - uy * 6 - ux * 4,
+            p.y + ux * 6 - uy * 4,
+            p.x + uy * 6 - ux * 4,
+            p.y - ux * 6 - uy * 4,
+          ]).fill(C.gold);
+          g.circle(p.x, p.y, 3).fill(C.recess);
+        }
       } else if (node.type === 'gate') {
         const finish = visual.finish;
         const flash = finish?.result === 'blocked' && finish.nodeId === node.id ? finish.p : null;
@@ -382,13 +447,16 @@ export class Board {
     drawFinish(g, glow, visual, at);
     const finish = visual.finish;
     const approach = finish && trackLinks(level).find(([, to]) => to === finish.nodeId)?.[0];
-    drawBall(g, glow, visual, at, approach ? at(approach) : null, this.gradients.ball);
+    const route = (from: NodeId, to: NodeId) => trackRoute(level, from, to);
+    const before = approach ? route(approach, finish.nodeId).at(-2)! : null;
+    drawBall(g, glow, visual, at, route, before, this.gradients.ball);
   }
 }
 
 function emptyVisual(ballStart: NodeId | null): VisualState {
   return {
     wires: new Map(),
+    reached: new Map(),
     gates: new Map(),
     ball: ballStart ? { at: ballStart } : null,
     finish: null,
@@ -535,13 +603,17 @@ function drawGate(
   }
 }
 
-function ballPosition(visual: VisualState, at: (id: NodeId) => Point): Point | null {
+type RouteOf = (from: NodeId, to: NodeId) => Point[];
+
+function ballPosition(
+  visual: VisualState,
+  at: (id: NodeId) => Point,
+  route: RouteOf,
+): Point | null {
   const ball = visual.ball;
   if (!ball) return null;
   if ('at' in ball) return at(ball.at);
-  const a = at(ball.from);
-  const b = at(ball.to);
-  return { x: a.x + (b.x - a.x) * ball.p, y: a.y + (b.y - a.y) * ball.p };
+  return pointAlong(route(ball.from, ball.to), ball.p);
 }
 
 function drawBall(
@@ -549,10 +621,11 @@ function drawBall(
   glow: Graphics,
   visual: VisualState,
   at: (id: NodeId) => Point,
+  route: RouteOf,
   approach: Point | null,
   fill: FillGradient,
 ) {
-  const pos = ballPosition(visual, at);
+  const pos = ballPosition(visual, at, route);
   if (!pos) return;
   let { x, y } = pos;
   const finish = visual.finish;
@@ -567,9 +640,10 @@ function drawBall(
   }
   const ball = visual.ball;
   if (ball && 'from' in ball) {
-    // Motion trail while rolling.
-    const a = at(ball.from);
-    const b = at(ball.to);
+    // Motion trail while rolling, pointing back along the current leg of the route.
+    const legs = route(ball.from, ball.to);
+    const b = pointAlong(legs, Math.min(1, ball.p + 0.02));
+    const a = pointAlong(legs, Math.max(0, ball.p - 0.02));
     const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     for (let i = 1; i <= 3; i++) {
       glow

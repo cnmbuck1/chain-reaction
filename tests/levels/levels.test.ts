@@ -26,7 +26,7 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s', (_id, level) => {
 });
 
 describe('the curated set', () => {
-  it('has the ten planned levels in order', () => {
+  it('has the planned levels in order', () => {
     expect(levels.map((l) => l.name)).toEqual([
       'First Spark',
       'Reverse Logic',
@@ -38,6 +38,11 @@ describe('the curated set', () => {
       'Split Signal',
       'Interlock',
       'Master Circuit',
+      'Flip Side',
+      'Fork in the Road',
+      'Double Negative',
+      'Switchyard',
+      'Grand Junction',
     ]);
   });
 
@@ -47,9 +52,18 @@ describe('the curated set', () => {
       expect(report.allOnWins, level.id).toBe(false);
       expect(report.zeroChangeWin, level.id).toBe(false);
     }
-    for (const level of levels.slice(4)) {
+    // Easy levels that introduce a new part may be solved by fixing blockers one by one.
+    for (const level of levels.slice(4).filter((l) => l.difficulty !== 'easy')) {
       expect(checkLevel(level).report!.greedySolves, level.id).toBe(false);
     }
+  });
+
+  it('introduces NOT wires at level 11 and forks at level 12', () => {
+    const firstWith = (has: (l: (typeof levels)[number]) => boolean) => levels.findIndex(has) + 1;
+    expect(firstWith((l) => l.signalEdges.some((e) => e.invert))).toBe(11);
+    expect(firstWith((l) => l.nodes.some((n) => n.type === 'junction'))).toBe(12);
+    expect(levels[10]!.meta.prompt).toMatch(/NOT/);
+    expect(levels[11]!.meta.prompt).toMatch(/fork/);
   });
 
   it('gets harder: budgets never shrink below the solution and grow overall', () => {

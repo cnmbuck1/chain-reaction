@@ -67,6 +67,8 @@ export interface LevelDef {
   difficulty: 'tutorial' | 'easy' | 'medium' | 'hard';
   /** Maximum number of switches that may differ from their initial position. */
   maxToggles: number;
+  /** Board layout height in CSS pixels at 360 wide, for levels that need more room. */
+  boardHeight?: number;
   nodes: LevelNode[];
   signalEdges: SignalEdge[];
   /**

@@ -21,6 +21,11 @@ const SOLUTIONS = [
   { name: 'Split Signal', switches: ['A', 'B', 'D'] },
   { name: 'Interlock', switches: ['A', 'B', 'D'] },
   { name: 'Master Circuit', switches: ['A', 'B', 'C', 'D'] },
+  { name: 'Flip Side', switches: ['A', 'B'] },
+  { name: 'Fork in the Road', switches: ['F'] },
+  { name: 'Double Negative', switches: ['B', 'C', 'D'] },
+  { name: 'Switchyard', switches: ['C', 'F'] },
+  { name: 'Grand Junction', switches: ['F', 'B', 'C'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
@@ -34,8 +39,8 @@ async function solve(page: Page, switches: string[]) {
 test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
-  test('a new player opens on level 1 and can play all ten levels', async ({ page }) => {
-    test.setTimeout(120_000);
+  test('a new player opens on level 1 and can play every level', async ({ page }) => {
+    test.setTimeout(180_000);
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await dismissIntro(page);
@@ -44,9 +49,11 @@ test.describe('with reduced motion', () => {
       await solve(page, switches);
       if (i < SOLUTIONS.length - 1) await page.getByRole('button', { name: 'Next level' }).click();
     }
-    await expect(page.getByRole('dialog')).toContainText('Every machine solved. 10 of 10 on the');
+    await expect(page.getByRole('dialog')).toContainText(
+      `Every machine solved. ${SOLUTIONS.length} of ${SOLUTIONS.length} on the`,
+    );
     await page.getByRole('button', { name: 'Done' }).click();
-    await expect(page.getByText('10 of 10 solved')).toBeVisible();
+    await expect(page.getByText(`${SOLUTIONS.length} of ${SOLUTIONS.length} solved`)).toBeVisible();
   });
 
   test('a failed run explains where the ball stopped and keeps switch positions', async ({
@@ -72,7 +79,7 @@ test.describe('with reduced motion', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
-    await expect(page.getByText('1 of 10 solved')).toBeVisible();
+    await expect(page.getByText(`1 of ${SOLUTIONS.length} solved`)).toBeVisible();
     await page.getByRole('button', { name: 'Level 1, First Spark, solved' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
@@ -128,7 +135,7 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await dismissIntro(page);
   await solve(page, ['A']);
   await page.getByRole('dialog').getByRole('button', { name: 'Levels' }).click();
-  await expect(page.getByText('1 of 10 solved')).toBeVisible();
+  await expect(page.getByText(`1 of ${SOLUTIONS.length} solved`)).toBeVisible();
   await page.getByRole('button', { name: 'Settings' }).click();
 
   await page.getByRole('switch', { name: 'Sound' }).click();
@@ -152,7 +159,7 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await page.getByRole('dialog').getByRole('button', { name: 'Reset' }).click();
   await expect(page.getByText('Progress cleared.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '‹ Levels' }).click();
-  await expect(page.getByText('0 of 10 solved')).toBeVisible();
+  await expect(page.getByText(`0 of ${SOLUTIONS.length} solved`)).toBeVisible();
 });
 
 test('the sound button mutes from the game screen', async ({ page }) => {
@@ -229,4 +236,59 @@ test('hints: two free moves, then the demo shop, and they last across reloads', 
   await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeVisible();
   await expect(hinted).toHaveCount(3);
   await expect(page.getByLabel('Changes used 0 of 4')).toBeVisible();
+});
+
+test.describe('on the smallest phone', () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test('every level fits the board, with no labels or switches overlapping', async ({ page }) => {
+    test.setTimeout(120_000);
+    const completed = Object.fromEntries(
+      SOLUTIONS.map((_, i) => [`level-${String(i + 1).padStart(2, '0')}`, { bestAttempts: 1 }]),
+    );
+    await page.goto('/');
+    await page.evaluate(
+      (done) =>
+        localStorage.setItem(
+          'chain-reaction/progress',
+          JSON.stringify({ version: 1, completed: done, seenIntro: true }),
+        ),
+      completed,
+    );
+    await page.reload();
+    for (const [i, { name }] of SOLUTIONS.entries()) {
+      // With every level solved, the game opens on the level list.
+      if (i > 0) await page.getByRole('button', { name: 'Levels', exact: true }).click();
+      await page.getByRole('button', { name: `Level ${i + 1}, ${name}, solved` }).click();
+      await expect(board(page)).toBeVisible();
+      const problems = await page.evaluate(() => {
+        const frame = document.querySelector('.board')!.getBoundingClientRect();
+        const boxes = [
+          ...document.querySelectorAll(
+            [
+              '.board-stage > .switch',
+              '.board-stage > .tag:not(.gate-tag, .fork-tag, .lane-tag)',
+              '.board-stage > :is(.gate-tag, .fork-tag, .lane-tag) > *',
+            ].join(','),
+          ),
+        ].map((el) => ({
+          name: el.getAttribute('aria-label') ?? el.textContent,
+          r: el.getBoundingClientRect(),
+        }));
+        const out: string[] = boxes.length < 3 ? ['no overlays found'] : [];
+        for (const [j, a] of boxes.entries()) {
+          if (a.r.left < frame.left || a.r.right > frame.right || a.r.bottom > frame.bottom)
+            out.push(`${a.name} leaves the board`);
+          for (const b of boxes.slice(j + 1)) {
+            const overlap =
+              Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left) > 1 &&
+              Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top) > 1;
+            if (overlap) out.push(`${a.name} overlaps ${b.name}`);
+          }
+        }
+        return out;
+      });
+      expect(problems, name).toEqual([]);
+    }
+  });
 });
