@@ -5,17 +5,23 @@ interface Props {
   levels: readonly LevelDef[];
   progress: Progress;
   onPlay: (index: number) => void;
+  onSettings: () => void;
 }
 
-export function LevelSelect({ levels, progress, onPlay }: Props) {
+export function LevelSelect({ levels, progress, onPlay, onSettings }: Props) {
   const ids = levels.map((l) => l.id);
   const solved = ids.filter((id) => id in progress.completed).length;
   return (
     <main className="select">
       <header>
-        <p className="eyebrow">
-          {solved} of {levels.length} solved
-        </p>
+        <div className="select-top">
+          <p className="eyebrow">
+            {solved} of {levels.length} solved
+          </p>
+          <button type="button" className="ghost small" onClick={onSettings}>
+            Settings
+          </button>
+        </div>
         <h1>Chain Reaction</h1>
         <p className="tagline">Understand the machine. Find the sequence. Watch it work.</p>
       </header>

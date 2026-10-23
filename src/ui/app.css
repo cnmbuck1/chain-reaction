@@ -208,72 +208,122 @@ h2 {
 }
 
 .switch {
-  width: 64px;
-  height: 48px;
+  width: 60px;
+  height: 56px;
   display: grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr auto;
   align-items: center;
-  justify-content: center;
-  column-gap: 6px;
-  padding: 4px 8px;
-  border-radius: 11px;
-  border: 1.5px solid var(--metal-dark);
-  background: linear-gradient(180deg, #2b3242, #1d2330);
+  justify-items: center;
+  padding: 6px 6px 4px;
+  border-radius: 12px;
+  border: 1.5px solid color-mix(in srgb, var(--swatch) 40%, #3a4256);
+  /* Brushed plate with four rivets. */
+  background:
+    radial-gradient(circle at 6px 6px, #8d95a6 1.4px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) 6px, #8d95a6 1.4px, transparent 2px),
+    radial-gradient(circle at 6px calc(100% - 6px), #8d95a6 1.4px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #8d95a6 1.4px, transparent 2px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #343c4e, #1e2431);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35);
   cursor: pointer;
   touch-action: manipulation;
+  transition:
+    box-shadow 200ms,
+    border-color 200ms,
+    transform 90ms;
+}
+.switch:active:not([aria-disabled='true']) {
+  transform: translate(-50%, -50%) translateY(1px) scale(0.98);
 }
 .switch-name {
-  grid-row: 1 / 3;
   font-family: var(--font-label);
   font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--gold);
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--swatch);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
-.switch-state {
-  font-family: var(--font-label);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-}
+/* The lever: a slot, and a rod with a colored knob that throws up (ON) or down (OFF). */
 .lever {
   position: relative;
-  width: 10px;
-  height: 20px;
-  border-radius: 5px;
-  background: var(--bg);
-  border: 1px solid var(--metal-dark);
+  width: 8px;
+  height: 22px;
+  border-radius: 4px;
+  background: #0b0f16;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.rod {
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 4px;
+  height: 8px;
+  margin-top: -8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #6b7385, #c4cad6, #6b7385);
+  transform-origin: 50% 100%;
+  transform: rotate(180deg);
+  transition: transform 220ms cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 .knob {
   position: absolute;
-  left: -3px;
-  width: 14px;
-  height: 10px;
-  border-radius: 4px;
-  background: var(--metal);
-  top: 9px;
+  left: -4px;
+  top: -8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e8ebf1, #8d95a6 60%, #4b5366);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  transition: background 200ms;
+}
+.switch-state {
+  grid-column: 1 / 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-label);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.lamp {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2b3140;
   transition:
-    top 160ms cubic-bezier(0.3, 1.4, 0.5, 1),
-    background 160ms;
-}
-.switch {
-  border-color: color-mix(in srgb, var(--swatch) 45%, var(--metal-dark));
-}
-.switch .switch-name {
-  color: var(--swatch);
+    background 200ms,
+    box-shadow 200ms;
 }
 .switch.is-on {
   border-color: var(--swatch);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--swatch) 40%, transparent),
-    0 0 18px color-mix(in srgb, var(--swatch) 30%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--swatch) 35%, transparent),
+    0 0 20px color-mix(in srgb, var(--swatch) 28%, transparent);
+}
+.switch.is-on .rod {
+  transform: rotate(0deg);
 }
 .switch.is-on .knob {
-  top: -1px;
-  background: var(--swatch);
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff,
+    var(--swatch) 55%,
+    color-mix(in srgb, var(--swatch) 50%, #000)
+  );
 }
 .switch.is-on .switch-state {
   color: var(--swatch);
+}
+.switch.is-on .lamp {
+  background: var(--swatch);
+  box-shadow: 0 0 6px var(--swatch);
 }
 .switch[aria-disabled='true'] {
   cursor: default;
@@ -284,10 +334,10 @@ h2 {
 }
 .changed-dot {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 10px;
-  height: 10px;
+  top: -5px;
+  right: -5px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--gold);
   border: 2px solid var(--bg);
@@ -488,4 +538,173 @@ button:disabled {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- Top bar extras ---------- */
+.topbar-left {
+  display: flex;
+  gap: 6px;
+}
+.ghost.icon {
+  width: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.ghost.icon[aria-pressed='true'] {
+  color: var(--energy);
+}
+@media (max-width: 380px) {
+  .back-text {
+    display: none;
+  }
+  .ghost.back {
+    width: 44px;
+    padding: 0;
+    font-size: 1.3rem;
+  }
+  .title h1 {
+    font-size: 1.3rem;
+  }
+}
+
+/* ---------- Settings ---------- */
+.select-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settings-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.settings-top h1 {
+  font-size: 2rem;
+}
+.setting-list {
+  display: grid;
+  gap: 10px;
+}
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--edge);
+  background: var(--bg-raise);
+}
+.setting-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.setting-label {
+  font-family: var(--font-label);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+}
+.setting-detail {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.toggle {
+  flex: none;
+  position: relative;
+  width: 56px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--edge);
+  background: #0b0f16;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e6ebf3, #8a93a6 70%);
+  transition: transform 160ms ease;
+}
+.toggle[aria-checked='true'] {
+  background: color-mix(in srgb, var(--energy) 35%, #0b0f16);
+  border-color: var(--energy);
+}
+.toggle[aria-checked='true'] .toggle-knob {
+  transform: translateX(24px);
+}
+.segmented {
+  flex: none;
+  display: flex;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.segmented button {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.segmented button.active {
+  background: color-mix(in srgb, var(--energy) 22%, transparent);
+  color: var(--text);
+}
+.ghost.danger {
+  border-color: color-mix(in srgb, var(--amber) 60%, var(--edge));
+  color: var(--amber);
+}
+.card-actions .danger-solid {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #20150a;
+  font-family: var(--font-label);
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@media (max-width: 380px) {
+  .setting:has(.segmented) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .setting .segmented button {
+    flex: 1;
+  }
+}
+
+/* ---------- Failure states ---------- */
+.board-failed {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+.board-failed strong {
+  display: block;
+  color: var(--text);
+}
+.crash {
+  justify-content: center;
+  gap: 16px;
+}
+.crash .run {
+  min-height: 48px;
+  border-radius: 12px;
 }

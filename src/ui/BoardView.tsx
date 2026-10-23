@@ -38,6 +38,8 @@ export function BoardView({
   const hostRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<Board | null>(null);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [tries, setTries] = useState(0);
   const onPlayedRef = useRef(onPlayed);
   useEffect(() => {
     onPlayedRef.current = onPlayed;
@@ -47,14 +49,17 @@ export function BoardView({
     const board = new Board();
     boardRef.current = board;
     let live = true;
-    void board.init(hostRef.current!).then(() => live && setReady(true));
+    board.init(hostRef.current!).then(
+      () => live && setReady(true),
+      () => live && setFailed(true),
+    );
     return () => {
       live = false;
       boardRef.current = null;
       setReady(false);
       board.destroy();
     };
-  }, []);
+  }, [tries]);
 
   useEffect(() => {
     if (ready) boardRef.current?.setLevel(level);
@@ -83,6 +88,27 @@ export function BoardView({
     };
   }, [ready, level, playback, reducedMotion]);
 
+  if (failed) {
+    return (
+      <div className="board board-failed" role="alert">
+        <p>
+          <strong>The machine couldn't start.</strong> This browser may have graphics acceleration
+          turned off.
+        </p>
+        <button
+          type="button"
+          className="ghost small"
+          onClick={() => {
+            setFailed(false);
+            setTries((n) => n + 1);
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="board" ref={hostRef} data-ready={ready}>
       {level.nodes.map((node) => {
@@ -105,9 +131,14 @@ export function BoardView({
               >
                 <span className="switch-name">{nodeName(level, node.id)}</span>
                 <span className="lever" aria-hidden="true">
-                  <span className="knob" />
+                  <span className="rod">
+                    <span className="knob" />
+                  </span>
                 </span>
-                <span className="switch-state">{on ? 'ON' : 'OFF'}</span>
+                <span className="switch-state">
+                  <span className="lamp" aria-hidden="true" />
+                  {on ? 'ON' : 'OFF'}
+                </span>
                 {changed && <span className="changed-dot" aria-hidden="true" />}
               </button>
             );
