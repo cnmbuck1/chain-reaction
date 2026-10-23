@@ -1,6 +1,6 @@
 import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 'pixi.js';
 import { evaluate } from '../engine/evaluate';
-import { indexLevel } from '../engine/graph';
+import { indexLevel, stageStart } from '../engine/graph';
 import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
 import { signalColor, toHex } from './colors';
 import {
@@ -18,6 +18,7 @@ import {
   boardPoint,
   forkExits,
   FORK_RADIUS,
+  partDividers,
   trackRoute,
   wireRoutes,
   type WireRoute,
@@ -55,7 +56,11 @@ const C = {
   amber: 0xf0a43a,
   hazard: 0x1b1408,
   lampOff: 0x2b3140,
+  shade: 0x080b11,
 };
+
+/** How far the parts of a staged board not being played are shaded. */
+const SHADE_ALPHA = 0.55;
 
 const MAX_RESOLUTION = 3;
 
@@ -87,6 +92,8 @@ export class Board {
   /** Switch and source signals for the current picture; NOT wires and forks read them. */
   private signals: ReadonlyMap<NodeId, boolean> = new Map();
   private forks = new Map<NodeId, NodeId>();
+  /** On staged boards, the part in play; the others are shaded. */
+  private stage = 0;
 
   init(host: HTMLElement): Promise<void> {
     this.initPromise ??= (async () => {
@@ -145,10 +152,11 @@ export class Board {
    * Before a run: wires show live power for the current switch positions so the
    * player can trace it, while gates stay unresolved and the ball waits at the start.
    */
-  showIdle(switches: SwitchStates) {
+  showIdle(switches: SwitchStates, stage = 0) {
     this.finishPlayback();
     this.timeline = null;
-    const visual = emptyVisual(this.level ? indexLevel(this.level).ballStart : null);
+    this.stage = stage;
+    const visual = emptyVisual(this.level ? stageStart(indexLevel(this.level), stage) : null);
     if (this.level) {
       const { signals } = evaluate(indexLevel(this.level), switches);
       this.setSignals(this.level, signals);
@@ -163,9 +171,10 @@ export class Board {
     this.dirty = true;
   }
 
-  /** Plays a RUN. Resolves when the last cue has finished. */
-  play(events: readonly RunEvent[], timing: Timing): Promise<void> {
+  /** Plays a RUN of the given part. Resolves when the last cue has finished. */
+  play(events: readonly RunEvent[], timing: Timing, stage = 0): Promise<void> {
     this.finishPlayback();
+    this.stage = stage;
     if (this.level) {
       const signals = new Map<NodeId, boolean>();
       for (const e of events) if (e.type === 'signal') signals.set(e.nodeId, e.value);
@@ -313,8 +322,24 @@ export class Board {
             .stroke({ width: 2, color: C.metalDark });
           g.circle(p.x, p.y, 12).fill(C.channel);
           break;
+        case 'checkpoint':
+          // A brass station ring; its lamp lights once the part it ends is cleared.
+          g.circle(p.x + 2, p.y + 3, 19).fill({ color: 0x000000, alpha: 0.35 });
+          g.circle(p.x, p.y, 18).fill(this.gradients.brass);
+          g.circle(p.x, p.y, 13).fill(C.recess);
+          g.circle(p.x, p.y, 13).stroke({ width: 1.5, color: C.brassDark });
+          break;
         case 'gate':
           break;
+      }
+    }
+
+    // Between parts, a dashed seam across the panel.
+    for (const y of partDividers(level)) {
+      for (let x = 14; x < width - 14; x += 14) {
+        g.moveTo(x, y)
+          .lineTo(Math.min(x + 7, width - 14), y)
+          .stroke({ width: 1.5, color: C.rail, alpha: 0.45 });
       }
     }
   }
@@ -358,6 +383,30 @@ export class Board {
       C.railLight,
       0.45,
     );
+  }
+
+  /**
+   * Shades every part of a staged board but the one in play. When a run clears a part,
+   * the shade slides from the next part onto the one just cleared.
+   */
+  private shadeParts(level: LevelDef, visual: VisualState) {
+    const dividers = partDividers(level);
+    if (dividers.length === 0) return;
+    const { width, height } = this.app.screen;
+    const edges = [0, ...dividers, height];
+    const finish = visual.finish;
+    const moving = finish?.result === 'checkpoint' ? finish.p : 0;
+    for (let part = 0; part + 1 < edges.length; part++) {
+      let shade = part === this.stage ? 0 : 1;
+      if (moving > 0 && part === this.stage) shade = moving;
+      if (moving > 0 && part === this.stage + 1) shade = 1 - moving;
+      if (shade <= 0) continue;
+      const top = edges[part]!;
+      const bottom = edges[part + 1]!;
+      this.moving
+        .rect(0, top, width, bottom - top)
+        .fill({ color: C.shade, alpha: SHADE_ALPHA * shade });
+    }
   }
 
   /** Draws everything that moves: energy, the gear, gates, ball and effects. */
@@ -441,6 +490,12 @@ export class Board {
           ]).fill(C.gold);
           g.circle(p.x, p.y, 3).fill(C.recess);
         }
+      } else if (node.type === 'checkpoint') {
+        const finish = visual.finish;
+        const arriving = finish?.result === 'checkpoint' && finish.nodeId === node.id;
+        const lit = arriving ? finish.p : node.stage < this.stage ? 1 : 0;
+        g.circle(p.x, p.y, 5).fill(lit > 0 ? C.energy : C.lampOff);
+        if (lit > 0) glow.circle(p.x, p.y, 16).fill({ color: C.energy, alpha: 0.35 * lit });
       } else if (node.type === 'gate') {
         const finish = visual.finish;
         const flash = finish?.result === 'blocked' && finish.nodeId === node.id ? finish.p : null;
@@ -448,6 +503,7 @@ export class Board {
       }
     }
 
+    this.shadeParts(level, visual);
     drawFinish(g, glow, visual, at);
     const finish = visual.finish;
     const approach = finish && trackLinks(level).find(([, to]) => to === finish.nodeId)?.[0];
@@ -688,6 +744,16 @@ function drawFinish(g: Graphics, glow: Graphics, visual: VisualState, at: (id: N
       glow
         .circle(sx, sy, 2.6 * (1 - q) + 0.4)
         .fill({ color: i % 2 ? C.gold : C.energy, alpha: 1 - q });
+    }
+  } else if (finish.result === 'checkpoint') {
+    // Rings of light: the part is cleared.
+    for (const delay of [0, 0.25]) {
+      const r = Math.max(0, Math.min(1, (q - delay) / (1 - delay)));
+      if (r > 0) {
+        glow
+          .circle(p.x, p.y, 18 + r * 36)
+          .stroke({ width: 3 * (1 - r) + 0.5, color: C.energy, alpha: 1 - r });
+      }
     }
   } else {
     // A short burst of amber sparks where the ball struck, then a steady marker ring.

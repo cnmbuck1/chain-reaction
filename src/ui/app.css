@@ -866,3 +866,21 @@ button:disabled {
     box-shadow: 0 0 0 16px color-mix(in srgb, var(--gold) 0%, transparent);
   }
 }
+
+/* Staged boards: the part in play, and switches of parts cleared or still to come. */
+.board-stage > .part-tag {
+  left: 14px;
+  transform: none;
+  font-size: 0.66rem;
+  color: var(--muted);
+  opacity: 0.7;
+}
+.board-stage > .part-tag.is-current {
+  color: var(--energy);
+  opacity: 1;
+}
+.switch.is-done,
+.switch.is-ahead {
+  filter: saturate(0.4) brightness(0.7);
+  cursor: default;
+}

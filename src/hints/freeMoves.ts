@@ -1,3 +1,4 @@
+import { switchStage } from '../engine/graph';
 import { solve } from '../engine/solver';
 import type { LevelDef, NodeId } from '../engine/types';
 
@@ -17,7 +18,7 @@ const plans = new WeakMap<LevelDef, FreeMove[]>();
 
 /**
  * The moves hints make, in order: the level's key switch first, then the rest of the
- * solution. Capped one short of the full solution so the player always makes the last
+ * solution, part by part on staged boards. Capped one short of the full solution so the player always makes the last
  * change themselves, except on one-change levels.
  */
 export function freeMovePlan(level: LevelDef): FreeMove[] {
@@ -30,8 +31,11 @@ export function freeMovePlan(level: LevelDef): FreeMove[] {
     const changed = level.nodes.filter(
       (n) => n.type === 'switch' && !n.locked && win[n.id] !== n.initialOn,
     );
+    // Part by part, so a hint always helps where the player is; the key switch leads its part.
     const key = level.meta.keySwitch;
-    changed.sort((a, b) => Number(b.id === key) - Number(a.id === key));
+    changed.sort(
+      (a, b) => switchStage(a) - switchStage(b) || Number(b.id === key) - Number(a.id === key),
+    );
     for (const n of changed) moves.push({ switchId: n.id, on: win[n.id]! });
   }
   const plan = moves.slice(0, Math.max(1, moves.length - 1));

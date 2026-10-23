@@ -3,7 +3,7 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **Stage 2, S2: fifteen levels, with forks from level 11.** The game has:
+Status: **Stage 2, S3: twenty levels, with forks from level 11 and two-part boards from level 16.** The game has:
 
 - a brushed-metal machine drawn in PixiJS (cable wires, brass parts, portcullis gates, glowing
   energy) and lever switches;
@@ -47,12 +47,19 @@ the Playwright suite, on every push.
   early, so no level uses it before level 21; a test enforces that.
 - **Forks (junctions).** Route the ball to `whenTrue` (ON lane) or `whenFalse` (OFF lane) from one
   signal input. The board shows a pointer aimed down the lane the fork will take.
+- **Parts (checkpoints).** A staged board is split into parts by `checkpoint` nodes on the
+  track. Each switch has a `stage` (0 is part A). Only the part in play can be changed; the
+  ball stops at that part's checkpoint, the part's switches lock where they are, and the next
+  run starts from the checkpoint. A cleared part's switches still power their wires, so wires
+  crossing into a later part make the way part A is cleared matter. Reaching a checkpoint is
+  not a miss: the attempt count stays the same.
 - **Ball.** Follows the track from the start. It stops at the first closed gate or dead end.
   Reaching a goal wins.
 - **Budget.** `maxToggles` limits how many switches may differ from the level's starting position.
-  Flipping a changed switch back refunds it. The limit holds across attempts.
+  Flipping a changed switch back refunds it. The limit holds across attempts. On staged boards
+  each part gets its own `maxToggles`.
 - **Run** keeps switch positions after a failure and clears Undo. **Undo** reverses the last toggle
-  since the last run. **Reset** restores the starting positions.
+  since the last run. **Reset** restores the starting positions, and on staged boards goes back to part A.
 - **Events.** Each run returns one ordered event list: signals and wires, then gates, then ball
   moves, then the outcome.
 
@@ -82,9 +89,10 @@ Levels are typed data (`LevelDef` in `src/engine/types.ts`). The track is a list
 consecutive pair is a directed link, and junction exits live on the junction node.
 `meta.minChanges` must match what the solver finds; tests enforce it. `meta.prompt` is an optional
 coaching line, used on tutorial levels and where a new part appears. `boardHeight` (layout
-pixels, default 400) gives fork levels room for two lanes. The validator reports every problem with a code:
+pixels, default 400) gives fork levels room for two lanes, and two-part boards room for both parts. The validator reports every problem with a code:
 `DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`, `SWITCH_NO_INPUT`, `GATE_NO_INPUT`,
-`GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`, plus the
+`GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`,
+`BAD_STAGE`, plus the
 solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 
 ## Levels
@@ -106,10 +114,17 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 13  | Long Way Round   | Count what each lane costs; rerouting can be cheaper       | 2      | 2   |
 | 14  | Switchyard       | One switch both picks the lane and guards the other one    | 2      | 2   |
 | 15  | Grand Junction   | Rule out a lane, then follow a chain on the other one      | 3      | 3   |
+| 16  | Two Parts        | Clear part A, then part B opens                            | 1 + 1  | 2   |
+| 17  | Second Wind      | Each part has its own changes to spend                     | 2 + 2  | 4   |
+| 18  | Carry Over       | A wire crosses into part B, so clear part A the right way  | 1 + 1  | 2   |
+| 19  | Relay Race       | Spend a spare change in part A to set up part B            | 2 + 2  | 4   |
+| 20  | Grand Finale     | Plan both parts before the first run                       | 2 + 2  | 4   |
 
-Each of levels 4 to 15 has exactly one winning position within its budget, and turning every
+Each of levels 4 to 20 has exactly one winning position within its budget, and turning every
 switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
-fails, except on the `easy` levels 4 and 11, which introduce a new idea.
+fails, except on the `easy` levels 4, 11, 16 and 17, which introduce a new idea. On levels 18
+to 20 the greedy player clears part A the obvious way and finds part B out of reach; the game
+then says so and suggests Reset.
 
 ## Board layout
 
@@ -119,6 +134,14 @@ browser test opens every level at 320 by 568 and fails if any switch or label ov
 or leaves the board. On fork boards, wires turn just below their switch and drop straight into
 their gate, and several wires into one gate land side by side.
 
+Two-part boards stack part A over part B with a dashed seam between them. The part not in play
+is shaded and its switches dimmed; when the ball reaches the checkpoint, the shade slides onto
+the part just cleared. Wires crossing into part B drop straight down a column clear of part B's
+own switches.
+
+The board draws only when something changes, rather than every frame, which keeps phones cool
+and the browser tests quick.
+
 ## Hints
 
 A hint is a free move. The game sets one switch to where every solution needs it, locks it
@@ -126,7 +149,8 @@ there and marks it with a HINT pin. The move doesn't count against the level's c
 `withFreeMoves` (`src/hints/freeMoves.ts`) rebuilds the level with that switch's start moved
 to its target, so the engine needs no special case beyond refusing to toggle a locked switch.
 
-The first move is always `meta.keySwitch`, then the rest of the solver's solution. A level
+The first move is always `meta.keySwitch`, then the rest of the solver's solution, part by
+part on staged boards. A hint asked for in part B passes over moves left for part A. A level
 gives at most one fewer move than its minimum changes, so the player always makes the last
 change, except on one-change levels. `checkLevel` reports `BAD_HINT` when the key switch
 doesn't need to change or solutions disagree on it.

@@ -9,6 +9,9 @@ async function dismissIntro(page: Page) {
   await page.getByRole('button', { name: 'Got it' }).click();
 }
 
+/** In a solution: run to the checkpoint, so the next part opens. */
+const PART = '|';
+
 /** One shortest solution per level, by switch label (the solver's, checked in unit tests). */
 const SOLUTIONS = [
   { name: 'First Spark', switches: ['A'] },
@@ -26,12 +29,21 @@ const SOLUTIONS = [
   { name: 'Long Way Round', switches: ['A', 'F'] },
   { name: 'Switchyard', switches: ['C', 'F'] },
   { name: 'Grand Junction', switches: ['F', 'B', 'C'] },
+  { name: 'Two Parts', switches: ['A', PART, 'E'] },
+  { name: 'Second Wind', switches: ['B', 'C', PART, 'E', 'F'] },
+  { name: 'Carry Over', switches: ['B', PART, 'D'] },
+  { name: 'Relay Race', switches: ['A', 'C', PART, 'D', 'E'] },
+  { name: 'Grand Finale', switches: ['B', 'C', PART, 'D', 'E'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
   await expect(board(page)).toBeVisible();
-  for (const name of switches)
-    await page.getByRole('button', { name: new RegExp(`^Switch ${name},`) }).click();
+  for (const name of switches) {
+    if (name === PART) {
+      await run(page).click();
+      await expect(status(page)).toContainText('cleared');
+    } else await page.getByRole('button', { name: new RegExp(`^Switch ${name},`) }).click();
+  }
   await run(page).click();
   await expect(page.getByRole('dialog')).toBeVisible();
 }
@@ -85,6 +97,45 @@ test.describe('with reduced motion', () => {
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Level 1, First Spark, solved' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Level 3, Double Duty, locked' })).toBeDisabled();
+  });
+
+  test('a two-part board locks part A once cleared, and says when part B is out of reach', async ({
+    page,
+  }) => {
+    const done = Object.fromEntries(
+      Array.from({ length: 17 }, (_, i) => [
+        `level-${String(i + 1).padStart(2, '0')}`,
+        { bestAttempts: 1 },
+      ]),
+    );
+    await page.goto('/');
+    await page.evaluate(
+      (completed) =>
+        localStorage.setItem(
+          'chain-reaction/progress',
+          JSON.stringify({ version: 1, completed, seenIntro: true }),
+        ),
+      done,
+    );
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Carry Over' })).toBeVisible();
+    await expect(page.getByText('Level 18 · Part A')).toBeVisible();
+    // Switches of other parts are marked disabled but still explain themselves when tapped.
+    await page.getByRole('button', { name: /^Switch D,/ }).click({ force: true });
+    await expect(status(page)).toHaveText(
+      'Clear this part first. That switch opens at the checkpoint.',
+    );
+    await page.getByRole('button', { name: /^Switch A,/ }).click();
+    await run(page).click();
+    await expect(status(page)).toContainText('Part A cleared.');
+    await expect(page.getByText('Level 18 · Part B')).toBeVisible();
+    await page.getByRole('button', { name: /^Switch A,/ }).click({ force: true });
+    await expect(status(page)).toContainText('That part is cleared');
+    await page.getByRole('button', { name: /^Switch D,/ }).click();
+    await run(page).click();
+    await expect(status(page)).toContainText("Part A's switches leave no way through here.");
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.getByText('Level 18 · Part A')).toBeVisible();
   });
 
   test('the change budget, undo and reset stay in step', async ({ page }) => {

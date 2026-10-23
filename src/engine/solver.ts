@@ -27,32 +27,41 @@ export interface SolveReport {
 const key = (switchIds: readonly NodeId[], switches: SwitchStates) =>
   switchIds.map((id) => (switches[id] ? '1' : '0')).join('');
 
+/** A search state: switch positions plus, on staged boards, the part being played. */
+const stateKey = (switchIds: readonly NodeId[], state: GameState) =>
+  `${state.stage}:${key(switchIds, state.switches)}`;
+
 /**
  * Breadth-first search over switch positions using the engine's own `step` function,
  * so the solver can never disagree with play. Boards are small (<= ~10 switches).
+ * On staged boards a run that clears a part is a move too, so the search plays every
+ * part in order. `from` searches on from a game in progress.
  */
-export function solve(level: LevelDef): SolveReport {
+export function solve(level: LevelDef, from?: GameState): SolveReport {
   const { switchIds } = indexLevel(level);
-  const start = initialState(level);
-  const seen = new Map<string, NodeId[]>([[key(switchIds, start.switches), []]]);
+  const start = from ?? initialState(level);
+  const seen = new Map<string, NodeId[]>([[stateKey(switchIds, start), []]]);
   const queue: GameState[] = [start];
   let solution: NodeId[] | null = null;
   const wins: SwitchStates[] = [];
 
   while (queue.length > 0) {
     const state = queue.shift()!;
-    const path = seen.get(key(switchIds, state.switches))!;
-    if (step(level, state, { type: 'run' }).state.phase === 'won') {
+    const path = seen.get(stateKey(switchIds, state))!;
+    // A run either wins, clears a part (a new state to search from), or changes nothing.
+    const ran = step(level, state, { type: 'run' }).state;
+    if (ran.phase === 'won') {
       wins.push(state.switches);
       solution ??= path;
     }
-    for (const id of switchIds) {
-      const next = step(level, state, { type: 'toggle', switchId: id });
-      if (next.rejected) continue;
-      const k = key(switchIds, next.state.switches);
+    const next = switchIds.map((id) => step(level, state, { type: 'toggle', switchId: id }));
+    if (ran.stage > state.stage) next.push({ state: ran, events: [] });
+    for (const { state: after, rejected } of next) {
+      if (rejected) continue;
+      const k = stateKey(switchIds, after);
       if (seen.has(k)) continue;
-      seen.set(k, [...path, id]);
-      queue.push(next.state);
+      seen.set(k, after.stage === state.stage ? [...path, after.undoStack.at(-1)!] : path);
+      queue.push(after);
     }
   }
 
@@ -65,7 +74,7 @@ export function solve(level: LevelDef): SolveReport {
     winningConfigs: wins.length,
     wins,
     zeroChangeWin: solution?.length === 0,
-    allOnWins: simulateRun(level, allOn, 1).won,
+    allOnWins: simulateRun(level, allOn, 1, null).won,
     greedySolves: greedySolves(level),
   };
 }
@@ -79,13 +88,14 @@ export function greedySolves(level: LevelDef): boolean {
   let state = initialState(level);
   const tried = new Set<string>();
 
-  for (let round = 0; round <= index.switchIds.length * 2 + 1; round++) {
+  for (let round = 0; round <= index.switchIds.length * 2 + 1 + index.checkpoints.length; round++) {
     const ran = step(level, state, { type: 'run' });
     if (ran.state.phase === 'won') return true;
     state = ran.state;
-    tried.add(key(index.switchIds, state.switches));
+    tried.add(stateKey(index.switchIds, state));
 
     const outcome = ran.state.lastRun!.outcome;
+    if (outcome.kind === 'checkpoint') continue;
     let culprit: NodeId | undefined;
     if (outcome.kind === 'blocked') culprit = outcome.gateId;
     else {
@@ -105,7 +115,7 @@ export function greedySolves(level: LevelDef): boolean {
     let moved = false;
     for (const id of upstreamSwitches(level, culprit)) {
       const next = step(level, state, { type: 'toggle', switchId: id });
-      if (next.rejected || tried.has(key(index.switchIds, next.state.switches))) continue;
+      if (next.rejected || tried.has(stateKey(index.switchIds, next.state))) continue;
       if (fixes(next.state.switches)) {
         state = next.state;
         moved = true;

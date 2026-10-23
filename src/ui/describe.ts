@@ -5,6 +5,9 @@ export function nodeName(level: LevelDef, id: NodeId): string {
   return indexLevel(level).nodes.get(id)?.label ?? id;
 }
 
+/** What players call a part of a staged board: Part A, Part B, ... */
+export const partName = (stage: number) => `Part ${String.fromCharCode(65 + stage)}`;
+
 /** Short requirement label shown under a gate. */
 export function gateRequirement(level: LevelDef, id: NodeId): string {
   const node = indexLevel(level).nodes.get(id);
@@ -20,6 +23,10 @@ export function explainRun(level: LevelDef, run: RunResult): string {
   switch (outcome.kind) {
     case 'goal':
       return 'The ball reached the goal.';
+    case 'checkpoint': {
+      const stage = indexLevel(level).checkpoints.indexOf(outcome.nodeId);
+      return `${partName(stage)} cleared. ${partName(stage + 1)}'s switches are open: set them, then Run.`;
+    }
     case 'deadEnd': {
       const forks = run.events.filter((e) => e.type === 'junction');
       const fork = forks[forks.length - 1];
@@ -50,6 +57,8 @@ export function explainRun(level: LevelDef, run: RunResult): string {
 export const rejectMessage: Record<RejectReason, string> = {
   budget: 'No changes left. Switch a changed switch back, or Reset.',
   locked: 'A hint set that switch, so it stays put.',
+  stageDone: 'That part is cleared, so its switches stay put. Reset to start over.',
+  stageAhead: 'Clear this part first. That switch opens at the checkpoint.',
   notASwitch: 'That is not a switch.',
   nothingToUndo: 'Nothing to undo since the last run.',
   levelWon: 'Level already solved.',

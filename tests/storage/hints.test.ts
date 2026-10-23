@@ -38,6 +38,14 @@ describe('hint wallet', () => {
     expect(spendFreeMove(wallet, 'level-10', 3, false)).toEqual({ ok: false, reason: 'empty' });
   });
 
+  it('passes over stale moves for one hint, never past the end of the plan', () => {
+    const r = spendFreeMove(freshWallet(), 'level-19', 3, false, 2);
+    expect(r.ok && r.wallet.balance).toBe(1);
+    expect(r.ok && freeMovesUsed(r.wallet, 'level-19')).toBe(2);
+    const capped = spendFreeMove(freshWallet(), 'level-19', 3, false, 9);
+    expect(capped.ok && freeMovesUsed(capped.wallet, 'level-19')).toBe(3);
+  });
+
   it('charges nothing on free levels and stops when the level has no moves left', () => {
     let wallet = freshWallet();
     const r = spendFreeMove(wallet, 'level-03', 1, true);

@@ -122,9 +122,10 @@ export function App() {
         used: freeMovesUsed(wallet, level.id),
         free: screen.index < FREE_HINT_LEVELS,
         shop,
-        onUse: () => {
+        onUse: (moves) => {
           const free = screen.index < FREE_HINT_LEVELS;
-          const result = spendFreeMove(wallet, level.id, freeMovePlan(level).length, free);
+          const available = freeMovePlan(level).length;
+          const result = spendFreeMove(wallet, level.id, available, free, moves);
           if (result.ok) updateWallet(result.wallet);
           return result.ok;
         },

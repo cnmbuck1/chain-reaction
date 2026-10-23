@@ -66,13 +66,15 @@ export type HintResult = { ok: true; wallet: HintWallet } | { ok: false; reason:
 
 /**
  * Spends a hint on the next free move for a level. `available` is how many free moves the
- * level offers; `free` levels cost nothing.
+ * level offers; `free` levels cost nothing. `moves` above 1 also passes over moves the
+ * player no longer needs, such as those in a part of the board they already cleared.
  */
 export function spendFreeMove(
   wallet: HintWallet,
   levelId: string,
   available: number,
   free: boolean,
+  moves = 1,
 ): HintResult {
   const used = freeMovesUsed(wallet, levelId);
   if (used >= available) return { ok: false, reason: 'done' };
@@ -82,7 +84,7 @@ export function spendFreeMove(
     wallet: {
       ...wallet,
       balance: free ? wallet.balance : wallet.balance - 1,
-      used: { ...wallet.used, [levelId]: used + 1 },
+      used: { ...wallet.used, [levelId]: Math.min(available, used + Math.max(1, moves)) },
     },
   };
 }

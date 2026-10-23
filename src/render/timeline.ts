@@ -42,9 +42,19 @@ export type Cue =
       kind: 'finish';
       at: number;
       dur: number;
-      result: 'goal' | 'blocked' | 'deadEnd';
+      result: FinishResult;
       nodeId: NodeId;
     };
+
+/** How a run ended, as the board shows it. */
+export type FinishResult = 'goal' | 'blocked' | 'deadEnd' | 'checkpoint';
+
+const FINISH: Partial<Record<RunEvent['type'], FinishResult>> = {
+  ballGoal: 'goal',
+  ballBlocked: 'blocked',
+  ballDeadEnd: 'deadEnd',
+  ballCheckpoint: 'checkpoint',
+};
 
 export interface Timeline {
   cues: Cue[];
@@ -84,9 +94,13 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
       ballStart ??= e.from;
       cues.push({ kind: 'ball', at: cursor, dur: timing.ballSegment, from: e.from, to: e.to });
       cursor += timing.ballSegment;
-    } else if (e.type === 'ballBlocked' || e.type === 'ballGoal' || e.type === 'ballDeadEnd') {
-      const result =
-        e.type === 'ballBlocked' ? 'blocked' : e.type === 'ballGoal' ? 'goal' : 'deadEnd';
+    } else if (
+      e.type === 'ballBlocked' ||
+      e.type === 'ballGoal' ||
+      e.type === 'ballDeadEnd' ||
+      e.type === 'ballCheckpoint'
+    ) {
+      const result = FINISH[e.type]!;
       const nodeId =
         e.type === 'ballBlocked' ? e.gateId : e.type === 'ballGoal' ? e.goalId : e.nodeId;
       cues.push({ kind: 'finish', at: cursor, dur: timing.finish, result, nodeId });
@@ -105,7 +119,7 @@ export interface VisualState {
   gates: Map<NodeId, number>;
   /** Ball position: on a node, or partway along a track link. */
   ball: { from: NodeId; to: NodeId; p: number } | { at: NodeId } | null;
-  finish: { result: 'goal' | 'blocked' | 'deadEnd'; nodeId: NodeId; p: number } | null;
+  finish: { result: FinishResult; nodeId: NodeId; p: number } | null;
 }
 
 /** Gate openness before a run resolves it. */
