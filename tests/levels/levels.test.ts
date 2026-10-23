@@ -26,7 +26,7 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s', (_id, level) => {
 });
 
 describe('the curated set', () => {
-  it('has the ten planned levels in order', () => {
+  it('has the planned levels in order', () => {
     expect(levels.map((l) => l.name)).toEqual([
       'First Spark',
       'Reverse Logic',
@@ -38,6 +38,11 @@ describe('the curated set', () => {
       'Split Signal',
       'Interlock',
       'Master Circuit',
+      'Fork in the Road',
+      'Dead Lane',
+      'Long Way Round',
+      'Switchyard',
+      'Grand Junction',
     ]);
   });
 
@@ -47,8 +52,21 @@ describe('the curated set', () => {
       expect(report.allOnWins, level.id).toBe(false);
       expect(report.zeroChangeWin, level.id).toBe(false);
     }
-    for (const level of levels.slice(4)) {
+    // Easy levels that introduce a new part may be solved by fixing blockers one by one.
+    for (const level of levels.slice(4).filter((l) => l.difficulty !== 'easy')) {
       expect(checkLevel(level).report!.greedySolves, level.id).toBe(false);
+    }
+  });
+
+  it('introduces forks at level 11 and saves NOT wires for after level 20', () => {
+    const firstFork = levels.findIndex((l) => l.nodes.some((n) => n.type === 'junction')) + 1;
+    expect(firstFork).toBe(11);
+    expect(levels[10]!.meta.prompt).toMatch(/fork/);
+    for (const level of levels.slice(0, 20)) {
+      expect(
+        level.signalEdges.some((e) => e.invert),
+        level.id,
+      ).toBe(false);
     }
   });
 

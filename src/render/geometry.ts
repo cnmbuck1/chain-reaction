@@ -72,3 +72,39 @@ export function partialPath(points: readonly Point[], p: number): Point[] {
   }
   return out;
 }
+
+/** The part of a polyline between fractions `p0` and `p1` (0..1) of its length. */
+export function slicePath(points: readonly Point[], p0: number, p1: number): Point[] {
+  if (p1 <= p0) return [];
+  const head = partialPath(points, p1);
+  const skip = pathLength(points) * Math.max(0, p0);
+  const out: Point[] = [];
+  let walked = 0;
+  for (let i = 1; i < head.length; i++) {
+    const a = head[i - 1]!;
+    const b = head[i]!;
+    const seg = Math.hypot(b.x - a.x, b.y - a.y);
+    if (walked + seg > skip) {
+      if (out.length === 0) {
+        const f = seg === 0 ? 0 : Math.max(0, skip - walked) / seg;
+        out.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+      }
+      out.push(b);
+    }
+    walked += seg;
+  }
+  return out;
+}
+
+/**
+ * Where a NOT sits on a wire, as a fraction of its length: the middle of its last run, so
+ * it reads as part of what the wire feeds. Wires into a gate end in a vertical drop.
+ */
+export function flipFraction(points: readonly Point[]): number {
+  const total = pathLength(points);
+  if (total === 0 || points.length < 2) return 0.5;
+  const a = points[points.length - 2]!;
+  const b = points[points.length - 1]!;
+  const last = Math.hypot(b.x - a.x, b.y - a.y);
+  return (total - last / 2) / total;
+}

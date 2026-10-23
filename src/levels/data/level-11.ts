@@ -1,0 +1,67 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level11: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-11',
+  name: 'Fork in the Road',
+  difficulty: 'easy',
+  maxToggles: 1,
+  boardHeight: 470,
+  nodes: [
+    { id: 'source', type: 'source', x: 0.5, y: 0.05, label: 'Power' },
+    { id: 'f', type: 'switch', x: 0.36, y: 0.24, initialOn: false, label: 'F' },
+    { id: 'a', type: 'switch', x: 0.62, y: 0.24, initialOn: false, label: 'A' },
+    { id: 'b', type: 'switch', x: 0.86, y: 0.24, initialOn: false, label: 'B' },
+    {
+      id: 'fork',
+      type: 'junction',
+      x: 0.2,
+      y: 0.76,
+      whenTrue: 'g1',
+      whenFalse: 'g2',
+      label: 'The fork',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.62,
+      y: 0.5,
+      combine: 'single',
+      requiredSignal: false,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.8,
+      y: 1,
+      combine: 'and',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    { id: 'ball', type: 'ballStart', x: 0, y: 0.76, label: 'Start' },
+    { id: 'goal', type: 'goal', x: 0.96, y: 0.76, label: 'Goal' },
+  ],
+  signalEdges: [
+    { from: 'source', to: 'f' },
+    { from: 'source', to: 'a' },
+    { from: 'source', to: 'b' },
+    { from: 'f', to: 'fork' },
+    { from: 'b', to: 'g1' },
+    { from: 'a', to: 'g2' },
+    { from: 'b', to: 'g2' },
+  ],
+  track: [
+    ['ball', 'fork'],
+    ['g1', 'goal'],
+    ['g2', 'goal'],
+  ],
+  meta: {
+    teachingPoint: 'A fork picks the lane. Sometimes the best move is to change the route.',
+    hint: 'The bottom lane needs two changes. The top lane is already open.',
+    prompt:
+      'A fork sends the ball along its ON lane when its wire has power, and its OFF lane when not.',
+    minChanges: 1,
+    keySwitch: 'f',
+  },
+};

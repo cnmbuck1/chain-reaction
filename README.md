@@ -3,30 +3,31 @@
 A mobile-first, deterministic logic puzzle game (working title). Players set switches, press
 **Run**, and watch power, gates and a ball play out exactly as the logic engine computed.
 
-Status: **M4, all ten Phase 1 levels.** The game has:
+Status: **Stage 2, S2: fifteen levels, with forks from level 11.** The game has:
 
 - a brushed-metal machine drawn in PixiJS (cable wires, brass parts, portcullis gates, glowing
   energy) and lever switches;
 - synthesized sound with a mute button, and vibration on phones that support it;
 - a settings screen for sound, vibration, motion and resetting progress;
-- saved progress, a level select, and a completion card after level 10;
+- saved progress, a level select, and a completion card after the last level;
+- hints that make a free move, with a demo shop for more;
 - fallbacks when graphics fail to start.
 
 The solver checks every level.
 
 ## Commands
 
-| Command                | What it does                                                            |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `npm install`          | Install dependencies (Node 22+)                                         |
-| `npm run dev`          | Start the dev server                                                    |
-| `npm test`             | Run unit, determinism, level, timeline and storage tests (Vitest)       |
-| `npm run e2e`          | Play all ten levels in Chromium at phone and desktop sizes (Playwright) |
-| `npm run levels`       | Print the solver report for every level; fails if any level is invalid  |
-| `npm run lint`         | ESLint                                                                  |
-| `npm run typecheck`    | TypeScript, strict                                                      |
-| `npm run build`        | Typecheck and build to `dist/`                                          |
-| `npm run build:single` | Build one bundled script to `dist-single/` for a shareable single page  |
+| Command                | What it does                                                           |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `npm install`          | Install dependencies (Node 22+)                                        |
+| `npm run dev`          | Start the dev server                                                   |
+| `npm test`             | Run unit, determinism, level, timeline and storage tests (Vitest)      |
+| `npm run e2e`          | Play every level in Chromium at phone and desktop sizes (Playwright)   |
+| `npm run levels`       | Print the solver report for every level; fails if any level is invalid |
+| `npm run lint`         | ESLint                                                                 |
+| `npm run typecheck`    | TypeScript, strict                                                     |
+| `npm run build`        | Typecheck and build to `dist/`                                         |
+| `npm run build:single` | Build one bundled script to `dist-single/` for a shareable single page |
 
 Run `npx playwright install chromium` once before `npm run e2e`. After `build:single`,
 `node scripts/single-page.mjs out.html` packs the build into one HTML page.
@@ -41,7 +42,11 @@ the Playwright suite, on every push.
   topological order, ties broken by node id.
 - **Gates.** `combine` is `single`, `and` or `or`. A gate is open when the combined input equals
   `requiredSignal`, so `false` makes a normally-open gate.
-- **Junctions.** Route the ball to `whenTrue` or `whenFalse` from one signal input.
+- **NOT wires.** A wire with `invert` flips its signal. The board draws a NOT part on the wire,
+  lit before it when the switch is live and after it when not. Playtesting found NOT hard this
+  early, so no level uses it before level 21; a test enforces that.
+- **Forks (junctions).** Route the ball to `whenTrue` (ON lane) or `whenFalse` (OFF lane) from one
+  signal input. The board shows a pointer aimed down the lane the fork will take.
 - **Ball.** Follows the track from the start. It stops at the first closed gate or dead end.
   Reaching a goal wins.
 - **Budget.** `maxToggles` limits how many switches may differ from the level's starting position.
@@ -62,7 +67,7 @@ each gate will do.
 ```
 src/engine/   pure rules: types, graph index, evaluate, simulate, reducer, solver (no UI imports)
 src/levels/   level data, schema validator, level checker
-src/render/   PixiJS board, wire geometry, panel texture, and the timeline built from RUN events
+src/render/   PixiJS board, board layout and wire geometry, panel texture, and the RUN timeline
 src/audio/    WebAudio synth and the run's sound cues, read off the same timeline
 src/storage/  versioned local progress and settings with safe fallbacks
 src/ui/       React screens: game, level select, settings; switches and labels are DOM over the canvas
@@ -76,29 +81,43 @@ scripts/      level-report.ts, single-page.mjs
 Levels are typed data (`LevelDef` in `src/engine/types.ts`). The track is a list of paths; each
 consecutive pair is a directed link, and junction exits live on the junction node.
 `meta.minChanges` must match what the solver finds; tests enforce it. `meta.prompt` is an optional
-coaching line for tutorial levels. The validator reports every problem with a code:
+coaching line, used on tutorial levels and where a new part appears. `boardHeight` (layout
+pixels, default 400) gives fork levels room for two lanes. The validator reports every problem with a code:
 `DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`, `SWITCH_NO_INPUT`, `GATE_NO_INPUT`,
 `GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`, plus the
 solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 
 ## Levels
 
-| #   | Name           | Teaches                                                    | Budget | Min |
-| --- | -------------- | ---------------------------------------------------------- | ------ | --- |
-| 1   | First Spark    | A powered switch opens the gate it feeds                   | 1      | 1   |
-| 2   | Reverse Logic  | OFF gates open only without power                          | 1      | 1   |
-| 3   | Double Duty    | One switch can feed two gates                              | 2      | 2   |
-| 4   | The Tradeoff   | Switch chains: B only has power if A does                  | 2      | 2   |
-| 5   | Two Conditions | ALL ON gates need every wire powered                       | 3      | 3   |
-| 6   | False Friend   | ANY ON gates; the obvious fix blocks a later gate          | 2      | 2   |
-| 7   | Minimal Moves  | The step-by-step route costs 3; one switch fixes two gates | 2      | 2   |
-| 8   | Split Signal   | One switch feeds three; choose which branches stay dark    | 3      | 3   |
-| 9   | Interlock      | A forbidden route forces you to build the other one        | 3      | 3   |
-| 10  | Master Circuit | Chains, splits, ALL/ANY gates and a false friend together  | 4      | 4   |
+| #   | Name             | Teaches                                                    | Budget | Min |
+| --- | ---------------- | ---------------------------------------------------------- | ------ | --- |
+| 1   | First Spark      | A powered switch opens the gate it feeds                   | 1      | 1   |
+| 2   | Reverse Logic    | OFF gates open only without power                          | 1      | 1   |
+| 3   | Double Duty      | One switch can feed two gates                              | 2      | 2   |
+| 4   | The Tradeoff     | Switch chains: B only has power if A does                  | 2      | 2   |
+| 5   | Two Conditions   | ALL ON gates need every wire powered                       | 3      | 3   |
+| 6   | False Friend     | ANY ON gates; the obvious fix blocks a later gate          | 2      | 2   |
+| 7   | Minimal Moves    | The step-by-step route costs 3; one switch fixes two gates | 2      | 2   |
+| 8   | Split Signal     | One switch feeds three; choose which branches stay dark    | 3      | 3   |
+| 9   | Interlock        | A forbidden route forces you to build the other one        | 3      | 3   |
+| 10  | Master Circuit   | Chains, splits, ALL/ANY gates and a false friend together  | 4      | 4   |
+| 11  | Fork in the Road | A fork picks the lane; change the route, not the gates     | 1      | 1   |
+| 12  | Dead Lane        | A lane whose gates contradict each other can never open    | 2      | 2   |
+| 13  | Long Way Round   | Count what each lane costs; rerouting can be cheaper       | 2      | 2   |
+| 14  | Switchyard       | One switch both picks the lane and guards the other one    | 2      | 2   |
+| 15  | Grand Junction   | Rule out a lane, then follow a chain on the other one      | 3      | 3   |
 
-Each of levels 4 to 10 has exactly one winning position within its budget, and turning every
+Each of levels 4 to 15 has exactly one winning position within its budget, and turning every
 switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
-fails. Level 4 is marked `easy` and still allows it.
+fails, except on the `easy` levels 4 and 11, which introduce a new idea.
+
+## Board layout
+
+The board is laid out at 360 layout pixels wide (`src/render/layout.ts`) and scaled to fit the
+screen, so every phone shows the same picture and labels can't collide on small screens. A
+browser test opens every level at 320 by 568 and fails if any switch or label overlaps another
+or leaves the board. On fork boards, wires turn just below their switch and drop straight into
+their gate, and several wires into one gate land side by side.
 
 ## Hints
 
@@ -122,11 +141,10 @@ App Store / Google Play in-app purchases replace it in the native-app milestone.
 
 ## Known limitations
 
-- The engine supports junctions (branching tracks) and inverted (NOT) wires, but no level uses
-  them yet. Both were left out to keep the Phase 1 rule set small. The board draws them
-  plainly, and they would need UI work before use.
-- Boards are laid out for at most five switches and three gates on one straight track. More
-  gates would crowd the labels at phone width.
+- Fork boards hold one fork and two lanes. A second fork would need more height and new wire
+  routing.
+- Boards fit about four or five switches across. Wires can cross tracks, which is legal but
+  busier to read.
 - Tested in Chromium only, emulating iPhone 14, iPhone SE and desktop. Real iOS Safari and
   Android Chrome have not been checked. Vibration does nothing on iPhones, because Safari
   has no vibration API.

@@ -209,7 +209,7 @@ export function GameScreen({
           >
             Hint
             <span className="hint-badge" aria-hidden="true">
-              {hints.free ? 'free' : hints.balance}
+              {hints.free ? 'free' : hints.balance > 0 ? hints.balance : '+'}
             </span>
           </button>
         )}

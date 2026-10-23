@@ -20,8 +20,12 @@ export function explainRun(level: LevelDef, run: RunResult): string {
   switch (outcome.kind) {
     case 'goal':
       return 'The ball reached the goal.';
-    case 'deadEnd':
-      return `A junction sent the ball into a dead end.`;
+    case 'deadEnd': {
+      const forks = run.events.filter((e) => e.type === 'junction');
+      const fork = forks[forks.length - 1];
+      const name = fork?.type === 'junction' ? nodeName(level, fork.nodeId) : 'A fork';
+      return `${name} sent the ball into a dead end.`;
+    }
     case 'blocked': {
       const node = indexLevel(level).nodes.get(outcome.gateId);
       const name = nodeName(level, outcome.gateId);

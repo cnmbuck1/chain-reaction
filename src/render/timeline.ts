@@ -99,6 +99,8 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
 export interface VisualState {
   /** Glow progress 0..1 along each energized wire (only wires carrying TRUE appear). */
   wires: Map<string, number>;
+  /** How far power has travelled along every wire, live or not. NOT wires light by this. */
+  reached: Map<string, number>;
   /** Gate openness 0 (closed) .. 1 (open). Gates not yet resolved are absent. */
   gates: Map<NodeId, number>;
   /** Ball position: on a node, or partway along a track link. */
@@ -117,6 +119,7 @@ const easeInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p 
 export function sampleTimeline(timeline: Timeline, t: number): VisualState {
   const state: VisualState = {
     wires: new Map(),
+    reached: new Map(),
     gates: new Map(),
     ball: timeline.ballStart ? { at: timeline.ballStart } : null,
     finish: null,
@@ -126,6 +129,7 @@ export function sampleTimeline(timeline: Timeline, t: number): VisualState {
     const p = progress(cue, t);
     switch (cue.kind) {
       case 'wire':
+        state.reached.set(edgeKey(cue.from, cue.to), p);
         if (cue.value) state.wires.set(edgeKey(cue.from, cue.to), p);
         break;
       case 'gate': {
