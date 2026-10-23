@@ -105,6 +105,9 @@ export class Board {
       stage.addChild(this.panel, this.fixed, this.moving, this.glow);
       this.app.stage.addChild(stage);
       this.app.renderer.on('resize', () => (this.layoutDirty = true));
+      // Draw only when something changed. Pixi's own loop re-renders every frame, which
+      // keeps a phone's GPU busy (and slow devices sluggish) while the machine sits still.
+      this.app.ticker.remove(this.app.render, this.app);
       this.app.ticker.add(() => this.frame());
       document.addEventListener('visibilitychange', this.onVisibility);
     })();
@@ -229,6 +232,7 @@ export class Board {
     if (!this.dirty) return;
     this.dirty = false;
     this.drawMoving(this.level, this.visual, performance.now());
+    this.app.render();
   }
 
   private at(level: LevelDef, id: NodeId): Point {

@@ -32,8 +32,9 @@ body {
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
 }
+/* A definite height, so the game screen can fill the viewport and the board can grow into it. */
 #root {
-  min-height: 100%;
+  height: 100%;
 }
 button {
   font: inherit;
