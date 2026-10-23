@@ -75,6 +75,8 @@ export interface LevelDef {
   meta: {
     teachingPoint: string;
     hint: string;
+    /** Short coaching line shown before the first run (tutorial levels). */
+    prompt?: string;
     /** Minimum switch changes to win, as computed by the solver (checked in tests). */
     minChanges: number;
   };

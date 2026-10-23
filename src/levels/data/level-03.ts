@@ -1,0 +1,57 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level03: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-03',
+  name: 'Double Duty',
+  difficulty: 'tutorial',
+  maxToggles: 2,
+  nodes: [
+    { id: 'source', type: 'source', x: 0.5, y: 0.1, label: 'Power' },
+    { id: 'a', type: 'switch', x: 0.3, y: 0.38, initialOn: false, label: 'A' },
+    { id: 'b', type: 'switch', x: 0.76, y: 0.38, initialOn: true, label: 'B' },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.26,
+      y: 0.78,
+      combine: 'single',
+      requiredSignal: true,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.5,
+      y: 0.78,
+      combine: 'single',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.74,
+      y: 0.78,
+      combine: 'single',
+      requiredSignal: false,
+      label: 'Gate 3',
+    },
+    { id: 'ball', type: 'ballStart', x: 0.06, y: 0.78, label: 'Start' },
+    { id: 'goal', type: 'goal', x: 0.94, y: 0.78, label: 'Goal' },
+  ],
+  signalEdges: [
+    { from: 'source', to: 'a' },
+    { from: 'source', to: 'b' },
+    { from: 'a', to: 'g1' },
+    { from: 'a', to: 'g2' },
+    { from: 'b', to: 'g3' },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint: 'One switch can feed more than one gate.',
+    hint: 'Follow every wire leaving a switch.',
+    prompt: 'You have 2 changes. Follow each wire to see which gates a switch controls.',
+    minChanges: 2,
+  },
+};
