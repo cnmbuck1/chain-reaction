@@ -1,0 +1,159 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`determinism > matches the recorded event log 1`] = `
+[
+  [],
+  [
+    {
+      "nodeId": "source",
+      "type": "signal",
+      "value": true,
+    },
+    {
+      "from": "source",
+      "to": "a",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "nodeId": "a",
+      "type": "signal",
+      "value": true,
+    },
+    {
+      "from": "a",
+      "to": "b",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "from": "a",
+      "to": "g1",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "nodeId": "b",
+      "type": "signal",
+      "value": true,
+    },
+    {
+      "from": "b",
+      "to": "g2",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "gateId": "g1",
+      "input": true,
+      "open": true,
+      "type": "gate",
+    },
+    {
+      "gateId": "g2",
+      "input": true,
+      "open": false,
+      "type": "gate",
+    },
+    {
+      "from": "ball",
+      "to": "g1",
+      "type": "ballMove",
+    },
+    {
+      "from": "g1",
+      "to": "g2",
+      "type": "ballMove",
+    },
+    {
+      "gateId": "g2",
+      "type": "ballBlocked",
+    },
+    {
+      "attempt": 1,
+      "type": "attemptEnd",
+      "won": false,
+    },
+  ],
+  [],
+  [],
+  [],
+  [
+    {
+      "nodeId": "source",
+      "type": "signal",
+      "value": true,
+    },
+    {
+      "from": "source",
+      "to": "a",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "nodeId": "a",
+      "type": "signal",
+      "value": true,
+    },
+    {
+      "from": "a",
+      "to": "b",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "from": "a",
+      "to": "g1",
+      "type": "wire",
+      "value": true,
+    },
+    {
+      "nodeId": "b",
+      "type": "signal",
+      "value": false,
+    },
+    {
+      "from": "b",
+      "to": "g2",
+      "type": "wire",
+      "value": false,
+    },
+    {
+      "gateId": "g1",
+      "input": true,
+      "open": true,
+      "type": "gate",
+    },
+    {
+      "gateId": "g2",
+      "input": false,
+      "open": true,
+      "type": "gate",
+    },
+    {
+      "from": "ball",
+      "to": "g1",
+      "type": "ballMove",
+    },
+    {
+      "from": "g1",
+      "to": "g2",
+      "type": "ballMove",
+    },
+    {
+      "from": "g2",
+      "to": "goal",
+      "type": "ballMove",
+    },
+    {
+      "goalId": "goal",
+      "type": "ballGoal",
+    },
+    {
+      "attempt": 2,
+      "type": "attemptEnd",
+      "won": true,
+    },
+  ],
+]
+`;
