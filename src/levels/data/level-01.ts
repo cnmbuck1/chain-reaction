@@ -31,5 +31,7 @@ export const level01: LevelDef = {
     hint: 'The gate opens only when power reaches it.',
     prompt: 'Tap switch A to turn it on, then press Run.',
     minChanges: 1,
+    focus: 'g1',
+    keySwitch: 's1',
   },
 };

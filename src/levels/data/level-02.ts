@@ -31,5 +31,7 @@ export const level02: LevelDef = {
     hint: 'Look at what this gate needs before you touch anything.',
     prompt: 'This gate is marked OFF: it opens only without power.',
     minChanges: 1,
+    focus: 'g1',
+    keySwitch: 's1',
   },
 };

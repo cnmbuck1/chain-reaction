@@ -79,6 +79,10 @@ export interface LevelDef {
     prompt?: string;
     /** Minimum switch changes to win, as computed by the solver (checked in tests). */
     minChanges: number;
+    /** Hint step 2: the gate to look at. */
+    focus?: NodeId;
+    /** Hint step 3: a switch every in-budget solution changes (its target comes from the solver). */
+    keySwitch?: NodeId;
   };
 }
 

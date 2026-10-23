@@ -14,6 +14,8 @@ export interface SolveReport {
   reachableConfigs: number;
   /** Of those, how many win. */
   winningConfigs: number;
+  /** The winning switch positions themselves. */
+  wins: SwitchStates[];
   /** Winning without touching anything. */
   zeroChangeWin: boolean;
   /** Turning every switch ON wins (ignoring the budget). */
@@ -35,13 +37,13 @@ export function solve(level: LevelDef): SolveReport {
   const seen = new Map<string, NodeId[]>([[key(switchIds, start.switches), []]]);
   const queue: GameState[] = [start];
   let solution: NodeId[] | null = null;
-  let winningConfigs = 0;
+  const wins: SwitchStates[] = [];
 
   while (queue.length > 0) {
     const state = queue.shift()!;
     const path = seen.get(key(switchIds, state.switches))!;
     if (step(level, state, { type: 'run' }).state.phase === 'won') {
-      winningConfigs++;
+      wins.push(state.switches);
       solution ??= path;
     }
     for (const id of switchIds) {
@@ -60,7 +62,8 @@ export function solve(level: LevelDef): SolveReport {
     minChanges: solution?.length ?? null,
     solution,
     reachableConfigs: seen.size,
-    winningConfigs,
+    winningConfigs: wins.length,
+    wins,
     zeroChangeWin: solution?.length === 0,
     allOnWins: simulateRun(level, allOn, 1).won,
     greedySolves: greedySolves(level),

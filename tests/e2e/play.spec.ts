@@ -57,7 +57,9 @@ test.describe('with reduced motion', () => {
     await expect(board(page)).toBeVisible();
     await run(page).click();
     await expect(status(page)).toHaveText('Stopped at Gate 1: it needs power but got no power.');
-    await page.getByRole('button', { name: 'Hint' }).click();
+    await page.getByRole('button', { name: /^Hint, free/ }).click();
+    await page.getByRole('button', { name: 'Nudge · free' }).click();
+    await page.getByRole('button', { name: 'Close' }).click();
     await expect(page.getByText('The gate opens only when power reaches it.')).toBeVisible();
     await page.getByRole('button', { name: /^Switch A,/ }).click();
     await run(page).click();
@@ -178,4 +180,44 @@ test('the game fits a small phone without sideways scrolling', async ({ page }) 
   );
   expect(overflow).toBeLessThanOrEqual(0);
   await expect(run(page)).toBeInViewport();
+});
+
+test('hints: two free, then the demo shop, and they last across reloads', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'chain-reaction/progress',
+      JSON.stringify({
+        version: 1,
+        completed: {
+          'level-01': { bestAttempts: 1 },
+          'level-02': { bestAttempts: 1 },
+          'level-03': { bestAttempts: 1 },
+        },
+        seenIntro: true,
+      }),
+    ),
+  );
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'The Tradeoff' })).toBeVisible();
+  await expect(board(page)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Hint, 2 left' }).click();
+  await page.getByRole('button', { name: 'Nudge · use 1 hint' }).click();
+  await page.getByRole('button', { name: 'Focus · use 1 hint' }).click();
+  await expect(page.getByText('0 hints left')).toBeVisible();
+  await expect(page.locator('.focus-ring')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Get more hints' }).click();
+  await expect(page.getByText(/^Demo: nothing is shown or charged/)).toBeVisible();
+  await page.getByRole('button', { name: /Watch a short ad/ }).click();
+  await expect(page.getByText('1 hint added.')).toBeVisible();
+  await page.getByRole('button', { name: 'One move · use 1 hint' }).click();
+  await expect(page.getByText('Switch B must end up OFF.', { exact: false }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('.switch.is-key')).toHaveAttribute('aria-label', /^Switch B/);
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeVisible();
+  await expect(page.locator('.switch.is-key')).toHaveCount(1);
 });

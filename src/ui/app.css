@@ -736,3 +736,112 @@ button:disabled {
 .card .finale strong {
   color: var(--gold);
 }
+
+/* ---------- Hints ---------- */
+.hint-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.hint-badge {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+  color: var(--gold);
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hint-card {
+  display: grid;
+  gap: 12px;
+}
+.hint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hint-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.hint-steps li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-raise);
+  border: 1px solid var(--edge);
+  line-height: 1.4;
+}
+.hint-step-title {
+  font-family: var(--font-label);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.card .hint-notice {
+  color: var(--energy);
+}
+.card .demo-note {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--amber) 70%, transparent);
+  color: var(--amber);
+  font-size: 0.9rem;
+}
+.shop-list {
+  display: grid;
+  gap: 8px;
+}
+.shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--edge);
+  background: var(--bg-raise);
+  font-weight: 600;
+  cursor: pointer;
+}
+.shop-price {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  color: var(--gold);
+}
+.gate-tag.is-focus .need,
+.gate-tag.is-focus .feeder {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+.focus-ring {
+  position: absolute;
+  left: calc(var(--pad) + var(--x) * (100% - 2 * var(--pad)));
+  top: calc(var(--pad) + var(--y) * (100% - 2 * var(--pad)));
+  width: 74px;
+  height: 74px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px dashed var(--gold);
+  pointer-events: none;
+  animation: focus-pulse 1.6s ease-in-out infinite;
+}
+.switch.is-key {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 18px color-mix(in srgb, var(--gold) 60%, transparent);
+}
+@keyframes focus-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}

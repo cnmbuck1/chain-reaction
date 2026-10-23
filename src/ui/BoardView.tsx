@@ -18,6 +18,9 @@ interface Props {
   playback: RunPlayback | null;
   reducedMotion: boolean;
   locked: boolean;
+  /** Hint highlights. */
+  focusGate?: string;
+  keySwitch?: string;
   onToggle: (switchId: string) => void;
   onPlayed: (id: number) => void;
 }
@@ -32,6 +35,8 @@ export function BoardView({
   playback,
   reducedMotion,
   locked,
+  focusGate,
+  keySwitch,
   onToggle,
   onPlayed,
 }: Props) {
@@ -88,6 +93,8 @@ export function BoardView({
     };
   }, [ready, level, playback, reducedMotion]);
 
+  const focusNode = focusGate ? level.nodes.find((n) => n.id === focusGate) : undefined;
+
   if (failed) {
     return (
       <div className="board board-failed" role="alert">
@@ -122,7 +129,7 @@ export function BoardView({
               <button
                 key={node.id}
                 type="button"
-                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}`}
+                className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${node.id === keySwitch ? ' is-key' : ''}`}
                 style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                 aria-pressed={on}
                 aria-disabled={locked || blocked}
@@ -146,7 +153,12 @@ export function BoardView({
           case 'gate': {
             const feeders = level.signalEdges.filter((e) => e.to === node.id);
             return (
-              <div key={node.id} className="tag gate-tag" style={style} aria-hidden="true">
+              <div
+                key={node.id}
+                className={`tag gate-tag${node.id === focusGate ? ' is-focus' : ''}`}
+                style={style}
+                aria-hidden="true"
+              >
                 <span className="feeders">
                   {feeders.map((e) => (
                     <span
@@ -185,6 +197,9 @@ export function BoardView({
             return null;
         }
       })}
+      {focusNode && (
+        <div className="focus-ring" style={place(focusNode.x, focusNode.y)} aria-hidden="true" />
+      )}
     </div>
   );
 }

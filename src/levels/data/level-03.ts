@@ -53,5 +53,7 @@ export const level03: LevelDef = {
     hint: 'Follow every wire leaving a switch.',
     prompt: 'You have 2 changes. Follow each wire to see which gates a switch controls.',
     minChanges: 2,
+    focus: 'g3',
+    keySwitch: 'b',
   },
 };
