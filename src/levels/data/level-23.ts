@@ -43,7 +43,7 @@ export const level23: LevelDef = {
       id: 'g1',
       type: 'gate',
       x: 0.66,
-      y: 0.5,
+      y: 0.44,
       combine: 'and',
       requiredSignal: true,
       label: 'Gate 1',

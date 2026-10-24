@@ -195,15 +195,13 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
   });
 
-  test('the tip folds away on the first switch change, giving the board the room', async ({
-    page,
-  }) => {
+  test('the tip sits in the status line until the first switch change', async ({ page }) => {
     await page.goto('/');
     await dismissIntro(page);
-    const tip = page.getByText('Tap switch A to turn it on, then press Run.');
-    await expect(tip).toBeVisible();
+    const status = page.locator('p.status');
+    await expect(status).toHaveText('Tap switch A to turn it on, then press Run.');
     await page.getByRole('button', { name: /^Switch A,/ }).click();
-    await expect(tip).toBeHidden();
+    await expect(status).not.toHaveText(/Tap switch A/);
   });
 
   test('progress survives a reload', async ({ page }) => {

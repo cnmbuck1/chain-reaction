@@ -5,7 +5,7 @@ export const level39: LevelDef = {
   id: 'level-39',
   name: 'Turnkey',
   difficulty: 'hard',
-  boardHeight: 860,
+  boardHeight: 790,
   nodes: [
     {
       id: 'a',
@@ -79,7 +79,7 @@ export const level39: LevelDef = {
     {
       id: 'g2',
       type: 'gate',
-      x: 0.32,
+      x: 0.3,
       y: 0.44,
       combine: 'and',
       requiredSignal: false,
@@ -88,7 +88,7 @@ export const level39: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.71,
+      x: 0.67,
       y: 0.44,
       combine: 'single',
       requiredSignal: false,
@@ -154,14 +154,14 @@ export const level39: LevelDef = {
     {
       id: 'key',
       type: 'key',
-      x: 0.52,
+      x: 0.49,
       y: 0.44,
       label: 'Key',
     },
     {
       id: 'cp',
       type: 'checkpoint',
-      x: 0.96,
+      x: 0.92,
       y: 0.44,
       stage: 0,
       label: 'Checkpoint',

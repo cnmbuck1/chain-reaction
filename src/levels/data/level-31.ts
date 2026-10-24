@@ -146,7 +146,7 @@ export const level31: LevelDef = {
   track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
     teachingPoint: 'A gear turns its partner too, so you may need to turn the partner back.',
-    prompt: 'New part: gears. A switch with a cog badge turns its partner too when you turn it.',
+    prompt: 'New: gears. Turning a switch with a cog badge turns its partner too.',
     hint: "Gate 3 needs B on, but B's gear turns C off, and E gets its power through C.",
     minChanges: 2,
     keySwitch: 'b',

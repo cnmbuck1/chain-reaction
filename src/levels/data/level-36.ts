@@ -5,7 +5,7 @@ export const level36: LevelDef = {
   id: 'level-36',
   name: 'Skeleton Key',
   difficulty: 'easy',
-  boardHeight: 500,
+  boardHeight: 420,
   nodes: [
     {
       id: 'a',
@@ -44,7 +44,7 @@ export const level36: LevelDef = {
       id: 'g1',
       type: 'gate',
       x: 0.5,
-      y: 0.38,
+      y: 0.34,
       combine: 'single',
       requiredSignal: false,
       label: 'Gate 1',
@@ -161,8 +161,7 @@ export const level36: LevelDef = {
   ],
   meta: {
     teachingPoint: 'The lock only lets the ball through if it rolled past the key.',
-    prompt:
-      'New parts: a key and a lock. The ball picks up the key as it rolls past, and the lock opens only if it has the key.',
+    prompt: 'New: keys and locks. The ball grabs a key as it rolls past. A lock opens only for it.',
     hint: 'The top lane is quicker, but the key is on the bottom lane. Send the ball down with F.',
     minChanges: 2,
     keySwitch: 'b',

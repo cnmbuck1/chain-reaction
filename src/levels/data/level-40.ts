@@ -5,7 +5,7 @@ export const level40: LevelDef = {
   id: 'level-40',
   name: 'Master Key',
   difficulty: 'hard',
-  boardHeight: 860,
+  boardHeight: 790,
   nodes: [
     {
       id: 'a',
@@ -72,7 +72,7 @@ export const level40: LevelDef = {
       id: 'g1',
       type: 'gate',
       x: 0.5,
-      y: 0.2,
+      y: 0.18,
       combine: 'and',
       requiredSignal: true,
       label: 'Gate 1',
@@ -80,7 +80,7 @@ export const level40: LevelDef = {
     {
       id: 'g2',
       type: 'gate',
-      x: 0.32,
+      x: 0.3,
       y: 0.44,
       combine: 'single',
       requiredSignal: false,
@@ -89,7 +89,7 @@ export const level40: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.71,
+      x: 0.67,
       y: 0.44,
       combine: 'single',
       requiredSignal: false,
@@ -155,14 +155,14 @@ export const level40: LevelDef = {
     {
       id: 'key',
       type: 'key',
-      x: 0.52,
+      x: 0.49,
       y: 0.44,
       label: 'Key',
     },
     {
       id: 'cp',
       type: 'checkpoint',
-      x: 0.96,
+      x: 0.92,
       y: 0.44,
       stage: 0,
       label: 'Checkpoint',
