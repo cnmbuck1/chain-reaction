@@ -132,6 +132,16 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 28  | Long Haul        | Set part A's switches for part B before leaving            | 4   | 1 in 35 |
 | 29  | Backwire         | A wire from part A decides a NOT gate in part B            | 3   | 1 in 35 |
 | 30  | Grand Inversion  | Turning one switch on turns a NOT off somewhere else       | 4   | 1 in 35 |
+| 31  | Meshed           | A gear turns its partner, so you may turn it back          | 2   | 1 in 10 |
+| 32  | Gear Train       | Let the gears do the work                                  | 2   | 1 in 10 |
+| 33  | Chain Drive      | Gears turn one step only                                   | 3   | 1 in 10 |
+| 34  | Clockwork        | One gear turns two switches                                | 3   | 1 in 20 |
+| 35  | Escapement       | Plan which switch to turn by hand                          | 4   | 1 in 15 |
+| 36  | Skeleton Key     | The lock opens only if the ball rolled past the key        | 2   | 1 in 6  |
+| 37  | Key Ring         | Clearing part A isn't enough without the key               | 3   | 1 in 35 |
+| 38  | Lockstep         | Keys and gears together                                    | 3   | 1 in 35 |
+| 39  | Turnkey          | A geared switch isn't always the cheapest turn             | 4   | 1 in 35 |
+| 40  | Master Key       | Pick the gear that moves only what you need                | 4   | 1 in 35 |
 
 Every level has exactly one winning position at par, and from level 4 on turning every switch
 ON never wins. Without a change limit some levels also have longer wins, which earn at most two
@@ -141,6 +151,13 @@ to 20 the greedy player clears part A the obvious way and finds part B out of re
 then says so and suggests Reset. Levels 21 to 30 bring in NOT wires, which carry power while
 their switch is off. Blind guessing wins at par about 1 in 10 on one-part NOT boards, 1 in 6 on
 the two fork boards, and 1 in 15 to 1 in 35 on the two-part boards.
+
+Levels 31 to 35 bring in gears: a switch with a cog badge also turns the switches it names
+when turned by hand (one step only, never onward). Par counts turns by hand; worked out
+drivers first, every position has exactly one set of turns (`turnsFor` in `reducer.ts`).
+Levels 36 to 40 bring in keys: the ball picks up a key as it rolls past, and a lock stops it
+unless it has that key. Keys ride along into the next part, so on 37 to 40 the lane part A
+takes decides whether part B can be finished.
 
 ## Board layout
 

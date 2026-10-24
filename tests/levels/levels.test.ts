@@ -70,6 +70,11 @@ describe('the curated set', () => {
       'Chain Drive',
       'Clockwork',
       'Escapement',
+      'Skeleton Key',
+      'Key Ring',
+      'Lockstep',
+      'Turnkey',
+      'Master Key',
     ]);
   });
 
@@ -146,6 +151,29 @@ describe('the curated set', () => {
       ).toBe(true);
       expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(10);
     }
+  });
+
+  it('brings in keys at 36, where the lock costs extra changes, and carries them across parts from 37', () => {
+    const hasLock = (l: LevelDef) => l.nodes.some((n) => n.type === 'lock');
+    expect(levels.findIndex(hasLock)).toBe(35);
+    expect(levels[35]!.meta.prompt).toMatch(/key/);
+    for (const level of levels.slice(35, 40)) {
+      // Without the lock, the lane that skips the key would win in fewer changes.
+      const open: LevelDef = {
+        ...level,
+        nodes: level.nodes.filter((n) => n.type !== 'lock'),
+        track: level.track
+          .map((path) =>
+            path.map((id) => (id === 'lock' ? indexLevel(level).trackNext.get(id)! : id)),
+          )
+          .map((path) => path.filter((id, i) => id !== path[i - 1]))
+          .filter((path) => path.length > 1),
+      };
+      const lockless = checkLevel(open).report!.minChanges!;
+      expect(lockless, level.id).toBeLessThan(level.meta.minChanges);
+    }
+    const staged = levels.slice(36, 40).map((l) => indexLevel(l).checkpoints.length > 0);
+    expect(staged).toEqual([true, true, true, true]);
   });
 
   it('gets harder: par grows overall', () => {

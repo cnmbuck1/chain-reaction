@@ -50,6 +50,11 @@ const SOLUTIONS = [
   { name: 'Chain Drive', switches: ['A', 'C', 'D'] },
   { name: 'Clockwork', switches: ['A', 'B', 'D'] },
   { name: 'Escapement', switches: ['B', 'D', 'E', 'F'] },
+  { name: 'Skeleton Key', switches: ['B', 'F'] },
+  { name: 'Key Ring', switches: ['A', 'B', PART, 'D'] },
+  { name: 'Lockstep', switches: ['B', 'F', PART, 'D'] },
+  { name: 'Turnkey', switches: ['C', 'F', PART, 'D', 'G'] },
+  { name: 'Master Key', switches: ['A', 'B', 'F', PART, 'D'] },
 ];
 
 async function solve(page: Page, switches: string[]) {

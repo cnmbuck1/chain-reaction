@@ -336,6 +336,35 @@ export class Board {
           g.circle(p.x, p.y, 13).fill(C.recess);
           g.circle(p.x, p.y, 13).stroke({ width: 1.5, color: C.brassDark });
           break;
+        case 'key':
+          // A brass plate in the track with a key lying on it.
+          g.circle(p.x + 2, p.y + 3, 16).fill({ color: 0x000000, alpha: 0.35 });
+          g.circle(p.x, p.y, 15).fill(this.gradients.brass);
+          g.circle(p.x, p.y, 11).fill(C.recess);
+          g.circle(p.x - 4, p.y, 3.6).stroke({ width: 2.2, color: C.brassLight });
+          g.moveTo(p.x - 0.5, p.y)
+            .lineTo(p.x + 7, p.y)
+            .stroke({ width: 2.2, color: C.brassLight });
+          g.moveTo(p.x + 4, p.y)
+            .lineTo(p.x + 4, p.y + 3.5)
+            .stroke({ width: 2, color: C.brassLight });
+          g.moveTo(p.x + 6.5, p.y)
+            .lineTo(p.x + 6.5, p.y + 3)
+            .stroke({ width: 2, color: C.brassLight });
+          break;
+        case 'lock':
+          // A padlock bolted across the track.
+          g.roundRect(p.x - 14 + 2, p.y - 15 + 3, 28, 30, 6).fill({ color: 0x000000, alpha: 0.35 });
+          g.roundRect(p.x - 14, p.y - 15, 28, 30, 6)
+            .fill(this.gradients.metal)
+            .stroke({ width: 1.5, color: C.metalDark });
+          g.moveTo(p.x - 6, p.y - 2)
+            .arc(p.x, p.y - 2, 6, Math.PI, 0)
+            .stroke({ width: 2.4, color: C.brassDark });
+          g.roundRect(p.x - 8, p.y - 3, 16, 12, 2).fill(C.gold);
+          g.circle(p.x, p.y + 2, 1.8).fill(C.recess);
+          g.rect(p.x - 0.7, p.y + 2, 1.4, 4).fill(C.recess);
+          break;
         case 'gate':
           break;
       }
@@ -537,6 +566,11 @@ export class Board {
         const lit = arriving ? finish.p : node.stage < this.stage ? 1 : 0;
         g.circle(p.x, p.y, 5).fill(lit > 0 ? C.energy : C.lampOff);
         if (lit > 0) glow.circle(p.x, p.y, 16).fill({ color: C.energy, alpha: 0.35 * lit });
+      } else if (node.type === 'lock') {
+        const finish = visual.finish;
+        if (finish?.result === 'locked' && finish.nodeId === node.id) {
+          glow.circle(p.x, p.y, 30).fill({ color: C.amber, alpha: 0.3 * (1 - finish.p * 0.6) });
+        }
       } else if (node.type === 'gate') {
         const finish = visual.finish;
         const flash = finish?.result === 'blocked' && finish.nodeId === node.id ? finish.p : null;
@@ -732,7 +766,7 @@ function drawBall(
   if (!pos) return;
   let { x, y } = pos;
   const finish = visual.finish;
-  if (finish?.result === 'blocked' || finish?.result === 'deadEnd') {
+  if (finish?.result === 'blocked' || finish?.result === 'deadEnd' || finish?.result === 'locked') {
     // Bounce back from the obstacle, then settle just in front of it.
     const back = Math.sin(Math.min(1, finish.p * 2) * Math.PI) * 6 + 28 * Math.min(1, finish.p * 3);
     const dx = approach ? x - approach.x : 1;

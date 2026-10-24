@@ -36,9 +36,9 @@ export interface SolveReport {
 const key = (switchIds: readonly NodeId[], switches: SwitchStates) =>
   switchIds.map((id) => (switches[id] ? '1' : '0')).join('');
 
-/** A search state: switch positions plus, on staged boards, the part being played. */
+/** A search state: switch positions plus, on staged boards, the part being played and keys held. */
 const stateKey = (switchIds: readonly NodeId[], state: GameState) =>
-  `${state.stage}:${key(switchIds, state.switches)}`;
+  `${state.stage}:${state.keys.join(',')}:${key(switchIds, state.switches)}`;
 
 /**
  * Breadth-first search over switch positions using the engine's own `step` function,

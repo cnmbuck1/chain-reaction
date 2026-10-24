@@ -216,9 +216,11 @@ export function GameScreen({
   const stoppedAt =
     showingMiss && lastRun?.outcome.kind === 'blocked'
       ? lastRun.outcome.gateId
-      : showingMiss && lastRun?.outcome.kind === 'deadEnd'
-        ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
-        : null;
+      : showingMiss && lastRun?.outcome.kind === 'locked'
+        ? lastRun.outcome.nodeId
+        : showingMiss && lastRun?.outcome.kind === 'deadEnd'
+          ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
+          : null;
 
   let status: string;
   if (notice) status = rejectMessage[notice];

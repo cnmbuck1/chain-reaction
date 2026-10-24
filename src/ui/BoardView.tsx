@@ -310,6 +310,13 @@ export function BoardView({
                   Checkpoint
                 </div>
               );
+            case 'key':
+            case 'lock':
+              return (
+                <div key={node.id} className="tag below" style={style} aria-hidden="true">
+                  {nodeName(level, node.id)}
+                </div>
+              );
             case 'goal':
               return (
                 <div key={node.id} className="tag below" style={style} aria-hidden="true">
@@ -335,6 +342,12 @@ export function BoardView({
               aria-hidden="true"
             >
               {partName(part)}
+              {part === stage && state.keys.length > 0 && (
+                <span className="carry-tag">
+                  {' '}
+                  · {state.keys.map((k) => nodeName(level, k)).join(', ')} aboard
+                </span>
+              )}
             </div>
           ))}
         {[...routes].map(

@@ -65,6 +65,17 @@ export interface CheckpointNode extends NodeBase {
   stage: number;
 }
 
+/** A key on the track: the ball picks it up as it rolls past and carries it on. */
+export interface KeyNode extends NodeBase {
+  type: 'key';
+}
+
+/** A lock on the track: the ball rolls through only if it carries the named key. */
+export interface LockNode extends NodeBase {
+  type: 'lock';
+  key: NodeId;
+}
+
 export type LevelNode =
   | SourceNode
   | SwitchNode
@@ -73,7 +84,9 @@ export type LevelNode =
   | BallStartNode
   | GoalNode
   | DeadEndNode
-  | CheckpointNode;
+  | CheckpointNode
+  | KeyNode
+  | LockNode;
 
 export type NodeType = LevelNode['type'];
 
@@ -127,6 +140,8 @@ export type RunEvent =
   | { type: 'ballDeadEnd'; nodeId: NodeId }
   | { type: 'ballGoal'; goalId: NodeId }
   | { type: 'ballCheckpoint'; nodeId: NodeId }
+  | { type: 'ballKey'; nodeId: NodeId }
+  | { type: 'ballLocked'; nodeId: NodeId }
   | { type: 'attemptEnd'; won: boolean; attempt: number };
 
 export type RunOutcome =
@@ -134,12 +149,16 @@ export type RunOutcome =
   | { kind: 'blocked'; gateId: NodeId }
   | { kind: 'deadEnd'; nodeId: NodeId }
   /** The ball cleared a part of a staged board; the next part opens. */
-  | { kind: 'checkpoint'; nodeId: NodeId };
+  | { kind: 'checkpoint'; nodeId: NodeId }
+  /** The ball reached a lock without its key. */
+  | { kind: 'locked'; nodeId: NodeId };
 
 export interface RunResult {
   won: boolean;
   outcome: RunOutcome;
   events: RunEvent[];
+  /** The keys the ball holds when it stops: those it set off with, and those picked up. */
+  keys: NodeId[];
 }
 
 // ---- Player state and actions --------------------------------------------
@@ -152,6 +171,8 @@ export interface GameState {
   attempt: number;
   /** The part of a staged board being played (0 = the first). Always 0 on other boards. */
   stage: number;
+  /** Keys the ball carries into this part, picked up while clearing earlier parts. */
+  keys: readonly NodeId[];
   phase: 'editing' | 'won';
   lastRun: RunResult | null;
 }

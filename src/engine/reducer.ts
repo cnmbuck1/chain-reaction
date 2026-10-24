@@ -24,6 +24,7 @@ export function initialState(level: LevelDef): GameState {
     undoStack: [],
     attempt: 1,
     stage: 0,
+    keys: [],
     phase: 'editing',
     lastRun: null,
   };
@@ -120,7 +121,7 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
     }
     case 'run': {
       if (state.phase === 'won') return { state, events: [], rejected: 'levelWon' };
-      const result = simulateRun(level, state.switches, state.attempt, state.stage);
+      const result = simulateRun(level, state.switches, state.attempt, state.stage, state.keys);
       // Reaching a checkpoint is progress, not a miss: the next part opens, same attempt.
       const cleared = result.outcome.kind === 'checkpoint';
       return {
@@ -129,6 +130,8 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
           undoStack: [],
           attempt: result.won || cleared ? state.attempt : state.attempt + 1,
           stage: cleared ? state.stage + 1 : state.stage,
+          // Keys go on with the ball only when it clears a part; after a miss it starts over.
+          keys: cleared ? result.keys : state.keys,
           phase: result.won ? 'won' : 'editing',
           lastRun: result,
         },

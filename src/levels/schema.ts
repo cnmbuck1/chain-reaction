@@ -14,7 +14,8 @@ export type ValidationCode =
   | 'NOT_ON_TRACK'
   | 'BAD_POSITION'
   | 'BAD_STAGE'
-  | 'BAD_GEAR';
+  | 'BAD_GEAR'
+  | 'BAD_KEY';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -31,6 +32,8 @@ const TRACK_TYPES = new Set<LevelNode['type']>([
   'goal',
   'deadEnd',
   'checkpoint',
+  'key',
+  'lock',
 ]);
 const TERMINAL = new Set<LevelNode['type']>(['goal', 'deadEnd']);
 
@@ -88,6 +91,13 @@ export function validateLevel(level: LevelDef): ValidationError[] {
     path.has(id) || (geared.get(id) ?? []).some((to) => gearCycle(to, new Set([...path, id])));
   for (const id of geared.keys()) {
     if (gearCycle(id, new Set())) add('BAD_GEAR', `Gears from "${id}" turn back round to it`, id);
+  }
+
+  // Every lock names a key on the board.
+  for (const n of level.nodes) {
+    if (n.type === 'lock' && nodes.get(n.key)?.type !== 'key') {
+      add('BAD_KEY', `Lock "${n.id}" needs key "${n.key}", which is not a key`, n.id);
+    }
   }
 
   // Signal edges
