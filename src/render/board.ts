@@ -2,7 +2,7 @@ import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 
 import { evaluate } from '../engine/evaluate';
 import { indexLevel, stageStart } from '../engine/graph';
 import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
-import { signalColor, toHex } from './colors';
+import { keyColor, signalColor, toHex } from './colors';
 import {
   GATE_HALF_HEIGHT,
   partialPath,
@@ -94,6 +94,9 @@ export class Board {
   private forks = new Map<NodeId, NodeId>();
   /** On staged boards, the part in play; the others are shaded. */
   private stage = 0;
+  /** Told which switches trip plates have flipped, as a run plays and when it is cleared. */
+  onFlipped: ((switches: ReadonlySet<NodeId>) => void) | null = null;
+  private flippedKey = '';
 
   init(host: HTMLElement): Promise<void> {
     this.initPromise ??= (async () => {
@@ -168,7 +171,15 @@ export class Board {
       }
     }
     this.visual = visual;
+    this.reportFlipped(visual.flipped);
     this.dirty = true;
+  }
+
+  private reportFlipped(flipped: ReadonlySet<NodeId>) {
+    const key = [...flipped].sort().join(' ');
+    if (key === this.flippedKey) return;
+    this.flippedKey = key;
+    this.onFlipped?.(flipped);
   }
 
   /** Plays a RUN of the given part. Resolves when the last cue has finished. */
@@ -177,7 +188,11 @@ export class Board {
     this.stage = stage;
     if (this.level) {
       const signals = new Map<NodeId, boolean>();
-      for (const e of events) if (e.type === 'signal') signals.set(e.nodeId, e.value);
+      for (const e of events) {
+        // A trip plate's later pictures arrive with the timeline.
+        if (e.type === 'ballTrip') break;
+        if (e.type === 'signal') signals.set(e.nodeId, e.value);
+      }
       this.setSignals(this.level, signals);
     }
     this.timeline = buildTimeline(events, timing);
@@ -187,6 +202,8 @@ export class Board {
       this.resolvePlay = resolve;
       if (this.timeline!.duration === 0) {
         this.visual = sampleTimeline(this.timeline!, 0);
+        if (this.visual.signals) this.setSignals(this.level!, this.visual.signals);
+        this.reportFlipped(this.visual.flipped);
         this.finishPlayback();
       }
     });
@@ -235,6 +252,9 @@ export class Board {
     if (this.timeline && this.resolvePlay) {
       const t = performance.now() - this.startedAt;
       this.visual = sampleTimeline(this.timeline, t);
+      if (this.visual.signals && this.visual.signals !== this.signals)
+        this.setSignals(this.level!, this.visual.signals);
+      this.reportFlipped(this.visual.flipped);
       this.dirty = true;
       if (t >= this.timeline.duration) this.finishPlayback();
     }
@@ -336,22 +356,24 @@ export class Board {
           g.circle(p.x, p.y, 13).fill(C.recess);
           g.circle(p.x, p.y, 13).stroke({ width: 1.5, color: C.brassDark });
           break;
-        case 'key':
+        case 'key': {
+          const metal = toHex(keyColor(level, node.id));
           // A brass plate in the track with a key lying on it.
           g.circle(p.x + 2, p.y + 3, 16).fill({ color: 0x000000, alpha: 0.35 });
           g.circle(p.x, p.y, 15).fill(this.gradients.brass);
           g.circle(p.x, p.y, 11).fill(C.recess);
-          g.circle(p.x - 4, p.y, 3.6).stroke({ width: 2.2, color: C.brassLight });
+          g.circle(p.x - 4, p.y, 3.6).stroke({ width: 2.2, color: metal });
           g.moveTo(p.x - 0.5, p.y)
             .lineTo(p.x + 7, p.y)
-            .stroke({ width: 2.2, color: C.brassLight });
+            .stroke({ width: 2.2, color: metal });
           g.moveTo(p.x + 4, p.y)
             .lineTo(p.x + 4, p.y + 3.5)
-            .stroke({ width: 2, color: C.brassLight });
+            .stroke({ width: 2, color: metal });
           g.moveTo(p.x + 6.5, p.y)
             .lineTo(p.x + 6.5, p.y + 3)
-            .stroke({ width: 2, color: C.brassLight });
+            .stroke({ width: 2, color: metal });
           break;
+        }
         case 'lock':
           // A padlock bolted across the track.
           g.roundRect(p.x - 14 + 2, p.y - 15 + 3, 28, 30, 6).fill({ color: 0x000000, alpha: 0.35 });
@@ -361,9 +383,20 @@ export class Board {
           g.moveTo(p.x - 6, p.y - 2)
             .arc(p.x, p.y - 2, 6, Math.PI, 0)
             .stroke({ width: 2.4, color: C.brassDark });
-          g.roundRect(p.x - 8, p.y - 3, 16, 12, 2).fill(C.gold);
+          g.roundRect(p.x - 8, p.y - 3, 16, 12, 2).fill(toHex(keyColor(level, node.id)));
           g.circle(p.x, p.y + 2, 1.8).fill(C.recess);
           g.rect(p.x - 0.7, p.y + 2, 1.4, 4).fill(C.recess);
+          break;
+        case 'trip':
+          // A pressure plate set into the track, with amber corners; the DOM labels it with
+          // the switch it flips.
+          g.roundRect(p.x - 14 + 2, p.y - 14 + 3, 28, 28, 6).fill({ color: 0x000000, alpha: 0.35 });
+          g.roundRect(p.x - 14, p.y - 14, 28, 28, 6)
+            .fill(this.gradients.metal)
+            .stroke({ width: 1.5, color: C.metalDark });
+          g.roundRect(p.x - 10, p.y - 10, 20, 20, 4)
+            .fill(C.recess)
+            .stroke({ width: 1.5, color: C.amber, alpha: 0.8 });
           break;
         case 'gate':
           break;
@@ -571,6 +604,12 @@ export class Board {
         if (finish?.result === 'locked' && finish.nodeId === node.id) {
           glow.circle(p.x, p.y, 30).fill({ color: C.amber, alpha: 0.3 * (1 - finish.p * 0.6) });
         }
+      } else if (node.type === 'trip') {
+        const pressed = visual.trips.get(node.id);
+        if (pressed !== undefined) {
+          glow.circle(p.x, p.y, 26).fill({ color: C.amber, alpha: 0.4 * (1 - pressed * 0.5) });
+          g.roundRect(p.x - 10, p.y - 10, 20, 20, 4).stroke({ width: 2.5, color: C.amber });
+        }
       } else if (node.type === 'gate') {
         const finish = visual.finish;
         const flash = finish?.result === 'blocked' && finish.nodeId === node.id ? finish.p : null;
@@ -597,6 +636,9 @@ function emptyVisual(ballStart: NodeId | null): VisualState {
     ball: ballStart ? { at: ballStart } : null,
     finish: null,
     circuit: null,
+    signals: null,
+    flipped: new Set(),
+    trips: new Map(),
   };
 }
 

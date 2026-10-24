@@ -53,6 +53,18 @@ export const CHAPTERS: readonly Chapter[] = [
     intro: 'Pick up the key on the way, or the lock stops the ball',
     levelIds: range(36, 40),
   },
+  {
+    id: 'trips',
+    name: 'Trip plates',
+    intro: 'The ball flips a switch as it rolls over a plate',
+    levelIds: range(41, 45),
+  },
+  {
+    id: 'key-ring',
+    name: 'Gold and silver',
+    intro: 'Two keys, two locks: each lock needs its own key',
+    levelIds: range(46, 50),
+  },
 ];
 
 export interface ChapterView {

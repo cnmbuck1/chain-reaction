@@ -1151,3 +1151,18 @@ button:disabled {
 .meter-count.over {
   color: var(--amber);
 }
+
+/* Trip plates: the switch a plate flipped mid-run glows amber until the run ends. */
+.switch.is-tripped {
+  border-color: var(--amber);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--amber) 70%, transparent),
+    0 0 16px color-mix(in srgb, var(--amber) 50%, transparent);
+}
+/* The plate is labelled with the switch it flips, in that switch's colour. */
+.trip-tag {
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--swatch);
+}

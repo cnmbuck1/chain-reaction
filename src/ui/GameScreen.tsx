@@ -244,7 +244,11 @@ export function GameScreen({
           ? [
               `gear: turning ${nodeName(level, n.id)} also turns ${n.turns.map((id) => nodeName(level, id)).join(' and ')}`,
             ]
-          : [],
+          : n.type === 'trip'
+            ? [
+                `trip plate on the track: it flips ${nodeName(level, n.flips)} as the ball rolls over`,
+              ]
+            : [],
       ),
     )
     .join('; ');
