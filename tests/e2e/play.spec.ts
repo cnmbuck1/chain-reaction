@@ -143,6 +143,38 @@ test.describe('with reduced motion', () => {
     ).toBeVisible();
   });
 
+  test('the level select groups chapters, previews the next machine, and Continue plays on', async ({
+    page,
+  }) => {
+    const completed = Object.fromEntries(
+      Array.from({ length: 10 }, (_, i) => [
+        `level-${String(i + 1).padStart(2, '0')}`,
+        { stars: i === 1 ? 2 : 3, bestAttempts: 1 },
+      ]),
+    );
+    await page.goto('/');
+    await page.evaluate(
+      (done) =>
+        localStorage.setItem(
+          'chain-reaction/progress',
+          JSON.stringify({ version: 2, completed: done, firstRunUsed: {}, seenIntro: true }),
+        ),
+      completed,
+    );
+    await page.reload();
+    await page.getByRole('button', { name: 'Levels', exact: true }).click();
+    await expect(page.getByLabel('29 of 60 stars')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Basics/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Forks/ })).toBeVisible();
+    await expect(page.getByText('Coming up: Clear part A')).toBeVisible();
+    await expect(page.getByRole('complementary', { name: 'Next machine' })).toContainText(
+      'Dead Lane',
+    );
+    await expect(page.getByRole('button', { name: 'Level 12, Dead Lane, locked' })).toBeDisabled();
+    await page.getByRole('button', { name: /^Continue/ }).click();
+    await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
+  });
+
   test('progress survives a reload', async ({ page }) => {
     await page.goto('/');
     await dismissIntro(page);
@@ -283,6 +315,18 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await expect(page.getByText('Progress cleared.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '‹ Levels' }).click();
   await expect(page.getByText(`0 of ${SOLUTIONS.length} solved`)).toBeVisible();
+});
+
+test('Unlock all levels opens every level for testing', async ({ page }) => {
+  await page.goto('/');
+  await dismissIntro(page);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Level 20, Grand Finale, locked' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('switch', { name: 'Unlock all levels' }).click();
+  await page.getByRole('button', { name: '‹ Levels' }).click();
+  await page.getByRole('button', { name: /^Level 20, Grand Finale$/ }).click();
+  await expect(page.getByRole('heading', { name: 'Grand Finale' })).toBeVisible();
 });
 
 test('the sound button mutes from the game screen', async ({ page }) => {

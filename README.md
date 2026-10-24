@@ -161,6 +161,14 @@ is the same frame the full animation ends on. Reduced motion shows it at once.
 After a miss, the gate or fork that stopped the ball stays outlined and the status line says what
 it needed. Run reads **Retry** until a switch moves. There is no failure pop-up.
 
+## Level select
+
+Levels are grouped into chapters (`src/levels/chapters.ts`): Basics (1 to 10), Forks (11 to 15)
+and Two Parts (16 to 20). Each shows its stars, a locked chapter previews its new idea, and
+levels no chapter lists appear under "More machines", so adding levels never hides one. The
+screen shows total stars, a **Continue** button for the first unsolved level, and a card for the
+next locked machine. Settings has **Unlock all levels**, a testing switch that opens every level.
+
 ## Stars
 
 `src/game/scoring.ts`: 1 star for reaching the goal, 2 with no hints on that solve, 3 with no hints,

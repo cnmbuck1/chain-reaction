@@ -118,7 +118,8 @@ export function App() {
       <LevelSelect
         levels={levels}
         progress={progress}
-        onPlay={(index) => isUnlocked(ids, progress, index) && play(index)}
+        unlockAll={settings.unlockAll}
+        onPlay={(index) => (settings.unlockAll || isUnlocked(ids, progress, index)) && play(index)}
         onSettings={() => setScreen({ kind: 'settings' })}
       />
     );
