@@ -10,17 +10,26 @@ export interface SolveReport {
   minChanges: number | null;
   /** One shortest winning toggle sequence (then RUN). */
   solution: NodeId[] | null;
-  /** Switch positions reachable within the budget. */
+  /** Switch positions reachable in play (every position; on staged boards, per part played). */
   reachableConfigs: number;
   /** Of those, how many win. */
   winningConfigs: number;
-  /** The winning switch positions themselves. */
+  /** The winning switch positions themselves, fewest changes first. */
   wins: SwitchStates[];
+  /** The winning positions at par (`minChanges`): the ones that can earn three stars. */
+  parWins: SwitchStates[];
+  /**
+   * Positions with exactly `minChanges` switches changed, per par win: a player who picks
+   * that many switches at random wins on the first Run 1 time in this many.
+   */
+  guessOdds: number | null;
+  /** Switches that never change any gate or fork, in any position. */
+  idleSwitches: NodeId[];
   /** Winning without touching anything. */
   zeroChangeWin: boolean;
-  /** Turning every switch ON wins (ignoring the budget). */
+  /** Turning every switch ON wins. */
   allOnWins: boolean;
-  /** A "fix whatever blocked the ball" player wins. A sign the level is shallow. */
+  /** A "fix whatever blocked the ball" player wins at par. A sign the level is shallow. */
   greedySolves: boolean;
 }
 
@@ -66,31 +75,64 @@ export function solve(level: LevelDef, from?: GameState): SolveReport {
   }
 
   const allOn = Object.fromEntries(switchIds.map((id) => [id, true]));
+  const minChanges = solution?.length ?? null;
+  const changes = (w: SwitchStates) =>
+    switchIds.filter((id) => w[id] !== start.switches[id]).length;
+  const parWins = wins.filter((w) => changes(w) === minChanges);
+  const greedy = greedyWin(level);
   return {
     solvable: solution !== null,
-    minChanges: solution?.length ?? null,
+    minChanges,
     solution,
     reachableConfigs: seen.size,
     winningConfigs: wins.length,
     wins,
+    parWins,
+    guessOdds: minChanges === null ? null : binomial(switchIds.length, minChanges) / parWins.length,
+    idleSwitches: idleSwitches(level),
     zeroChangeWin: solution?.length === 0,
     allOnWins: simulateRun(level, allOn, 1, null).won,
-    greedySolves: greedySolves(level),
+    greedySolves: greedy !== null && changes(greedy) === minChanges,
   };
+}
+
+function binomial(n: number, k: number): number {
+  let out = 1;
+  for (let i = 1; i <= k; i++) out = (out * (n - k + i)) / i;
+  return Math.round(out);
+}
+
+/** Switches whose flip changes no gate and no fork in any position of the others. */
+export function idleSwitches(level: LevelDef): NodeId[] {
+  const index = indexLevel(level);
+  const ids = index.switchIds;
+  const reads = (switches: SwitchStates) => {
+    const { gateOpen, sinkInputs } = evaluate(index, switches);
+    return JSON.stringify([[...gateOpen], [...sinkInputs]]);
+  };
+  return ids.filter((id) => {
+    for (let mask = 0; mask < 1 << ids.length; mask++) {
+      const switches = Object.fromEntries(ids.map((s, i) => [s, (mask & (1 << i)) !== 0]));
+      if (switches[id]) continue;
+      if (reads(switches) !== reads({ ...switches, [id]: true })) return false;
+    }
+    return true;
+  });
 }
 
 /**
  * Heuristic shallow-level detector. The simulated player runs, looks at what stopped
  * the ball, and flips the first upstream switch (by id) that fixes that spot on its own.
+ * Returns the position it wins with, or null.
  */
-export function greedySolves(level: LevelDef): boolean {
+export function greedyWin(level: LevelDef): SwitchStates | null {
   const index = indexLevel(level);
   let state = initialState(level);
   const tried = new Set<string>();
 
   for (let round = 0; round <= index.switchIds.length * 2 + 1 + index.checkpoints.length; round++) {
     const ran = step(level, state, { type: 'run' });
-    if (ran.state.phase === 'won') return true;
+    if (ran.state.phase === 'won') return state.switches;
     state = ran.state;
     tried.add(stateKey(index.switchIds, state));
 
@@ -102,7 +144,7 @@ export function greedySolves(level: LevelDef): boolean {
       const junctions = ran.events.filter((e) => e.type === 'junction');
       culprit = junctions[junctions.length - 1]?.nodeId;
     }
-    if (culprit === undefined) return false;
+    if (culprit === undefined) return null;
 
     const before = evaluate(index, state.switches);
     const fixes = (switches: SwitchStates) => {
@@ -122,9 +164,9 @@ export function greedySolves(level: LevelDef): boolean {
         break;
       }
     }
-    if (!moved) return false;
+    if (!moved) return null;
   }
-  return false;
+  return null;
 }
 
 /** Switches whose signal can reach the node, sorted by id. */

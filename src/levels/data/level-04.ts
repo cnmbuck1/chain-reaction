@@ -5,7 +5,6 @@ export const level04: LevelDef = {
   id: 'level-04',
   name: 'The Tradeoff',
   difficulty: 'easy',
-  maxToggles: 2,
   nodes: [
     {
       id: 'source',

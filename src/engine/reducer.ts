@@ -29,19 +29,20 @@ export function initialState(level: LevelDef): GameState {
 }
 
 /**
- * Budget used: how many switches differ from the level's starting position. On staged
- * boards only the given part's switches count, since each part has its own budget.
+ * How many switches differ from the level's starting position: all of them, or only one
+ * part's on a staged board. There is no limit; a solve at `meta.minChanges` is par.
  */
-export function changesUsed(level: LevelDef, switches: SwitchStates, stage = 0): number {
+export function changesUsed(level: LevelDef, switches: SwitchStates, stage?: number): number {
   let count = 0;
   for (const node of level.nodes) {
-    if (node.type !== 'switch' || switchStage(node) !== stage) continue;
+    if (node.type !== 'switch') continue;
+    if (stage !== undefined && switchStage(node) !== stage) continue;
     if (switches[node.id] !== node.initialOn) count++;
   }
   return count;
 }
 
-/** Why a switch can't be toggled right now, regardless of the budget. */
+/** Why a switch can't be toggled right now, if it can't. */
 function blockedReason(level: LevelDef, state: GameState, switchId: string): RejectReason | null {
   const node = indexLevel(level).nodes.get(switchId);
   if (node?.type !== 'switch') return 'notASwitch';
@@ -53,12 +54,9 @@ function blockedReason(level: LevelDef, state: GameState, switchId: string): Rej
   return null;
 }
 
-/** Whether toggling this switch now is allowed by the budget. */
+/** Whether this switch can be toggled now. */
 export function canToggle(level: LevelDef, state: GameState, switchId: string): boolean {
-  if (blockedReason(level, state, switchId)) return false;
-  const node = indexLevel(level).nodes.get(switchId)!;
-  const isChanged = state.switches[switchId] !== (node.type === 'switch' && node.initialOn);
-  return isChanged || changesUsed(level, state.switches, state.stage) < level.maxToggles;
+  return blockedReason(level, state, switchId) === null;
 }
 
 /**
@@ -70,9 +68,6 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
     case 'toggle': {
       const blocked = blockedReason(level, state, action.switchId);
       if (blocked) return { state, events: [], rejected: blocked };
-      if (!canToggle(level, state, action.switchId)) {
-        return { state, events: [], rejected: 'budget' };
-      }
       return {
         state: {
           ...state,

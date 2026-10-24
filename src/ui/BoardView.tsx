@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { canToggle } from '../engine/reducer';
 import type { GameState, LevelDef, RunEvent, SignalEdge } from '../engine/types';
 import { Board } from '../render/board';
 import {
@@ -34,6 +33,12 @@ interface Props {
   locked: boolean;
   /** The switch a hint just set, for a one-off flourish. */
   justHinted?: string | null;
+  /** After a miss: the gate or fork that stopped the ball, kept marked until a switch moves. */
+  stoppedAt?: string | null;
+  /** Bumped to jump the playing run to its last frame. */
+  skipToken?: number;
+  /** Set while a run plays: a tap on the board skips to the end. */
+  onSkip?: () => void;
   onToggle: (switchId: string) => void;
   onPlayed: (id: number) => void;
 }
@@ -52,6 +57,9 @@ export function BoardView({
   reducedMotion,
   locked,
   justHinted,
+  stoppedAt = null,
+  skipToken = 0,
+  onSkip,
   onToggle,
   onPlayed,
 }: Props) {
@@ -142,6 +150,10 @@ export function BoardView({
     };
   }, [ready, level, playback, reducedMotion]);
 
+  useEffect(() => {
+    if (skipToken > 0) boardRef.current?.skip();
+  }, [skipToken]);
+
   if (failed) {
     return (
       <div className="board board-failed" role="alert">
@@ -168,7 +180,9 @@ export function BoardView({
       className={`board${reducedMotion ? ' still' : ''}`}
       ref={frameRef}
       data-ready={ready}
+      data-skippable={onSkip ? true : undefined}
       style={{ '--aspect': tallest / BOARD_WIDTH } as CSSProperties}
+      onClick={onSkip}
     >
       <div
         className="board-stage"
@@ -192,17 +206,15 @@ export function BoardView({
               const part = node.stage ?? 0;
               const done = part < stage;
               const ahead = part > stage;
-              const blocked =
-                !locked && !hinted && !done && !ahead && !canToggle(level, state, node.id);
               return (
                 <button
                   key={node.id}
                   type="button"
-                  className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
+                  className={`switch ${on ? 'is-on' : 'is-off'}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
                   style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                   aria-pressed={on}
-                  aria-disabled={locked || blocked || hinted || done || ahead}
-                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${blocked ? ', no changes left' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}`}
+                  aria-disabled={locked || hinted || done || ahead}
+                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}`}
                   onClick={() => !locked && onToggle(node.id)}
                 >
                   <span className="switch-name">{nodeName(level, node.id)}</span>
@@ -227,7 +239,12 @@ export function BoardView({
             case 'gate': {
               const feeders = level.signalEdges.filter((e) => e.to === node.id);
               return (
-                <div key={node.id} className="tag gate-tag" style={style} aria-hidden="true">
+                <div
+                  key={node.id}
+                  className={`tag gate-tag${node.id === stoppedAt ? ' is-stopped' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
                   <Feeders level={level} edges={feeders} />
                   <NeedBadge label={gateRequirement(level, node.id)} on={node.requiredSignal} />
                 </div>
@@ -241,7 +258,12 @@ export function BoardView({
                 return place({ x: (a!.x + b!.x) / 2, y: (a!.y + b!.y) / 2 });
               };
               return [
-                <div key={node.id} className="tag fork-tag" style={style} aria-hidden="true">
+                <div
+                  key={node.id}
+                  className={`tag fork-tag${node.id === stoppedAt ? ' is-stopped' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
                   <Feeders level={level} edges={feeders} />
                 </div>,
                 <div

@@ -4,7 +4,7 @@ import type { Timeline } from '../render/timeline';
 // so sound and picture stay in step. Pure, so it is tested without audio.
 
 export type SoundName =
-  'click' | 'deny' | 'hum' | 'gateOpen' | 'gateClose' | 'roll' | 'chime' | 'thud';
+  'click' | 'deny' | 'hum' | 'gateOpen' | 'gateClose' | 'roll' | 'chime' | 'thud' | 'win';
 
 export interface SoundCue {
   /** Milliseconds from the start of the run. */
@@ -56,6 +56,7 @@ export function runSounds(timeline: Timeline): SoundCue[] {
         dur: cue.dur,
       });
     }
+    if (cue.kind === 'circuit') out.push({ at: cue.at, sound: 'win', dur: cue.dur });
   }
   return out.sort((a, b) => a.at - b.at);
 }

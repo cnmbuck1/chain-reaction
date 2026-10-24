@@ -24,10 +24,42 @@ describe('solver', () => {
     expect(replay(tradeoff, actions).state.phase).toBe('won');
   });
 
-  it('reports unsolvable when the budget is too small', () => {
-    const report = solve({ ...tradeoff, maxToggles: 1 });
+  it('reports unsolvable when no position wins', () => {
+    // Gate 1 needs A on, gate 2 needs A off.
+    const impossible = makeLevel({
+      nodes: [source(), sw('a'), gate('g1'), gate('g2', false), ball(), goal()],
+      signalEdges: [
+        { from: 'source', to: 'a' },
+        { from: 'a', to: 'g1' },
+        { from: 'a', to: 'g2' },
+      ],
+      track: [['ball', 'g1', 'g2', 'goal']],
+    });
+    const report = solve(impossible);
     expect(report.solvable).toBe(false);
     expect(report.minChanges).toBeNull();
+    expect(report.guessOdds).toBeNull();
+  });
+
+  it('reports par wins, first-Run guess odds and idle switches', () => {
+    const report = solve(tradeoff);
+    expect(report.parWins).toEqual([{ a: true, b: false }]);
+    // Two switches, par 2: there is one way to pick two, and it wins.
+    expect(report.guessOdds).toBe(1);
+    expect(report.idleSwitches).toEqual([]);
+    const spare = makeLevel({
+      nodes: [source(), sw('a'), sw('b'), sw('c'), gate('g1'), ball(), goal()],
+      signalEdges: [
+        { from: 'source', to: 'a' },
+        { from: 'source', to: 'c' },
+        { from: 'a', to: 'g1' },
+      ],
+      track: [['ball', 'g1', 'goal']],
+    });
+    const spareReport = solve(spare);
+    expect(spareReport.idleSwitches).toEqual(['b', 'c']);
+    // Par 1 of 3 switches: a random single change wins 1 time in 3.
+    expect(spareReport.guessOdds).toBe(3);
   });
 
   it('solves junction routing', () => {
@@ -57,7 +89,6 @@ describe('solver', () => {
   it('a false-friend level defeats the greedy player', () => {
     // Gate 1 is A OR C. A is the obvious fix but also closes gate 2; C is the answer.
     const falseFriend = makeLevel({
-      maxToggles: 1,
       nodes: [
         source(),
         sw('a'),

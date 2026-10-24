@@ -13,6 +13,8 @@ export interface Timing {
   ballSegment: number;
   /** Bump at a closed gate, or flourish at the goal. */
   finish: number;
+  /** After a win: light runs back along the ball's route and through every open gate. */
+  circuit: number;
 }
 
 export const NORMAL_TIMING: Timing = {
@@ -21,6 +23,7 @@ export const NORMAL_TIMING: Timing = {
   gate: 340,
   ballSegment: 560,
   finish: 700,
+  circuit: 800,
 };
 
 /** Reduced motion: everything lands at once. */
@@ -30,6 +33,7 @@ export const INSTANT_TIMING: Timing = {
   gate: 0,
   ballSegment: 0,
   finish: 0,
+  circuit: 0,
 };
 
 export const edgeKey = (from: NodeId, to: NodeId) => `${from}>${to}`;
@@ -44,7 +48,8 @@ export type Cue =
       dur: number;
       result: FinishResult;
       nodeId: NodeId;
-    };
+    }
+  | { kind: 'circuit'; at: number; dur: number; links: readonly (readonly [NodeId, NodeId])[] };
 
 /** How a run ended, as the board shows it. */
 export type FinishResult = 'goal' | 'blocked' | 'deadEnd' | 'checkpoint';
@@ -89,8 +94,10 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
   if (gates.length > 0) cursor += timing.gate;
 
   let ballStart: NodeId | null = null;
+  const links: [NodeId, NodeId][] = [];
   for (const e of events) {
     if (e.type === 'ballMove') {
+      links.push([e.from, e.to]);
       ballStart ??= e.from;
       cues.push({ kind: 'ball', at: cursor, dur: timing.ballSegment, from: e.from, to: e.to });
       cursor += timing.ballSegment;
@@ -105,6 +112,10 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
         e.type === 'ballBlocked' ? e.gateId : e.type === 'ballGoal' ? e.goalId : e.nodeId;
       cues.push({ kind: 'finish', at: cursor, dur: timing.finish, result, nodeId });
       cursor += timing.finish;
+      if (result === 'goal') {
+        cues.push({ kind: 'circuit', at: cursor, dur: timing.circuit, links });
+        cursor += timing.circuit;
+      }
     }
   }
   return { cues, duration: cursor, ballStart };
@@ -120,6 +131,8 @@ export interface VisualState {
   /** Ball position: on a node, or partway along a track link. */
   ball: { from: NodeId; to: NodeId; p: number } | { at: NodeId } | null;
   finish: { result: FinishResult; nodeId: NodeId; p: number } | null;
+  /** After a win, how far the light has run along the ball's route (0..1). */
+  circuit: { links: readonly (readonly [NodeId, NodeId])[]; p: number } | null;
 }
 
 /** Gate openness before a run resolves it. */
@@ -137,6 +150,7 @@ export function sampleTimeline(timeline: Timeline, t: number): VisualState {
     gates: new Map(),
     ball: timeline.ballStart ? { at: timeline.ballStart } : null,
     finish: null,
+    circuit: null,
   };
   for (const cue of timeline.cues) {
     if (t < cue.at) continue;
@@ -156,6 +170,9 @@ export function sampleTimeline(timeline: Timeline, t: number): VisualState {
         break;
       case 'finish':
         state.finish = { result: cue.result, nodeId: cue.nodeId, p };
+        break;
+      case 'circuit':
+        state.circuit = { links: cue.links, p };
         break;
     }
   }

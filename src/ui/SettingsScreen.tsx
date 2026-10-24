@@ -80,6 +80,12 @@ export function SettingsScreen({
             ))}
           </div>
         </div>
+        <Toggle
+          label="Unlock all levels"
+          detail="For testing: open every level without solving the ones before it. Stars still count."
+          on={settings.unlockAll}
+          onChange={(unlockAll) => onChange({ ...settings, unlockAll })}
+        />
         <div className="setting">
           <div className="setting-text">
             <span className="setting-label">Progress</span>

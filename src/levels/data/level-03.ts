@@ -5,7 +5,6 @@ export const level03: LevelDef = {
   id: 'level-03',
   name: 'Double Duty',
   difficulty: 'tutorial',
-  maxToggles: 2,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0.1, label: 'Power' },
     { id: 'a', type: 'switch', x: 0.3, y: 0.38, initialOn: false, label: 'A' },
@@ -51,7 +50,7 @@ export const level03: LevelDef = {
   meta: {
     teachingPoint: 'One switch can feed more than one gate.',
     hint: 'Follow every wire leaving a switch.',
-    prompt: 'You have 2 changes. Follow each wire to see which gates a switch controls.',
+    prompt: 'Par is 2 changes. Follow each wire to see which gates a switch controls.',
     minChanges: 2,
     keySwitch: 'b',
   },

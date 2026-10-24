@@ -5,7 +5,6 @@ export const level18: LevelDef = {
   id: 'level-18',
   name: 'Carry Over',
   difficulty: 'medium',
-  maxToggles: 1,
   boardHeight: 740,
   nodes: [
     {

@@ -5,7 +5,6 @@ export const level06: LevelDef = {
   id: 'level-06',
   name: 'False Friend',
   difficulty: 'medium',
-  maxToggles: 2,
   nodes: [
     {
       id: 'source',

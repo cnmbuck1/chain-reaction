@@ -9,6 +9,8 @@ import {
   loadProgress,
   recordWin,
   saveProgress,
+  spendFirstRun,
+  totalStars,
   type Progress,
 } from '../storage/progress';
 import {
@@ -24,7 +26,11 @@ import { GameScreen } from './GameScreen';
 import { LevelSelect } from './LevelSelect';
 import { SettingsScreen } from './SettingsScreen';
 
-type Screen = { kind: 'select' } | { kind: 'settings' } | { kind: 'game'; index: number };
+type Screen =
+  | { kind: 'select' }
+  | { kind: 'settings' }
+  /** `play` counts replays, so a replay starts the level fresh. */
+  | { kind: 'game'; index: number; play?: number };
 
 const ids = levels.map((l) => l.id);
 
@@ -48,7 +54,8 @@ function usePrefersReducedMotion() {
 }
 
 export function App() {
-  const [progress, setProgress] = useState(loadProgress);
+  // Hint moves let an old save tell hinted solves apart when it is upgraded.
+  const [progress, setProgress] = useState(() => loadProgress(undefined, loadHints().used));
   const [settings, setSettings] = useState(loadSettings);
   const [wallet, setWallet] = useState(loadHints);
   const shop = useMemo(() => demoHintShop(), []);
@@ -64,6 +71,13 @@ export function App() {
     setProgress(next);
     saveProgress(next);
   };
+  /** For changes that can land in the same tick as another (a Run, then its win). */
+  const change = (edit: (p: Progress) => Progress) =>
+    setProgress((p) => {
+      const next = edit(p);
+      if (next !== p) saveProgress(next);
+      return next;
+    });
   const updateWallet = (next: HintWallet) => {
     setWallet(next);
     saveHints(next);
@@ -73,8 +87,19 @@ export function App() {
     saveSettings(next);
     if (next.sound) sound.unlock();
   };
-  const solved = (levelId: string, attempts: number) =>
-    update(recordWin(progress, levelId, attempts));
+  /**
+   * Opens a level. A level already solved starts clean, without the hint moves of an
+   * earlier visit, so its stars can be earned back. Spent hints are not refunded.
+   */
+  const play = (index: number, replay = 0) => {
+    const id = ids[index]!;
+    if (id in progress.completed && freeMovesUsed(wallet, id) > 0) {
+      const used = { ...wallet.used };
+      delete used[id];
+      updateWallet({ ...wallet, used });
+    }
+    setScreen({ kind: 'game', index, play: replay });
+  };
 
   if (screen.kind === 'settings') {
     return (
@@ -93,7 +118,8 @@ export function App() {
       <LevelSelect
         levels={levels}
         progress={progress}
-        onPlay={(index) => isUnlocked(ids, progress, index) && setScreen({ kind: 'game', index })}
+        unlockAll={settings.unlockAll}
+        onPlay={(index) => (settings.unlockAll || isUnlocked(ids, progress, index)) && play(index)}
         onSettings={() => setScreen({ kind: 'settings' })}
       />
     );
@@ -101,13 +127,10 @@ export function App() {
 
   const level = levels[screen.index]!;
   const hasNext = screen.index + 1 < levels.length;
-  const records = Object.values(progress.completed);
-  const finale = hasNext
-    ? null
-    : { firstTry: records.filter((r) => r.bestAttempts === 1).length, total: levels.length };
+  const finale = hasNext ? null : { stars: totalStars(ids, progress), total: levels.length };
   return (
     <GameScreen
-      key={level.id}
+      key={`${level.id}:${screen.play ?? 0}`}
       level={level}
       number={screen.index + 1}
       hasNext={hasNext}
@@ -138,8 +161,13 @@ export function App() {
       }}
       showIntro={screen.index === 0 && !progress.seenIntro}
       onIntroDone={() => update({ ...progress, seenIntro: true })}
-      onSolved={(attempts) => solved(level.id, attempts)}
-      onNext={() => setScreen({ kind: 'game', index: screen.index + 1 })}
+      firstRunOpen={!progress.firstRunUsed[level.id]}
+      onFirstRunUsed={() => change((p) => spendFirstRun(p, level.id))}
+      onSolved={(win) =>
+        change((p) => recordWin(p, level.id, { ...win, at: new Date().toISOString() }))
+      }
+      onNext={() => play(screen.index + 1)}
+      onReplay={() => play(screen.index, (screen.play ?? 0) + 1)}
       onLevels={() => setScreen({ kind: 'select' })}
     />
   );

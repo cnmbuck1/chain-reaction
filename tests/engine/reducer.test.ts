@@ -12,23 +12,15 @@ describe('player actions', () => {
     expect(state.undoStack).toEqual(['a']);
   });
 
-  it('counts the budget as switches changed from the start', () => {
+  it('counts changes as switches that differ from the start', () => {
     const { state } = replay(tradeoff, [toggle('a'), toggle('a'), toggle('b')]);
     expect(changesUsed(tradeoff, state.switches)).toBe(1);
   });
 
-  it('rejects a toggle that would exceed the budget, without changing state', () => {
-    const level = { ...tradeoff, maxToggles: 1 };
-    const { state } = replay(level, [toggle('a')]);
-    const result = step(level, state, toggle('b'));
-    expect(result.rejected).toBe('budget');
-    expect(result.state).toBe(state);
-  });
-
-  it('always allows flipping a changed switch back, refunding the budget', () => {
-    const level = { ...tradeoff, maxToggles: 1 };
-    const { state } = replay(level, [toggle('a'), toggle('a'), toggle('b')]);
-    expect(state.switches).toEqual({ a: false, b: false });
+  it('has no change limit: every switch can be changed', () => {
+    const { state, log } = replay(tradeoff, [toggle('a'), toggle('b')]);
+    expect(log.every((r) => !r.rejected)).toBe(true);
+    expect(changesUsed(tradeoff, state.switches)).toBe(2);
   });
 
   it('undo reverses the last toggle', () => {
@@ -51,10 +43,9 @@ describe('player actions', () => {
     expect(state.lastRun?.outcome).toEqual({ kind: 'blocked', gateId: 'g2' });
   });
 
-  it('the budget carries across attempts because it counts from the start', () => {
-    const level = { ...tradeoff, maxToggles: 1 };
-    const { state } = replay(level, [toggle('a'), { type: 'run' }]);
-    expect(step(level, state, toggle('b')).rejected).toBe('budget');
+  it('changes carry across attempts because they count from the start', () => {
+    const { state } = replay(tradeoff, [toggle('a'), { type: 'run' }]);
+    expect(changesUsed(tradeoff, state.switches)).toBe(1);
   });
 
   it('a winning run ends the level and locks further toggles', () => {

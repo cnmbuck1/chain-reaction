@@ -5,7 +5,6 @@ export const level02: LevelDef = {
   id: 'level-02',
   name: 'Reverse Logic',
   difficulty: 'tutorial',
-  maxToggles: 1,
   nodes: [
     { id: 'source', type: 'source', x: 0.14, y: 0.16, label: 'Power' },
     { id: 's1', type: 'switch', x: 0.5, y: 0.4, initialOn: true, label: 'A' },
