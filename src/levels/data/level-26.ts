@@ -218,7 +218,7 @@ export const level26: LevelDef = {
   track: [['ball', 'g1', 'g2', 'cp', 'g4', 'g5', 'g6', 'g7', 'goal']],
   meta: {
     teachingPoint: 'NOT wires work in both parts of the board.',
-    prompt: 'NOT wires in two parts. Clear part A, then set part B.',
+    prompt: 'NOT wires in two parts: clear part A, then set part B.',
     hint: 'In part A, Gate 1 needs C off. Gate 2 and the first gate of part B both want D off.',
     minChanges: 3,
     keySwitch: 'c',

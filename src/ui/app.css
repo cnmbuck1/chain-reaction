@@ -133,12 +133,30 @@ h2 {
 }
 
 .prompt {
-  margin: 0;
-  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--energy) 10%, var(--bg-raise));
   border: 1px solid color-mix(in srgb, var(--energy) 35%, transparent);
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.prompt p {
+  flex: 1;
+  margin: 0;
+}
+.prompt-close {
+  flex: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--energy) 35%, transparent);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
 }
 
 .board {

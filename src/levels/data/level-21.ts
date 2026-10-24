@@ -5,7 +5,7 @@ export const level21: LevelDef = {
   id: 'level-21',
   name: 'Inverter',
   difficulty: 'easy',
-  boardHeight: 520,
+  boardHeight: 440,
   nodes: [
     {
       id: 'a',
@@ -142,8 +142,7 @@ export const level21: LevelDef = {
   track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
     teachingPoint: 'A NOT wire carries the opposite of its switch.',
-    prompt:
-      'New part: a NOT wire carries the opposite of its switch. It has power while the switch is off.',
+    prompt: 'New part: a NOT wire has power while its switch is off.',
     hint: 'NOT E is powered while E is off. Gates 2 and 3 both need C.',
     minChanges: 2,
     keySwitch: 'a',

@@ -5,7 +5,7 @@ export const level23: LevelDef = {
   id: 'level-23',
   name: 'Contrary Fork',
   difficulty: 'medium',
-  boardHeight: 540,
+  boardHeight: 460,
   nodes: [
     {
       id: 'a',
@@ -144,7 +144,7 @@ export const level23: LevelDef = {
   ],
   meta: {
     teachingPoint: 'A NOT on the fork wire flips which way the ball goes.',
-    prompt: "A NOT wire can drive the fork too. Read the fork's wire before you flip F.",
+    prompt: 'A NOT wire can drive the fork too. Read it before you flip F.',
     hint: 'F is off, so NOT F is powered and the fork sends the ball to Gate 1. Open Gate 1.',
     minChanges: 2,
     keySwitch: 'a',

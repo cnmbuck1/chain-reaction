@@ -5,7 +5,7 @@ export const level24: LevelDef = {
   id: 'level-24',
   name: 'Upside Down',
   difficulty: 'medium',
-  boardHeight: 540,
+  boardHeight: 480,
   nodes: [
     {
       id: 'a',

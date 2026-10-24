@@ -185,6 +185,17 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
   });
 
+  test('the tip folds away on the first switch change, giving the board the room', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await dismissIntro(page);
+    const tip = page.getByText('Tap switch A to turn it on, then press Run.');
+    await expect(tip).toBeVisible();
+    await page.getByRole('button', { name: /^Switch A,/ }).click();
+    await expect(tip).toBeHidden();
+  });
+
   test('progress survives a reload', async ({ page }) => {
     await page.goto('/');
     await dismissIntro(page);
