@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const board = (page: Page) => page.locator('.board[data-ready="true"]');
-const run = (page: Page) => page.getByRole('button', { name: 'Run', exact: true });
+/** Run, which reads Retry after a miss. */
+const run = (page: Page) => page.getByRole('button', { name: /^(Run|Retry)$/ });
 const status = (page: Page) => page.getByRole('status');
 
 async function dismissIntro(page: Page) {
@@ -59,7 +60,8 @@ test.describe('with reduced motion', () => {
     for (const [i, { name, switches }] of SOLUTIONS.entries()) {
       await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
       await solve(page, switches);
-      if (i < SOLUTIONS.length - 1) await page.getByRole('button', { name: 'Next level' }).click();
+      if (i < SOLUTIONS.length - 1)
+        await page.getByRole('button', { name: 'Next challenge' }).click();
     }
     await expect(page.getByRole('dialog')).toContainText(
       `Every machine solved. ${SOLUTIONS.length} of ${SOLUTIONS.length} on the`,
@@ -76,12 +78,37 @@ test.describe('with reduced motion', () => {
     await expect(board(page)).toBeVisible();
     await run(page).click();
     await expect(status(page)).toHaveText('Stopped at Gate 1: it needs power but got no power.');
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+    await expect(page.locator('.gate-tag.is-stopped')).toHaveCount(1);
     await page.getByRole('button', { name: /^Hint, free/ }).click();
     await page.getByRole('button', { name: 'Make a free move' }).click();
     await expect(page.locator('.switch.is-hinted')).toHaveAttribute('aria-label', /^Switch A,/);
     await expect(page.getByLabel('Changes used 0 of 1')).toBeVisible();
     await run(page).click();
-    await expect(page.getByRole('dialog')).toContainText('Solved in 2 runs.');
+    const card = page.getByRole('dialog');
+    await expect(card).toContainText('Solved in 2 Runs');
+    await expect(card).toContainText('1 hint used');
+    await expect(card.getByRole('img', { name: '1 of 3 stars' })).toBeVisible();
+  });
+
+  test('a first-Run solve earns 3 stars; Close shows the machine and Replay starts fresh', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await dismissIntro(page);
+    await solve(page, ['A']);
+    const card = page.getByRole('dialog');
+    await expect(card.getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+    await expect(card).toContainText('First Run');
+    await expect(card.getByRole('button', { name: 'Next challenge' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(card).toHaveCount(0);
+    await page.getByRole('button', { name: 'Result' }).click();
+    await card.getByRole('button', { name: 'Replay' }).click();
+    await expect(card).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
+    await expect(run(page)).toHaveText('Run');
   });
 
   test('progress survives a reload', async ({ page }) => {
@@ -172,13 +199,29 @@ test('the full animation plays and ends on the success card', async ({ page }) =
   await expect(board(page)).toBeVisible();
   await page.getByRole('button', { name: /^Switch A,/ }).click();
   await run(page).click();
-  await expect(status(page)).toHaveText('Running…');
+  await expect(status(page)).toHaveText('Running… Tap the board to skip.');
   await expect(page.getByRole('button', { name: /^Switch A,/ })).toHaveAttribute(
     'aria-disabled',
     'true',
   );
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
   expect(errors).toEqual([]);
+});
+
+test('Skip jumps a run straight to the result card, and completion counts once', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await dismissIntro(page);
+  await expect(board(page)).toBeVisible();
+  await page.getByRole('button', { name: /^Switch A,/ }).click();
+  await run(page).click();
+  const skip = page.getByRole('button', { name: 'Skip' });
+  await skip.click();
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 1_500 });
+  await expect(page.getByRole('dialog').getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Levels' }).click();
+  await expect(page.getByText(`1 of ${SOLUTIONS.length} solved`)).toBeVisible();
 });
 
 test('settings persist, and resetting progress asks first', async ({ page }) => {

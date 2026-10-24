@@ -33,6 +33,12 @@ interface Props {
   locked: boolean;
   /** The switch a hint just set, for a one-off flourish. */
   justHinted?: string | null;
+  /** After a miss: the gate or fork that stopped the ball, kept marked until a switch moves. */
+  stoppedAt?: string | null;
+  /** Bumped to jump the playing run to its last frame. */
+  skipToken?: number;
+  /** Set while a run plays: a tap on the board skips to the end. */
+  onSkip?: () => void;
   onToggle: (switchId: string) => void;
   onPlayed: (id: number) => void;
 }
@@ -51,6 +57,9 @@ export function BoardView({
   reducedMotion,
   locked,
   justHinted,
+  stoppedAt = null,
+  skipToken = 0,
+  onSkip,
   onToggle,
   onPlayed,
 }: Props) {
@@ -132,6 +141,10 @@ export function BoardView({
     };
   }, [ready, level, playback, reducedMotion]);
 
+  useEffect(() => {
+    if (skipToken > 0) boardRef.current?.skip();
+  }, [skipToken]);
+
   if (failed) {
     return (
       <div className="board board-failed" role="alert">
@@ -158,7 +171,9 @@ export function BoardView({
       className="board"
       ref={frameRef}
       data-ready={ready}
+      data-skippable={onSkip ? true : undefined}
       style={{ '--aspect': height / BOARD_WIDTH } as CSSProperties}
+      onClick={onSkip}
     >
       <div
         className="board-stage"
@@ -210,7 +225,12 @@ export function BoardView({
             case 'gate': {
               const feeders = level.signalEdges.filter((e) => e.to === node.id);
               return (
-                <div key={node.id} className="tag gate-tag" style={style} aria-hidden="true">
+                <div
+                  key={node.id}
+                  className={`tag gate-tag${node.id === stoppedAt ? ' is-stopped' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
                   <Feeders level={level} edges={feeders} />
                   <NeedBadge label={gateRequirement(level, node.id)} on={node.requiredSignal} />
                 </div>
@@ -224,7 +244,12 @@ export function BoardView({
                 return placeAt({ x: (a!.x + b!.x) / 2, y: (a!.y + b!.y) / 2 });
               };
               return [
-                <div key={node.id} className="tag fork-tag" style={style} aria-hidden="true">
+                <div
+                  key={node.id}
+                  className={`tag fork-tag${node.id === stoppedAt ? ' is-stopped' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
                   <Feeders level={level} edges={feeders} />
                 </div>,
                 <div

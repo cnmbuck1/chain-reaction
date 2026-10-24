@@ -24,7 +24,11 @@ import { GameScreen } from './GameScreen';
 import { LevelSelect } from './LevelSelect';
 import { SettingsScreen } from './SettingsScreen';
 
-type Screen = { kind: 'select' } | { kind: 'settings' } | { kind: 'game'; index: number };
+type Screen =
+  | { kind: 'select' }
+  | { kind: 'settings' }
+  /** `play` counts replays, so a replay starts the level fresh. */
+  | { kind: 'game'; index: number; play?: number };
 
 const ids = levels.map((l) => l.id);
 
@@ -107,7 +111,7 @@ export function App() {
     : { firstTry: records.filter((r) => r.bestAttempts === 1).length, total: levels.length };
   return (
     <GameScreen
-      key={level.id}
+      key={`${level.id}:${screen.play ?? 0}`}
       level={level}
       number={screen.index + 1}
       hasNext={hasNext}
@@ -140,6 +144,7 @@ export function App() {
       onIntroDone={() => update({ ...progress, seenIntro: true })}
       onSolved={(attempts) => solved(level.id, attempts)}
       onNext={() => setScreen({ kind: 'game', index: screen.index + 1 })}
+      onReplay={() => setScreen({ ...screen, play: (screen.play ?? 0) + 1 })}
       onLevels={() => setScreen({ kind: 'select' })}
     />
   );

@@ -101,6 +101,11 @@ export class Sound {
       case 'chime':
         [784, 988, 1175, 1568].forEach((f, i) => this.tone(t + i * 0.09, 'sine', f, f, 0.9, 0.12));
         break;
+      case 'win':
+        // A soft major chord under a latch: the machine settling into place.
+        this.burst(t, 0.05, 1200, 0.25);
+        [523, 659, 784, 1047].forEach((f) => this.tone(t + 0.04, 'triangle', f, f, 1.1, 0.05));
+        break;
       case 'thud':
         this.tone(t, 'sine', 120, 45, 0.35, 0.4);
         this.burst(t, 0.08, 300, 0.4);

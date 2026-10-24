@@ -8,12 +8,14 @@ const win = simulateRun(tradeoff, { a: true, b: false }, 1);
 const blocked = simulateRun(tradeoff, { a: true, b: true }, 1);
 
 describe('run sounds', () => {
-  it('follow the animation: hum, gates, roll, then the outcome', () => {
+  it('follow the animation: hum, gates, roll, the outcome, then the win chord', () => {
     const timeline = buildTimeline(win.events, NORMAL_TIMING);
     const sounds = runSounds(timeline);
-    expect(sounds.map((s) => s.sound)).toEqual(['hum', 'gateOpen', 'roll', 'chime']);
+    expect(sounds.map((s) => s.sound)).toEqual(['hum', 'gateOpen', 'roll', 'chime', 'win']);
     const finish = timeline.cues.find((c) => c.kind === 'finish')!;
-    expect(sounds.at(-1)!.at).toBe(finish.at);
+    const circuit = timeline.cues.find((c) => c.kind === 'circuit')!;
+    expect(sounds.at(-2)!.at).toBe(finish.at);
+    expect(sounds.at(-1)!.at).toBe(circuit.at);
     const roll = sounds.find((s) => s.sound === 'roll')!;
     expect(roll.at + roll.dur).toBe(finish.at);
   });
