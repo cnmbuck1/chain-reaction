@@ -9,7 +9,9 @@ Status: **Stage 2, S3: twenty levels, with forks from level 11 and two-part boar
   energy) and lever switches;
 - synthesized sound with a mute button, and vibration on phones that support it;
 - a settings screen for sound, vibration, motion and resetting progress;
-- saved progress, a level select, and a completion card after the last level;
+- a win sequence (the goal lights, light runs back along the ball's route, a chord plays) and a
+  result card with stars, Next challenge, Replay and Levels;
+- saved progress, a level select, and a closing note after the last level;
 - hints that make a free move, with a demo shop for more;
 - fallbacks when graphics fail to start.
 
@@ -134,13 +136,31 @@ browser test opens every level at 320 by 568 and fails if any switch or label ov
 or leaves the board. On fork boards, wires turn just below their switch and drop straight into
 their gate, and several wires into one gate land side by side.
 
-Two-part boards stack part A over part B with a dashed seam between them. The part not in play
-is shaded and its switches dimmed; when the ball reaches the checkpoint, the shade slides onto
-the part just cleared. Wires crossing into part B drop straight down a column clear of part B's
+Two-part boards stack part A over part B, but the screen shows one part at a time, scaled to
+fill the board (`partViews` in `layout.ts`), so each part reads as large as a one-part level.
+The ball drops off the bottom of part A into the checkpoint, and the view pans down to part B
+as it falls. Reset pans back up. With reduced motion the view cuts instead of panning. Wires crossing into part B drop straight down a column clear of part B's
 own switches.
 
 The board draws only when something changes, rather than every frame, which keeps phones cool
 and the browser tests quick.
+
+## Finishing a level
+
+A win plays the ball to the goal, then a `circuit` cue: light runs along the route the ball took,
+each open gate flares as it passes, and a soft chord plays. Then the result card shows the level,
+stars, whether it was a first-Run solve, and hints used, with **Next challenge** focused and
+**Replay** and **Levels** below. Close (or Escape) hides the card to look at the lit machine;
+**Result** brings it back. Completion is reported once per visit, however the run ends.
+
+While a run plays, **Skip** (in Run's place) or a tap on the board jumps to the last frame, which
+is the same frame the full animation ends on. Reduced motion shows it at once.
+
+After a miss, the gate or fork that stopped the ball stays outlined and the status line says what
+it needed. Run reads **Retry** until a switch moves. There is no failure pop-up.
+
+Stars (`src/game/scoring.ts`): 1 for the goal, 2 with no hints on that solve, 3 with no hints on
+the first Run. Saving the best stars per level comes in the next milestone.
 
 ## Hints
 

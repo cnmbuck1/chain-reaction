@@ -29,8 +29,8 @@ export const level16: LevelDef = {
       requiredSignal: true,
       label: 'Gate 2',
     },
-    { id: 'cp', type: 'checkpoint', x: 0.96, y: 0.36, stage: 0, label: 'Checkpoint' },
-    { id: 'source2', type: 'source', x: 0.5, y: 0.56, label: 'Power' },
+    { id: 'cp', type: 'checkpoint', x: 0.96, y: 0.56, stage: 0, label: 'Checkpoint' },
+    { id: 'source2', type: 'source', x: 0.5, y: 0.58, label: 'Power' },
     { id: 'd', type: 'switch', x: 0.3, y: 0.72, initialOn: true, label: 'D', stage: 1 },
     { id: 'e', type: 'switch', x: 0.7, y: 0.72, initialOn: true, label: 'E', stage: 1 },
     {

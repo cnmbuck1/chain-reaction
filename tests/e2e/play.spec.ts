@@ -126,7 +126,7 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('button', { name: 'Level 3, Double Duty, locked' })).toBeDisabled();
   });
 
-  test('a two-part board locks part A once cleared, and says when part B is out of reach', async ({
+  test('a two-part board shows one part at a time, and says when part B is out of reach', async ({
     page,
   }) => {
     const done = Object.fromEntries(
@@ -147,22 +147,19 @@ test.describe('with reduced motion', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Carry Over' })).toBeVisible();
     await expect(page.getByText('Level 18 · Part A')).toBeVisible();
-    // Switches of other parts are marked disabled but still explain themselves when tapped.
-    await page.getByRole('button', { name: /^Switch D,/ }).click({ force: true });
-    await expect(status(page)).toHaveText(
-      'Clear this part first. That switch opens at the checkpoint.',
-    );
+    // Each part fills the screen on its own; the other part's switches are out of view.
+    await expect(page.getByRole('button', { name: /^Switch D,/ })).toBeHidden();
     await page.getByRole('button', { name: /^Switch A,/ }).click();
     await run(page).click();
     await expect(status(page)).toContainText('Part A cleared.');
     await expect(page.getByText('Level 18 · Part B')).toBeVisible();
-    await page.getByRole('button', { name: /^Switch A,/ }).click({ force: true });
-    await expect(status(page)).toContainText('That part is cleared');
+    await expect(page.getByRole('button', { name: /^Switch A,/ })).toBeHidden();
     await page.getByRole('button', { name: /^Switch D,/ }).click();
     await run(page).click();
     await expect(status(page)).toContainText("Part A's switches leave no way through here.");
     await page.getByRole('button', { name: 'Reset' }).click();
     await expect(page.getByText('Level 18 · Part A')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
   });
 
   test('the change budget, undo and reset stay in step', async ({ page }) => {
@@ -367,10 +364,13 @@ test.describe('on the smallest phone', () => {
               '.board-stage > :is(.gate-tag, .fork-tag, .lane-tag) > *',
             ].join(','),
           ),
-        ].map((el) => ({
-          name: el.getAttribute('aria-label') ?? el.textContent,
-          r: el.getBoundingClientRect(),
-        }));
+        ]
+          // Parts of a staged board out of view are hidden.
+          .filter((el) => getComputedStyle(el).visibility !== 'hidden')
+          .map((el) => ({
+            name: el.getAttribute('aria-label') ?? el.textContent,
+            r: el.getBoundingClientRect(),
+          }));
         const out: string[] = boxes.length < 3 ? ['no overlays found'] : [];
         for (const [j, a] of boxes.entries()) {
           if (a.r.left < frame.left || a.r.right > frame.right || a.r.bottom > frame.bottom)
