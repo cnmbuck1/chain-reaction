@@ -235,6 +235,15 @@ export function GameScreen({
       const req = to?.type === 'gate' ? ` (needs ${gateRequirement(level, e.to)})` : '';
       return `${nodeName(level, e.from)} to ${e.invert ? 'NOT ' : ''}${nodeName(level, e.to)}${req}`;
     })
+    .concat(
+      level.nodes.flatMap((n) =>
+        n.type === 'switch' && n.turns
+          ? [
+              `gear: turning ${nodeName(level, n.id)} also turns ${n.turns.map((id) => nodeName(level, id)).join(' and ')}`,
+            ]
+          : [],
+      ),
+    )
     .join('; ');
 
   return (

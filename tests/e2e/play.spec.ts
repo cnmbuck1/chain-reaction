@@ -45,6 +45,11 @@ const SOLUTIONS = [
   { name: 'Long Haul', switches: ['B', 'C', 'D', PART, 'E'] },
   { name: 'Backwire', switches: ['C', 'D', PART, 'F'] },
   { name: 'Grand Inversion', switches: ['A', 'B', PART, 'F', 'G'] },
+  { name: 'Meshed', switches: ['B', 'C'] },
+  { name: 'Gear Train', switches: ['B', 'C'] },
+  { name: 'Chain Drive', switches: ['A', 'C', 'D'] },
+  { name: 'Clockwork', switches: ['A', 'B', 'D'] },
+  { name: 'Escapement', switches: ['B', 'D', 'E', 'F'] },
 ];
 
 async function solve(page: Page, switches: string[]) {

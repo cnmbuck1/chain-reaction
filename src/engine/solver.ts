@@ -1,6 +1,6 @@
 import { evaluate } from './evaluate';
 import { indexLevel } from './graph';
-import { initialState, step } from './reducer';
+import { initialState, step, turnsFor } from './reducer';
 import { simulateRun } from './simulate';
 import type { GameState, LevelDef, NodeId, SwitchStates } from './types';
 
@@ -76,8 +76,8 @@ export function solve(level: LevelDef, from?: GameState): SolveReport {
 
   const allOn = Object.fromEntries(switchIds.map((id) => [id, true]));
   const minChanges = solution?.length ?? null;
-  const changes = (w: SwitchStates) =>
-    switchIds.filter((id) => w[id] !== start.switches[id]).length;
+  const fromStart = from ? { ...level, nodes: startNodes(level, from) } : level;
+  const changes = (w: SwitchStates) => turnsFor(fromStart, w).length;
   const parWins = wins.filter((w) => changes(w) === minChanges);
   const greedy = greedyWin(level);
   return {
@@ -94,6 +94,13 @@ export function solve(level: LevelDef, from?: GameState): SolveReport {
     allOnWins: simulateRun(level, allOn, 1, null).won,
     greedySolves: greedy !== null && changes(greedy) === minChanges,
   };
+}
+
+/** The level's nodes with switches starting where `start` has them. */
+function startNodes(level: LevelDef, start: GameState) {
+  return level.nodes.map((n) =>
+    n.type === 'switch' ? { ...n, initialOn: start.switches[n.id] ?? n.initialOn } : n,
+  );
 }
 
 function binomial(n: number, k: number): number {

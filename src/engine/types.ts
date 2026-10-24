@@ -21,6 +21,11 @@ export interface SwitchNode extends NodeBase {
   locked?: boolean;
   /** On staged boards, the part of the machine this switch belongs to (0 = the first). */
   stage?: number;
+  /**
+   * Gears: turning this switch by hand also turns these switches over, one step only (a
+   * switch turned by a gear doesn't turn its own gears).
+   */
+  turns?: NodeId[];
 }
 
 export interface GateNode extends NodeBase {

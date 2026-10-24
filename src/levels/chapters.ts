@@ -41,6 +41,12 @@ export const CHAPTERS: readonly Chapter[] = [
     intro: 'A NOT wire carries power while its switch is off',
     levelIds: range(21, 30),
   },
+  {
+    id: 'gears',
+    name: 'Gears',
+    intro: 'Meshed switches: turning one turns its partner too',
+    levelIds: range(31, 35),
+  },
 ];
 
 export interface ChapterView {

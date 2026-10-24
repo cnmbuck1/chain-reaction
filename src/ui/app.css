@@ -1012,6 +1012,23 @@ button:disabled {
   letter-spacing: 0.12em;
   line-height: 1.5;
 }
+.gear-badge {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 7px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+  font-family: var(--font-label);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
 .switch.just-hinted {
   animation: hinted 900ms ease-out;
 }
