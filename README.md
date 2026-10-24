@@ -122,13 +122,25 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 18  | Carry Over       | A wire crosses into part B, so clear part A the right way  | 2   | 1 in 3  |
 | 19  | Relay Race       | A change in part A can set up part B                       | 4   | 1 in 5  |
 | 20  | Grand Finale     | Plan both parts before the first run                       | 4   | 1 in 5  |
+| 21  | Inverter         | A NOT wire carries the opposite of its switch              | 2   | 1 in 10 |
+| 22  | Opposite Day     | To turn a NOT wire off, turn its switch on                 | 2   | 1 in 10 |
+| 23  | Contrary Fork    | A NOT on the fork wire flips which lane the ball takes     | 2   | 1 in 6  |
+| 24  | Upside Down      | Read every NOT before flipping anything                    | 2   | 1 in 6  |
+| 25  | Double Negative  | Powering a NOT's switch through a chain                    | 3   | 1 in 10 |
+| 26  | Mirror Stage     | NOT wires on a two-part board                              | 3   | 1 in 20 |
+| 27  | Dark Crossing    | One switch feeds a plain wire and a NOT wire               | 4   | 1 in 15 |
+| 28  | Long Haul        | Set part A's switches for part B before leaving            | 4   | 1 in 35 |
+| 29  | Backwire         | A wire from part A decides a NOT gate in part B            | 3   | 1 in 35 |
+| 30  | Grand Inversion  | Turning one switch on turns a NOT off somewhere else       | 4   | 1 in 35 |
 
 Every level has exactly one winning position at par, and from level 4 on turning every switch
 ON never wins. Without a change limit some levels also have longer wins, which earn at most two
 stars. From level 5 on, a greedy player who fixes whatever blocked the ball never wins at par,
 except on the `easy` levels 4, 11, 16 and 17, which introduce a new idea. On levels 18
 to 20 the greedy player clears part A the obvious way and finds part B out of reach; the game
-then says so and suggests Reset.
+then says so and suggests Reset. Levels 21 to 30 bring in NOT wires, which carry power while
+their switch is off. Blind guessing wins at par about 1 in 10 on one-part NOT boards, 1 in 6 on
+the two fork boards, and 1 in 15 to 1 in 35 on the two-part boards.
 
 ## Board layout
 

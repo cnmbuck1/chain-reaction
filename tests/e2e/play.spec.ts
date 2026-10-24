@@ -35,6 +35,16 @@ const SOLUTIONS = [
   { name: 'Carry Over', switches: ['B', PART, 'D'] },
   { name: 'Relay Race', switches: ['A', 'C', PART, 'D', 'E'] },
   { name: 'Grand Finale', switches: ['B', 'C', PART, 'D', 'E'] },
+  { name: 'Inverter', switches: ['A', 'C'] },
+  { name: 'Opposite Day', switches: ['B', 'D'] },
+  { name: 'Contrary Fork', switches: ['A', 'B'] },
+  { name: 'Upside Down', switches: ['A', 'C'] },
+  { name: 'Double Negative', switches: ['C', 'D', 'E'] },
+  { name: 'Mirror Stage', switches: ['C', 'D', PART, 'E'] },
+  { name: 'Dark Crossing', switches: ['C', 'D', PART, 'E', 'G'] },
+  { name: 'Long Haul', switches: ['B', 'C', 'D', PART, 'E'] },
+  { name: 'Backwire', switches: ['C', 'D', PART, 'F'] },
+  { name: 'Grand Inversion', switches: ['A', 'B', PART, 'F', 'G'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
@@ -163,7 +173,7 @@ test.describe('with reduced motion', () => {
     );
     await page.reload();
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
-    await expect(page.getByLabel('29 of 60 stars')).toBeVisible();
+    await expect(page.getByLabel(`29 of ${SOLUTIONS.length * 3} stars`)).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Basics/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Forks/ })).toBeVisible();
     await expect(page.getByText('Coming up: Clear part A')).toBeVisible();

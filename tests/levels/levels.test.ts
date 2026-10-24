@@ -55,6 +55,16 @@ describe('the curated set', () => {
       'Carry Over',
       'Relay Race',
       'Grand Finale',
+      'Inverter',
+      'Opposite Day',
+      'Contrary Fork',
+      'Upside Down',
+      'Double Negative',
+      'Mirror Stage',
+      'Dark Crossing',
+      'Long Haul',
+      'Backwire',
+      'Grand Inversion',
     ]);
   });
 
@@ -70,7 +80,7 @@ describe('the curated set', () => {
     }
   });
 
-  it('introduces forks at level 11 and saves NOT wires for after level 20', () => {
+  it('introduces forks at level 11 and NOT wires at level 21', () => {
     const firstFork = levels.findIndex((l) => l.nodes.some((n) => n.type === 'junction')) + 1;
     expect(firstFork).toBe(11);
     expect(levels[10]!.meta.prompt).toMatch(/fork/);
@@ -80,12 +90,34 @@ describe('the curated set', () => {
         level.id,
       ).toBe(false);
     }
+    expect(levels[20]!.meta.prompt).toMatch(/NOT/);
+    for (const level of levels.slice(20)) {
+      expect(
+        level.signalEdges.some((e) => e.invert),
+        level.id,
+      ).toBe(true);
+    }
+  });
+
+  it('mixes NOT wires with forks at 23 and 24, and with two parts from 26', () => {
+    const forks = levels.slice(20).map((l) => l.nodes.some((n) => n.type === 'junction'));
+    expect(forks).toEqual([false, false, true, true, false, false, false, false, false, false]);
+    const staged = levels.slice(20).map((l) => indexLevel(l).checkpoints.length > 0);
+    expect(staged).toEqual([false, false, false, false, false, true, true, true, true, true]);
+  });
+
+  it('keeps blind guessing at 1 in 10 or worse on NOT boards, except the fork boards', () => {
+    for (const level of levels.slice(20)) {
+      const odds = checkLevel(level).report!.guessOdds!;
+      const fork = level.nodes.some((n) => n.type === 'junction');
+      expect(odds, level.id).toBeGreaterThanOrEqual(fork ? 6 : 10);
+    }
   });
 
   it('splits levels 16 to 20 into two parts, with wires crossing between parts from 18', () => {
     const staged = levels.map((l) => indexLevel(l).checkpoints.length > 0);
     expect(staged.indexOf(true)).toBe(15);
-    expect(staged.slice(15)).toEqual([true, true, true, true, true]);
+    expect(staged.slice(15, 20)).toEqual([true, true, true, true, true]);
     expect(levels[15]!.meta.prompt).toMatch(/checkpoint/);
     const crosses = (level: LevelDef) =>
       level.signalEdges.some((e) => {
@@ -93,7 +125,7 @@ describe('the curated set', () => {
         const to = indexLevel(level).nodes.get(e.to)!;
         return from.type === 'switch' && switchStage(from) === 0 && to.y > 0.6;
       });
-    expect(levels.slice(15).map(crosses)).toEqual([false, false, true, true, true]);
+    expect(levels.slice(15, 20).map(crosses)).toEqual([false, false, true, true, true]);
   });
 
   it('gets harder: par grows overall', () => {
