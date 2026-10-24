@@ -317,8 +317,13 @@ export function BoardView({
               );
             case 'trip':
               return (
-                <div key={node.id} className="tag below trip-tag" style={style} aria-hidden="true">
-                  Flips {nodeName(level, node.flips)}
+                <div
+                  key={node.id}
+                  className="tag trip-tag"
+                  style={{ ...style, '--swatch': signalColor(level, node.flips) } as CSSProperties}
+                  aria-hidden="true"
+                >
+                  {nodeName(level, node.flips)}
                 </div>
               );
             case 'key':

@@ -1,0 +1,161 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level42: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-42',
+  name: 'Tripwire',
+  difficulty: 'medium',
+  boardHeight: 420,
+  nodes: [
+    {
+      id: 'a',
+      type: 'switch',
+      x: 0.16,
+      y: 0.16,
+      initialOn: false,
+      label: 'A',
+    },
+    {
+      id: 'b',
+      type: 'switch',
+      x: 0.5,
+      y: 0.16,
+      initialOn: false,
+      label: 'B',
+    },
+    {
+      id: 'c',
+      type: 'switch',
+      x: 0.84,
+      y: 0.16,
+      initialOn: true,
+      label: 'C',
+    },
+    {
+      id: 'd',
+      type: 'switch',
+      x: 0.33,
+      y: 0.46,
+      initialOn: false,
+      label: 'D',
+    },
+    {
+      id: 'e',
+      type: 'switch',
+      x: 0.67,
+      y: 0.46,
+      initialOn: true,
+      label: 'E',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.17,
+      y: 1,
+      combine: 'and',
+      requiredSignal: false,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.5,
+      y: 1,
+      combine: 'and',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.8,
+      y: 1,
+      combine: 'single',
+      requiredSignal: false,
+      label: 'Gate 3',
+    },
+    {
+      id: 't1',
+      type: 'trip',
+      x: 0.335,
+      y: 1,
+      flips: 'a',
+      label: 'Trip plate',
+    },
+    {
+      id: 'source',
+      type: 'source',
+      x: 0.5,
+      y: 0,
+      label: 'Power',
+    },
+    {
+      id: 'ball',
+      type: 'ballStart',
+      x: 0,
+      y: 1,
+      label: 'Start',
+    },
+    {
+      id: 'goal',
+      type: 'goal',
+      x: 1,
+      y: 1,
+      label: 'Goal',
+    },
+  ],
+  signalEdges: [
+    {
+      from: 'source',
+      to: 'a',
+    },
+    {
+      from: 'source',
+      to: 'b',
+    },
+    {
+      from: 'source',
+      to: 'c',
+    },
+    {
+      from: 'source',
+      to: 'd',
+    },
+    {
+      from: 'source',
+      to: 'e',
+    },
+    {
+      from: 'a',
+      to: 'g1',
+    },
+    {
+      from: 'b',
+      to: 'g1',
+    },
+    {
+      from: 'd',
+      to: 'g2',
+    },
+    {
+      from: 'e',
+      to: 'g2',
+    },
+    {
+      from: 'c',
+      to: 'g2',
+    },
+    {
+      from: 'a',
+      to: 'g3',
+    },
+  ],
+  track: [['ball', 'g1', 't1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint:
+      'Set a switch the opposite way when a plate will flip it before the gate that reads it.',
+    hint: 'Gate 3 needs A off, yet the plate flips A on the way. Turn A on, and the plate turns it off in time.',
+    minChanges: 2,
+    keySwitch: 'a',
+  },
+};

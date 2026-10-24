@@ -386,17 +386,15 @@ export class Board {
           g.rect(p.x - 0.7, p.y + 2, 1.4, 4).fill(C.recess);
           break;
         case 'trip':
-          // A pressure plate set into the track, ribbed so it reads as something to roll over.
-          g.roundRect(p.x - 13 + 2, p.y - 13 + 3, 26, 26, 5).fill({ color: 0x000000, alpha: 0.35 });
-          g.roundRect(p.x - 13, p.y - 13, 26, 26, 5)
+          // A pressure plate set into the track, with amber corners; the DOM labels it with
+          // the switch it flips.
+          g.roundRect(p.x - 14 + 2, p.y - 14 + 3, 28, 28, 6).fill({ color: 0x000000, alpha: 0.35 });
+          g.roundRect(p.x - 14, p.y - 14, 28, 28, 6)
             .fill(this.gradients.metal)
             .stroke({ width: 1.5, color: C.metalDark });
-          g.roundRect(p.x - 9, p.y - 9, 18, 18, 3).fill(C.recess);
-          for (let i = -1; i <= 1; i++) {
-            g.moveTo(p.x - 6, p.y + i * 5)
-              .lineTo(p.x + 6, p.y + i * 5)
-              .stroke({ width: 2, color: C.amber, alpha: 0.8 });
-          }
+          g.roundRect(p.x - 10, p.y - 10, 20, 20, 4)
+            .fill(C.recess)
+            .stroke({ width: 1.5, color: C.amber, alpha: 0.8 });
           break;
         case 'gate':
           break;
@@ -608,7 +606,7 @@ export class Board {
         const pressed = visual.trips.get(node.id);
         if (pressed !== undefined) {
           glow.circle(p.x, p.y, 26).fill({ color: C.amber, alpha: 0.4 * (1 - pressed * 0.5) });
-          g.roundRect(p.x - 9, p.y - 9, 18, 18, 3).stroke({ width: 2, color: C.amber });
+          g.roundRect(p.x - 10, p.y - 10, 20, 20, 4).stroke({ width: 2.5, color: C.amber });
         }
       } else if (node.type === 'gate') {
         const finish = visual.finish;

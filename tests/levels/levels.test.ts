@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { indexLevel, switchStage } from '../../src/engine/graph';
 import { replay } from '../../src/engine/reducer';
+import { simulateRun } from '../../src/engine/simulate';
 import type { GameAction, LevelDef } from '../../src/engine/types';
 import { checkLevel } from '../../src/levels/check';
 import { levels } from '../../src/levels';
@@ -75,6 +76,11 @@ describe('the curated set', () => {
       'Lockstep',
       'Turnkey',
       'Master Key',
+      'Trip Plate',
+      'Tripwire',
+      'Pressure Point',
+      'Switchback',
+      'Double Trip',
     ]);
   });
 
@@ -174,6 +180,26 @@ describe('the curated set', () => {
     }
     const staged = levels.slice(36, 40).map((l) => indexLevel(l).checkpoints.length > 0);
     expect(staged).toEqual([true, true, true, true]);
+  });
+
+  it('brings in trip plates at 41, and every plate level needs its plates counted', () => {
+    const hasTrip = (l: LevelDef) => l.nodes.some((n) => n.type === 'trip');
+    expect(levels.findIndex(hasTrip)).toBe(40);
+    expect(levels[40]!.meta.prompt).toMatch(/trip plate/i);
+    for (const level of levels.slice(40, 45)) {
+      const report = checkLevel(level).report!;
+      expect(report.parWins, level.id).toHaveLength(1);
+      // With the plates taken out, the par position no longer wins.
+      const trips = new Set(level.nodes.filter((n) => n.type === 'trip').map((n) => n.id));
+      const plain: LevelDef = {
+        ...level,
+        nodes: level.nodes.filter((n) => !trips.has(n.id)),
+        track: level.track.map((path) => path.filter((id) => !trips.has(id))),
+      };
+      expect(simulateRun(plain, report.parWins[0]!, 1, null).won, level.id).toBe(false);
+      const fork = level.nodes.some((n) => n.type === 'junction');
+      expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(fork ? 6 : 10);
+    }
   });
 
   it('gets harder: par grows overall', () => {

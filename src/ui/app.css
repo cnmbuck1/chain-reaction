@@ -1159,6 +1159,10 @@ button:disabled {
     0 0 0 2px color-mix(in srgb, var(--amber) 70%, transparent),
     0 0 16px color-mix(in srgb, var(--amber) 50%, transparent);
 }
+/* The plate is labelled with the switch it flips, in that switch's colour. */
 .trip-tag {
-  color: var(--amber);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--swatch);
 }
