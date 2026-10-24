@@ -17,12 +17,15 @@ export const SETTINGS_KEY = 'chain-reaction/settings';
 
 type KeyValueStore = Pick<Storage, 'getItem' | 'setItem'>;
 
+/** The shareable prototype is a test build, so every level starts open there. */
+const TEST_BUILD = import.meta.env.MODE === 'single';
+
 export const defaultSettings = (): Settings => ({
   version: 1,
   sound: true,
   haptics: true,
   motion: 'system',
-  unlockAll: false,
+  unlockAll: TEST_BUILD,
 });
 
 function defaultStore(): KeyValueStore | null {

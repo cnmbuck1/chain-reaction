@@ -34,8 +34,12 @@ type Screen =
 
 const ids = levels.map((l) => l.id);
 
-/** Opens on the first unsolved level so a new player is playing in one tap. */
-function firstScreen(progress: Progress): Screen {
+/**
+ * Opens on the first unsolved level so a new player is playing in one tap. With every
+ * level unlocked for testing, it opens on the level list instead.
+ */
+function firstScreen(progress: Progress, unlockAll: boolean): Screen {
+  if (unlockAll) return { kind: 'select' };
   const index = ids.findIndex((id) => !(id in progress.completed));
   return index === -1 ? { kind: 'select' } : { kind: 'game', index };
 }
@@ -59,7 +63,7 @@ export function App() {
   const [settings, setSettings] = useState(loadSettings);
   const [wallet, setWallet] = useState(loadHints);
   const shop = useMemo(() => demoHintShop(), []);
-  const [screen, setScreen] = useState<Screen>(() => firstScreen(progress));
+  const [screen, setScreen] = useState<Screen>(() => firstScreen(progress, settings.unlockAll));
   const systemReduced = usePrefersReducedMotion();
   const reducedMotion = settings.motion === 'reduce' || systemReduced;
 

@@ -82,6 +82,8 @@ export function GameScreen({
   useEffect(() => () => window.clearTimeout(follow.current), []);
   const [notice, setNotice] = useState<RejectReason | null>(null);
   const [hintOpen, setHintOpen] = useState(false);
+  // The new-part prompt costs board height, so it folds away once the player starts.
+  const [promptOpen, setPromptOpen] = useState(true);
 
   const useHint = () => {
     // Moves for a part already cleared are no use now, so the hint passes over them.
@@ -273,7 +275,19 @@ export function GameScreen({
         </div>
       </header>
 
-      {level.meta.prompt && <p className="prompt">{level.meta.prompt}</p>}
+      {level.meta.prompt && promptOpen && (
+        <div className="prompt">
+          <p>{level.meta.prompt}</p>
+          <button
+            type="button"
+            className="prompt-close"
+            aria-label="Hide this tip"
+            onClick={() => setPromptOpen(false)}
+          >
+            Got it
+          </button>
+        </div>
+      )}
 
       <p className="sr-only">Wiring: {wiring}.</p>
       <BoardView
@@ -287,7 +301,10 @@ export function GameScreen({
         stoppedAt={stoppedAt}
         skipToken={skipToken}
         onSkip={playing ? skip : undefined}
-        onToggle={(switchId) => dispatch({ type: 'toggle', switchId })}
+        onToggle={(switchId) => {
+          setPromptOpen(false);
+          dispatch({ type: 'toggle', switchId });
+        }}
         onPlayed={onPlayed}
       />
 

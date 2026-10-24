@@ -35,6 +35,16 @@ const SOLUTIONS = [
   { name: 'Carry Over', switches: ['B', PART, 'D'] },
   { name: 'Relay Race', switches: ['A', 'C', PART, 'D', 'E'] },
   { name: 'Grand Finale', switches: ['B', 'C', PART, 'D', 'E'] },
+  { name: 'Inverter', switches: ['A', 'C'] },
+  { name: 'Opposite Day', switches: ['B', 'D'] },
+  { name: 'Contrary Fork', switches: ['A', 'B'] },
+  { name: 'Upside Down', switches: ['A', 'C'] },
+  { name: 'Double Negative', switches: ['C', 'D', 'E'] },
+  { name: 'Mirror Stage', switches: ['C', 'D', PART, 'E'] },
+  { name: 'Dark Crossing', switches: ['C', 'D', PART, 'E', 'G'] },
+  { name: 'Long Haul', switches: ['B', 'C', 'D', PART, 'E'] },
+  { name: 'Backwire', switches: ['C', 'D', PART, 'F'] },
+  { name: 'Grand Inversion', switches: ['A', 'B', PART, 'F', 'G'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
@@ -53,7 +63,7 @@ test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
   test('a new player opens on level 1 and can play every level', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(SOLUTIONS.length * 9_000);
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await dismissIntro(page);
@@ -163,7 +173,7 @@ test.describe('with reduced motion', () => {
     );
     await page.reload();
     await page.getByRole('button', { name: 'Levels', exact: true }).click();
-    await expect(page.getByLabel('29 of 60 stars')).toBeVisible();
+    await expect(page.getByLabel(`29 of ${SOLUTIONS.length * 3} stars`)).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Basics/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /^Forks/ })).toBeVisible();
     await expect(page.getByText('Coming up: Clear part A')).toBeVisible();
@@ -173,6 +183,17 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('button', { name: 'Level 12, Dead Lane, locked' })).toBeDisabled();
     await page.getByRole('button', { name: /^Continue/ }).click();
     await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
+  });
+
+  test('the tip folds away on the first switch change, giving the board the room', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await dismissIntro(page);
+    const tip = page.getByText('Tap switch A to turn it on, then press Run.');
+    await expect(tip).toBeVisible();
+    await page.getByRole('button', { name: /^Switch A,/ }).click();
+    await expect(tip).toBeHidden();
   });
 
   test('progress survives a reload', async ({ page }) => {
@@ -411,7 +432,7 @@ test.describe('on the smallest phone', () => {
   test.use({ viewport: { width: 320, height: 568 } });
 
   test('every level fits the board, with no labels or switches overlapping', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SOLUTIONS.length * 6_000);
     const completed = Object.fromEntries(
       SOLUTIONS.map((_, i) => [`level-${String(i + 1).padStart(2, '0')}`, { bestAttempts: 1 }]),
     );

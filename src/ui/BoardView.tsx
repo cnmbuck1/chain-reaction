@@ -190,6 +190,7 @@ export function BoardView({
         style={
           {
             '--k': scale,
+            '--w': `${BOARD_WIDTH}px`,
             '--h': `${height}px`,
             '--view-top': `${view.top}px`,
             '--view-h': `${view.height}px`,
