@@ -44,7 +44,7 @@ export const level18: LevelDef = {
       id: 'cp',
       type: 'checkpoint',
       x: 0.96,
-      y: 0.36,
+      y: 0.56,
       stage: 0,
       label: 'Checkpoint',
     },

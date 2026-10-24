@@ -65,6 +65,10 @@ export function GameScreen({
   const [justHinted, setJustHinted] = useState<string | null>(null);
   const [playback, setPlayback] = useState<RunPlayback | null>(null);
   const [playing, setPlaying] = useState(false);
+  // On a run that clears a part, the view follows the ball down into the next part.
+  const [followed, setFollowed] = useState(false);
+  const follow = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(follow.current), []);
   const [notice, setNotice] = useState<RejectReason | null>(null);
   const [hintOpen, setHintOpen] = useState(false);
 
@@ -118,7 +122,16 @@ export function GameScreen({
     }
     if (action.type === 'run') {
       const timing = reducedMotion ? INSTANT_TIMING : NORMAL_TIMING;
-      sound.schedule(runSounds(buildTimeline(result.events, timing)));
+      const timeline = buildTimeline(result.events, timing);
+      sound.schedule(runSounds(timeline));
+      window.clearTimeout(follow.current);
+      setFollowed(false);
+      if (result.state.stage > state.stage) {
+        // Pan as the ball drops off the bottom of the part it just cleared.
+        const drop = timeline.cues.filter((c) => c.kind === 'ball').at(-1);
+        const at = drop ? drop.at + drop.dur / 2 : 0;
+        follow.current = window.setTimeout(() => setFollowed(true), at);
+      }
       runId.current += 1;
       setPlayback({ id: runId.current, events: result.events, stage: state.stage });
       setPlaying(true);
@@ -201,7 +214,7 @@ export function GameScreen({
         level={level}
         state={state}
         playback={playback}
-        stage={playing && playback ? playback.stage : state.stage}
+        stage={playing && playback ? playback.stage + (followed ? 1 : 0) : state.stage}
         reducedMotion={reducedMotion}
         locked={playing || state.phase === 'won'}
         justHinted={justHinted}

@@ -7,6 +7,7 @@ import {
   boardHeight,
   boardPoint,
   partDividers,
+  partViews,
   trackRoute,
   wireRoutes,
 } from '../render/layout';
@@ -60,6 +61,15 @@ export function BoardView({
   const height = boardHeight(level);
   const routes = useMemo(() => wireRoutes(level), [level]);
   const dividers = useMemo(() => partDividers(level), [level]);
+  // On staged boards the screen shows one part at a time, filling the frame, and pans
+  // down to the next part when the ball drops through the checkpoint.
+  const views = useMemo(() => partViews(level), [level]);
+  const view = views[Math.min(stage, views.length - 1)]!;
+  const tallest = Math.max(...views.map((v) => v.height));
+  // Labels and switches of the parts out of view are hidden, so they can't be tapped.
+  const offView = (y: number): CSSProperties =>
+    y >= view.top - 1 && y <= view.top + view.height + 1 ? {} : { visibility: 'hidden' };
+  const place = (at: Point): CSSProperties => ({ ...placeAt(at), ...offView(at.y) });
   const boardRef = useRef<Board | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -91,7 +101,7 @@ export function BoardView({
     const frame = frameRef.current;
     if (!frame) return;
     const fit = () => {
-      const k = Math.min(frame.clientWidth / BOARD_WIDTH, frame.clientHeight / height);
+      const k = Math.min(frame.clientWidth / BOARD_WIDTH, frame.clientHeight / view.height);
       // Rounded so sub-pixel jitter can't keep re-scaling the board.
       if (k > 0) setScale(Math.round(Math.min(k, MAX_SCALE) * 1000) / 1000);
     };
@@ -99,7 +109,7 @@ export function BoardView({
     const observer = new ResizeObserver(fit);
     observer.observe(frame);
     return () => observer.disconnect();
-  }, [failed, height]);
+  }, [failed, view.height]);
 
   useEffect(() => {
     if (ready) boardRef.current?.setScale(scale);
@@ -155,18 +165,25 @@ export function BoardView({
 
   return (
     <div
-      className="board"
+      className={`board${reducedMotion ? ' still' : ''}`}
       ref={frameRef}
       data-ready={ready}
-      style={{ '--aspect': height / BOARD_WIDTH } as CSSProperties}
+      style={{ '--aspect': tallest / BOARD_WIDTH } as CSSProperties}
     >
       <div
         className="board-stage"
         ref={hostRef}
-        style={{ '--k': scale, '--h': `${height}px` } as CSSProperties}
+        style={
+          {
+            '--k': scale,
+            '--h': `${height}px`,
+            '--view-top': `${view.top}px`,
+            '--view-h': `${view.height}px`,
+          } as CSSProperties
+        }
       >
         {level.nodes.map((node) => {
-          const style = placeAt(boardPoint(node.x, node.y, height));
+          const style = place(boardPoint(node.x, node.y, height));
           switch (node.type) {
             case 'switch': {
               const on = state.switches[node.id] ?? false;
@@ -221,7 +238,7 @@ export function BoardView({
               // Each lane's sign sits on the first leg out of the fork.
               const lane = (to: string) => {
                 const [a, b] = trackRoute(level, node.id, to);
-                return placeAt({ x: (a!.x + b!.x) / 2, y: (a!.y + b!.y) / 2 });
+                return place({ x: (a!.x + b!.x) / 2, y: (a!.y + b!.y) / 2 });
               };
               return [
                 <div key={node.id} className="tag fork-tag" style={style} aria-hidden="true">
@@ -284,7 +301,7 @@ export function BoardView({
             <div
               key={`part-${part}`}
               className={`tag part-tag${part === stage ? ' is-current' : ''}`}
-              style={{ top: y + 14 }}
+              style={{ top: y + 14, ...offView(y + 14) }}
               aria-hidden="true"
             >
               {partName(part)}
@@ -296,7 +313,7 @@ export function BoardView({
               <div
                 key={key}
                 className="tag not-tag"
-                style={placeAt(route.flip.point)}
+                style={place(route.flip.point)}
                 aria-hidden="true"
               >
                 NOT

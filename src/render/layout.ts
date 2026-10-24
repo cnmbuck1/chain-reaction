@@ -138,6 +138,18 @@ export function partDividers(level: LevelDef): number[] {
     return Math.round(top);
   });
 }
+/** The slice of the board each part fills the screen with: from its seam to the next one. */
+export interface PartView {
+  top: number;
+  height: number;
+}
+
+/** One view per part; a board without parts has one view, the whole board. */
+export function partViews(level: LevelDef): PartView[] {
+  const edges = [0, ...partDividers(level), boardHeight(level)];
+  return edges.slice(1).map((bottom, i) => ({ top: edges[i]!, height: bottom - edges[i]! }));
+}
+
 /** Room kept above a part's highest power source or switch, for its divider. */
 const SOURCE_CLEARANCE = 44;
 const SWITCH_CLEARANCE = 42;
