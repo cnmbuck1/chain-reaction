@@ -69,7 +69,7 @@ export const level29: LevelDef = {
     {
       id: 'g1',
       type: 'gate',
-      x: 0.26,
+      x: 0.23,
       y: 0.36,
       combine: 'and',
       requiredSignal: true,
@@ -87,7 +87,7 @@ export const level29: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.74,
+      x: 0.77,
       y: 0.36,
       combine: 'single',
       requiredSignal: true,

@@ -68,7 +68,7 @@ export const level22: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.82,
+      x: 0.78,
       y: 1,
       combine: 'or',
       requiredSignal: true,
