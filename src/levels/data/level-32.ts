@@ -1,0 +1,166 @@
+import type { LevelDef } from '../../engine/types';
+
+export const level32: LevelDef = {
+  schemaVersion: 1,
+  id: 'level-32',
+  name: 'Gear Train',
+  difficulty: 'medium',
+  boardHeight: 420,
+  nodes: [
+    {
+      id: 'a',
+      type: 'switch',
+      x: 0.16,
+      y: 0.16,
+      initialOn: true,
+      label: 'A',
+    },
+    {
+      id: 'b',
+      type: 'switch',
+      x: 0.5,
+      y: 0.16,
+      initialOn: false,
+      label: 'B',
+      turns: ['d'],
+    },
+    {
+      id: 'c',
+      type: 'switch',
+      x: 0.84,
+      y: 0.16,
+      initialOn: false,
+      label: 'C',
+      turns: ['e'],
+    },
+    {
+      id: 'd',
+      type: 'switch',
+      x: 0.33,
+      y: 0.46,
+      initialOn: true,
+      label: 'D',
+    },
+    {
+      id: 'e',
+      type: 'switch',
+      x: 0.67,
+      y: 0.46,
+      initialOn: false,
+      label: 'E',
+    },
+    {
+      id: 'g1',
+      type: 'gate',
+      x: 0.24,
+      y: 1,
+      combine: 'and',
+      requiredSignal: false,
+      label: 'Gate 1',
+    },
+    {
+      id: 'g2',
+      type: 'gate',
+      x: 0.515,
+      y: 1,
+      combine: 'and',
+      requiredSignal: true,
+      label: 'Gate 2',
+    },
+    {
+      id: 'g3',
+      type: 'gate',
+      x: 0.79,
+      y: 1,
+      combine: 'or',
+      requiredSignal: true,
+      label: 'Gate 3',
+    },
+    {
+      id: 'source',
+      type: 'source',
+      x: 0.5,
+      y: 0,
+      label: 'Power',
+    },
+    {
+      id: 'ball',
+      type: 'ballStart',
+      x: 0,
+      y: 1,
+      label: 'Start',
+    },
+    {
+      id: 'goal',
+      type: 'goal',
+      x: 1,
+      y: 1,
+      label: 'Goal',
+    },
+  ],
+  signalEdges: [
+    {
+      from: 'source',
+      to: 'a',
+    },
+    {
+      from: 'source',
+      to: 'b',
+    },
+    {
+      from: 'source',
+      to: 'c',
+    },
+    {
+      from: 'b',
+      to: 'd',
+    },
+    {
+      from: 'b',
+      to: 'e',
+    },
+    {
+      from: 'a',
+      to: 'g1',
+    },
+    {
+      from: 'b',
+      to: 'g1',
+    },
+    {
+      from: 'd',
+      to: 'g1',
+    },
+    {
+      from: 'c',
+      to: 'g2',
+    },
+    {
+      from: 'a',
+      to: 'g2',
+    },
+    {
+      from: 'e',
+      to: 'g2',
+    },
+    {
+      from: 'e',
+      to: 'g3',
+    },
+    {
+      from: 'c',
+      to: 'g3',
+    },
+    {
+      from: 'b',
+      to: 'g3',
+    },
+  ],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
+  meta: {
+    teachingPoint: 'One turn can set two switches: let the gears do the work.',
+    hint: 'Gate 2 needs C and E on, and E gets its power through B. Turning C turns E too.',
+    minChanges: 2,
+    keySwitch: 'b',
+  },
+};

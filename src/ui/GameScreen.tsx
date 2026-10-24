@@ -82,7 +82,7 @@ export function GameScreen({
   useEffect(() => () => window.clearTimeout(follow.current), []);
   const [notice, setNotice] = useState<RejectReason | null>(null);
   const [hintOpen, setHintOpen] = useState(false);
-  // The new-part prompt costs board height, so it folds away once the player starts.
+  // The level's tip stands in for the status line until the first switch change.
   const [promptOpen, setPromptOpen] = useState(true);
 
   const useHint = () => {
@@ -216,9 +216,11 @@ export function GameScreen({
   const stoppedAt =
     showingMiss && lastRun?.outcome.kind === 'blocked'
       ? lastRun.outcome.gateId
-      : showingMiss && lastRun?.outcome.kind === 'deadEnd'
-        ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
-        : null;
+      : showingMiss && lastRun?.outcome.kind === 'locked'
+        ? lastRun.outcome.nodeId
+        : showingMiss && lastRun?.outcome.kind === 'deadEnd'
+          ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
+          : null;
 
   let status: string;
   if (notice) status = rejectMessage[notice];
@@ -227,6 +229,7 @@ export function GameScreen({
     status = `${explainRun(level, lastRun)} ${partName(state.stage - 1)}'s switches leave no way through here. Reset to try another way.`;
   else if (lastRun && playback) status = explainRun(level, lastRun);
   else if (lastRun) status = 'Switches changed. Run again when ready.';
+  else if (promptOpen && level.meta.prompt) status = level.meta.prompt;
   else status = 'Set the switches, then press Run.';
 
   const wiring = level.signalEdges
@@ -235,6 +238,15 @@ export function GameScreen({
       const req = to?.type === 'gate' ? ` (needs ${gateRequirement(level, e.to)})` : '';
       return `${nodeName(level, e.from)} to ${e.invert ? 'NOT ' : ''}${nodeName(level, e.to)}${req}`;
     })
+    .concat(
+      level.nodes.flatMap((n) =>
+        n.type === 'switch' && n.turns
+          ? [
+              `gear: turning ${nodeName(level, n.id)} also turns ${n.turns.map((id) => nodeName(level, id)).join(' and ')}`,
+            ]
+          : [],
+      ),
+    )
     .join('; ');
 
   return (
@@ -274,20 +286,6 @@ export function GameScreen({
           </span>
         </div>
       </header>
-
-      {level.meta.prompt && promptOpen && (
-        <div className="prompt">
-          <p>{level.meta.prompt}</p>
-          <button
-            type="button"
-            className="prompt-close"
-            aria-label="Hide this tip"
-            onClick={() => setPromptOpen(false)}
-          >
-            Got it
-          </button>
-        </div>
-      )}
 
       <p className="sr-only">Wiring: {wiring}.</p>
       <BoardView

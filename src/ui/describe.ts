@@ -25,13 +25,20 @@ export function explainRun(level: LevelDef, run: RunResult): string {
       return 'The ball reached the goal.';
     case 'checkpoint': {
       const stage = indexLevel(level).checkpoints.indexOf(outcome.nodeId);
-      return `${partName(stage)} cleared. ${partName(stage + 1)}'s switches are open: set them, then Run.`;
+      const keys = run.keys.map((k) => nodeName(level, k)).join(' and ');
+      const carried = keys ? `, with the ${keys.toLowerCase()} aboard` : '';
+      return `${partName(stage)} cleared${carried}. ${partName(stage + 1)}'s switches are open: set them, then Run.`;
     }
     case 'deadEnd': {
       const forks = run.events.filter((e) => e.type === 'junction');
       const fork = forks[forks.length - 1];
       const name = fork?.type === 'junction' ? nodeName(level, fork.nodeId) : 'A fork';
       return `${name} sent the ball into a dead end.`;
+    }
+    case 'locked': {
+      const lock = indexLevel(level).nodes.get(outcome.nodeId);
+      const key = lock?.type === 'lock' ? nodeName(level, lock.key) : 'its key';
+      return `${nodeName(level, outcome.nodeId)} stopped the ball: it needs ${key}, and the ball didn't pass it.`;
     }
     case 'blocked': {
       const node = indexLevel(level).nodes.get(outcome.gateId);

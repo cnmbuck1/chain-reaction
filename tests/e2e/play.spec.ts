@@ -45,6 +45,16 @@ const SOLUTIONS = [
   { name: 'Long Haul', switches: ['B', 'C', 'D', PART, 'E'] },
   { name: 'Backwire', switches: ['C', 'D', PART, 'F'] },
   { name: 'Grand Inversion', switches: ['A', 'B', PART, 'F', 'G'] },
+  { name: 'Meshed', switches: ['B', 'C'] },
+  { name: 'Gear Train', switches: ['B', 'C'] },
+  { name: 'Chain Drive', switches: ['A', 'C', 'D'] },
+  { name: 'Clockwork', switches: ['A', 'B', 'D'] },
+  { name: 'Escapement', switches: ['B', 'D', 'E', 'F'] },
+  { name: 'Skeleton Key', switches: ['B', 'F'] },
+  { name: 'Key Ring', switches: ['A', 'B', PART, 'D'] },
+  { name: 'Lockstep', switches: ['B', 'F', PART, 'D'] },
+  { name: 'Turnkey', switches: ['C', 'F', PART, 'D', 'G'] },
+  { name: 'Master Key', switches: ['A', 'B', 'F', PART, 'D'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
@@ -185,15 +195,13 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
   });
 
-  test('the tip folds away on the first switch change, giving the board the room', async ({
-    page,
-  }) => {
+  test('the tip sits in the status line until the first switch change', async ({ page }) => {
     await page.goto('/');
     await dismissIntro(page);
-    const tip = page.getByText('Tap switch A to turn it on, then press Run.');
-    await expect(tip).toBeVisible();
+    const status = page.locator('p.status');
+    await expect(status).toHaveText('Tap switch A to turn it on, then press Run.');
     await page.getByRole('button', { name: /^Switch A,/ }).click();
-    await expect(tip).toBeHidden();
+    await expect(status).not.toHaveText(/Tap switch A/);
   });
 
   test('progress survives a reload', async ({ page }) => {
