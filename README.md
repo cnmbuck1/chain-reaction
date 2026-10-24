@@ -144,7 +144,7 @@ the two fork boards, and 1 in 15 to 1 in 35 on the two-part boards.
 
 ## Board layout
 
-The board is laid out at 360 layout pixels wide (`src/render/layout.ts`) and scaled to fit the
+The board is laid out at 312 layout pixels wide (`src/render/layout.ts`) and scaled to fit the
 screen, so every phone shows the same picture and labels can't collide on small screens. A
 browser test opens every level at 320 by 568 and fails if any switch or label overlaps another
 or leaves the board. On fork boards, wires turn just below their switch and drop straight into
@@ -152,6 +152,8 @@ their gate, and several wires into one gate land side by side.
 
 A level's tip card sits above the board and folds away on "Got it" or the first switch change,
 so the board can grow back to the full width.
+The board sits at the top of its area, and on short screens (under 700px high, such as a phone
+app's sheet) the header and status text shrink so the board gets the room.
 
 Two-part boards stack part A over part B, but the screen shows one part at a time, scaled to
 fill the board (`partViews` in `layout.ts`), so each part reads as large as a one-part level.
