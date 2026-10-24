@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { canToggle } from '../engine/reducer';
 import type { GameState, LevelDef, RunEvent, SignalEdge } from '../engine/types';
 import { Board } from '../render/board';
 import {
@@ -207,17 +206,15 @@ export function BoardView({
               const part = node.stage ?? 0;
               const done = part < stage;
               const ahead = part > stage;
-              const blocked =
-                !locked && !hinted && !done && !ahead && !canToggle(level, state, node.id);
               return (
                 <button
                   key={node.id}
                   type="button"
-                  className={`switch ${on ? 'is-on' : 'is-off'}${blocked ? ' is-blocked' : ''}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
+                  className={`switch ${on ? 'is-on' : 'is-off'}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
                   style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                   aria-pressed={on}
-                  aria-disabled={locked || blocked || hinted || done || ahead}
-                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${blocked ? ', no changes left' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}`}
+                  aria-disabled={locked || hinted || done || ahead}
+                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}`}
                   onClick={() => !locked && onToggle(node.id)}
                 >
                   <span className="switch-name">{nodeName(level, node.id)}</span>

@@ -10,7 +10,7 @@ import type { HintShop } from '../monetize/hintShop';
 import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, partName, rejectMessage } from './describe';
-import { nextStarTip, starsFor } from '../game/scoring';
+import { nextStarTip, starsFor, type Solve, type Stars } from '../game/scoring';
 import { HintPanel } from './HintPanel';
 import { ResultCard } from './ResultCard';
 
@@ -19,7 +19,7 @@ interface Props {
   number: number;
   hasNext: boolean;
   /** Set on the last level: how the whole run of levels went, for the closing card. */
-  finale: { firstTry: number; total: number } | null;
+  finale: { stars: number; total: number } | null;
   reducedMotion: boolean;
   sound: Sound;
   soundOn: boolean;
@@ -37,7 +37,11 @@ interface Props {
   };
   showIntro: boolean;
   onIntroDone: () => void;
-  onSolved: (attempts: number) => void;
+  /** This level's first Run is still unspent, so this visit can earn three stars. */
+  firstRunOpen: boolean;
+  /** The first Run is spent: a Run ended, or the player reset or left after clearing a part. */
+  onFirstRunUsed: () => void;
+  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => void;
   onNext: () => void;
   /** Plays this level again from the start. */
   onReplay: () => void;
@@ -57,6 +61,8 @@ export function GameScreen({
   hints,
   showIntro,
   onIntroDone,
+  firstRunOpen,
+  onFirstRunUsed,
   onSolved,
   onNext,
   onReplay,
@@ -102,6 +108,25 @@ export function GameScreen({
   const solvedRef = useRef(false);
   const [skipToken, setSkipToken] = useState(0);
   const [resultOpen, setResultOpen] = useState(true);
+  // Read once: spending the first Run mid-visit must not change what this visit can earn.
+  const [firstRunLive, setFirstRunLive] = useState(firstRunOpen);
+  const [solved, setSolved] = useState<Solve | null>(null);
+
+  // Leaving after clearing a part spends the first Run, as a Reset would; otherwise
+  // backing out would dodge a part cleared the wrong way.
+  const leaving = useRef({ partCleared: false, onFirstRunUsed });
+  useEffect(() => {
+    leaving.current = {
+      partCleared: state.stage > 0 && state.phase !== 'won',
+      onFirstRunUsed,
+    };
+  });
+  useEffect(
+    () => () => {
+      if (leaving.current.partCleared) leaving.current.onFirstRunUsed();
+    },
+    [],
+  );
 
   const won = state.phase === 'won' && !playing;
 
@@ -128,6 +153,11 @@ export function GameScreen({
       return;
     }
     setState(result.state);
+    const ended = action.type === 'run' && result.state.lastRun?.outcome.kind !== 'checkpoint';
+    if (ended || (action.type === 'reset' && state.stage > 0)) {
+      onFirstRunUsed();
+      if (!result.state.lastRun?.won || action.type === 'reset') setFirstRunLive(false);
+    }
     if (action.type === 'toggle') {
       sound.play('click');
       if (haptics) buzz(12);
@@ -160,11 +190,20 @@ export function GameScreen({
     if (state.phase !== 'won' || solvedRef.current) return;
     solvedRef.current = true;
     if (haptics) buzz([20, 50, 20, 50, 60]);
+    const facts: Solve = {
+      hintsUsed: hints.used,
+      firstRun: firstRunLive && state.attempt === 1,
+      changes: used,
+      par,
+    };
+    setSolved(facts);
     setResultOpen(true);
-    onSolved(state.attempt);
+    onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used });
   };
 
-  const used = changesUsed(level, state.switches, state.stage);
+  // Changes over the whole machine; hinted switches start where the hint set them.
+  const used = changesUsed(level, state.switches);
+  const par = baseLevel.meta.minChanges;
   const lastRun = state.lastRun;
   const missed = lastRun !== null && !lastRun.won && lastRun.outcome.kind !== 'checkpoint';
   const staged = indexLevel(level).checkpoints.length > 0;
@@ -178,7 +217,6 @@ export function GameScreen({
       : showingMiss && lastRun?.outcome.kind === 'deadEnd'
         ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
         : null;
-  const solveFacts = { hintsUsed: hints.used, firstRun: state.attempt === 1 };
 
   let status: string;
   if (notice) status = rejectMessage[notice];
@@ -221,15 +259,16 @@ export function GameScreen({
           </span>
           <h1>{level.name}</h1>
         </div>
-        <div className="meter" aria-label={`Changes used ${used} of ${level.maxToggles}`}>
+        <div className="meter" aria-label={`Changes ${used}, par ${par}`}>
           <span className="meter-label">Changes</span>
           <span className="pips" aria-hidden="true">
-            {Array.from({ length: level.maxToggles }, (_, i) => (
+            {Array.from({ length: par }, (_, i) => (
               <span key={i} className={i < used ? 'pip used' : 'pip'} />
             ))}
           </span>
-          <span className="meter-count">
-            {used}/{level.maxToggles}
+          <span className={`meter-count${used > par ? ' over' : ''}`}>
+            {used}
+            <span className="meter-par"> · par {par}</span>
           </span>
         </div>
       </header>
@@ -319,7 +358,7 @@ export function GameScreen({
               </li>
               <li>
                 <strong>Press Run.</strong> The ball rolls until it reaches the goal or a closed
-                gate. Changes are limited, so plan first.
+                gate. Plan first: a first-Run solve with the fewest changes earns three stars.
               </li>
             </ol>
             <div className="card-actions single">
@@ -343,15 +382,17 @@ export function GameScreen({
         />
       )}
 
-      {won && resultOpen && (
+      {won && resultOpen && solved && (
         <ResultCard
           number={number}
           name={level.name}
-          stars={starsFor(solveFacts)}
-          firstRun={solveFacts.firstRun}
+          stars={starsFor(solved)}
+          firstRun={solved.firstRun}
           runs={state.attempt}
-          hintsUsed={solveFacts.hintsUsed}
-          tip={nextStarTip(solveFacts)}
+          hintsUsed={solved.hintsUsed}
+          changes={solved.changes}
+          par={solved.par}
+          tip={nextStarTip(solved)}
           teachingPoint={level.meta.teachingPoint}
           hasNext={hasNext}
           finale={finale}

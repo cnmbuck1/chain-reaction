@@ -5,7 +5,6 @@ export const level07: LevelDef = {
   id: 'level-07',
   name: 'Minimal Moves',
   difficulty: 'medium',
-  maxToggles: 2,
   nodes: [
     {
       id: 'source',

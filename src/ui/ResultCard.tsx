@@ -8,12 +8,14 @@ interface Props {
   firstRun: boolean;
   runs: number;
   hintsUsed: number;
+  changes: number;
+  par: number;
   /** What the next star needs; null at three stars. */
   tip: string | null;
   teachingPoint: string;
   hasNext: boolean;
   /** Set on the last level: how the whole run of levels went. */
-  finale: { firstTry: number; total: number } | null;
+  finale: { stars: number; total: number } | null;
   onNext: () => void;
   onReplay: () => void;
   onLevels: () => void;
@@ -29,6 +31,8 @@ export function ResultCard({
   firstRun,
   runs,
   hintsUsed,
+  changes,
+  par,
   tip,
   teachingPoint,
   hasNext,
@@ -72,7 +76,7 @@ export function ResultCard({
         <ul className="result-facts">
           <li className={firstRun ? 'is-yes' : ''}>
             <span aria-hidden="true">{firstRun ? '✓' : '·'}</span>
-            {firstRun ? 'First Run' : `Solved in ${runs} Runs`}
+            {firstRun ? 'First Run' : runs > 1 ? `Solved in ${runs} Runs` : 'Not your first Run'}
           </li>
           <li className={hintsUsed === 0 ? 'is-yes' : ''}>
             <span aria-hidden="true">{hintsUsed === 0 ? '✓' : '·'}</span>
@@ -80,16 +84,21 @@ export function ResultCard({
               ? 'No hints'
               : `${hintsUsed} ${hintsUsed === 1 ? 'hint' : 'hints'} used`}
           </li>
+          <li className={changes <= par ? 'is-yes' : ''}>
+            <span aria-hidden="true">{changes <= par ? '✓' : '·'}</span>
+            {changes <= par
+              ? `Par: ${par} ${par === 1 ? 'change' : 'changes'}`
+              : `${changes} changes, par ${par}`}
+          </li>
         </ul>
         {tip && <p className="result-tip">{tip}</p>}
         <p className="result-lesson">{teachingPoint}</p>
         {finale && (
           <p className="finale">
-            <strong>Every machine solved.</strong> {finale.firstTry} of {finale.total} on the first
-            Run.{' '}
-            {finale.firstTry === finale.total
+            <strong>Every machine solved.</strong> {finale.stars} of {finale.total * 3} stars.{' '}
+            {finale.stars === finale.total * 3
               ? 'Flawless.'
-              : 'Replay any level to try for a first-Run solve.'}
+              : 'Replay any level to raise its stars.'}
           </p>
         )}
         {hasNext ? (

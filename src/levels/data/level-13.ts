@@ -5,7 +5,6 @@ export const level13: LevelDef = {
   id: 'level-13',
   name: 'Long Way Round',
   difficulty: 'medium',
-  maxToggles: 2,
   boardHeight: 470,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0.05, label: 'Power' },

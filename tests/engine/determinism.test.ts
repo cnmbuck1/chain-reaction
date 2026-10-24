@@ -64,7 +64,9 @@ describe('random play properties', () => {
           }
           if (result.rejected) expect(result.state).toBe(state);
           state = result.state;
-          expect(changesUsed(level, state.switches)).toBeLessThanOrEqual(level.maxToggles);
+          expect(changesUsed(level, state.switches)).toBeLessThanOrEqual(
+            Object.keys(state.switches).length,
+          );
         }
       }
     },

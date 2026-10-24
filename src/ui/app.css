@@ -999,3 +999,20 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   margin-top: 0;
 }
+
+/* ---------- Stars and par ---------- */
+.mini-stars {
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+.mini-stars .dim {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.meter-par {
+  color: var(--muted);
+  font-size: 0.8em;
+}
+.meter-count.over {
+  color: var(--amber);
+}

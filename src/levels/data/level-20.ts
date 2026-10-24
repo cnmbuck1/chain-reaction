@@ -5,7 +5,6 @@ export const level20: LevelDef = {
   id: 'level-20',
   name: 'Grand Finale',
   difficulty: 'hard',
-  maxToggles: 2,
   boardHeight: 740,
   nodes: [
     {

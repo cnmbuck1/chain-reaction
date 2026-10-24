@@ -12,15 +12,15 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s', (_id, level) => {
     expect(check.errors).toEqual([]);
   });
 
-  it('has a solution within budget that replays to a win', () => {
+  it('has exactly one par solution, and it replays to a win', () => {
     const solution = check.report!.solution!;
-    // Each part of a staged board has its own budget, and a run between parts.
+    expect(check.report!.parWins).toHaveLength(1);
+    // A run between the parts of a staged board.
     const stageOf = (id: string) => switchStage(indexLevel(level).nodes.get(id)!);
     const parts = indexLevel(level).checkpoints.length + 1;
     const actions: GameAction[] = [];
     for (let stage = 0; stage < parts; stage++) {
       const moves = solution.filter((id) => stageOf(id) === stage);
-      expect(moves.length).toBeLessThanOrEqual(level.maxToggles);
       actions.push(...moves.map((switchId) => ({ type: 'toggle' as const, switchId })));
       actions.push({ type: 'run' });
     }
@@ -96,10 +96,8 @@ describe('the curated set', () => {
     expect(levels.slice(15).map(crosses)).toEqual([false, false, true, true, true]);
   });
 
-  it('gets harder: budgets never shrink below the solution and grow overall', () => {
+  it('gets harder: par grows overall', () => {
     const mins = levels.map((l) => l.meta.minChanges);
     expect(mins.at(-1)).toBeGreaterThan(mins[0]!);
-    const parts = (l: LevelDef) => indexLevel(l).checkpoints.length + 1;
-    expect(levels.every((l) => l.meta.minChanges <= l.maxToggles * parts(l))).toBe(true);
   });
 });

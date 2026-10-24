@@ -5,7 +5,6 @@ export const level10: LevelDef = {
   id: 'level-10',
   name: 'Master Circuit',
   difficulty: 'hard',
-  maxToggles: 4,
   nodes: [
     {
       id: 'source',
@@ -144,7 +143,7 @@ export const level10: LevelDef = {
   ],
   track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
-    teachingPoint: 'Chains, splits, ALL and ANY gates, and a tight budget, all at once.',
+    teachingPoint: 'Chains, splits, ALL and ANY gates, and a par to hit, all at once.',
     hint: 'E is the easy way into Gate 1, but Gate 3 wants it dark. A reaches C and D, and both need switching on.',
     minChanges: 4,
     keySwitch: 'd',

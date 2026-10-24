@@ -5,7 +5,6 @@ export const level01: LevelDef = {
   id: 'level-01',
   name: 'First Spark',
   difficulty: 'tutorial',
-  maxToggles: 1,
   nodes: [
     { id: 'source', type: 'source', x: 0.14, y: 0.16, label: 'Power' },
     { id: 's1', type: 'switch', x: 0.5, y: 0.4, initialOn: false, label: 'A' },

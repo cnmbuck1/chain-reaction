@@ -5,7 +5,6 @@ export const level14: LevelDef = {
   id: 'level-14',
   name: 'Switchyard',
   difficulty: 'medium',
-  maxToggles: 2,
   boardHeight: 470,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0.05, label: 'Power' },

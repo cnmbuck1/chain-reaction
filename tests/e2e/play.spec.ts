@@ -64,7 +64,7 @@ test.describe('with reduced motion', () => {
         await page.getByRole('button', { name: 'Next challenge' }).click();
     }
     await expect(page.getByRole('dialog')).toContainText(
-      `Every machine solved. ${SOLUTIONS.length} of ${SOLUTIONS.length} on the`,
+      `Every machine solved. ${SOLUTIONS.length * 3} of ${SOLUTIONS.length * 3} stars.`,
     );
     await page.getByRole('button', { name: 'Done' }).click();
     await expect(page.getByText(`${SOLUTIONS.length} of ${SOLUTIONS.length} solved`)).toBeVisible();
@@ -83,12 +83,16 @@ test.describe('with reduced motion', () => {
     await page.getByRole('button', { name: /^Hint, free/ }).click();
     await page.getByRole('button', { name: 'Make a free move' }).click();
     await expect(page.locator('.switch.is-hinted')).toHaveAttribute('aria-label', /^Switch A,/);
-    await expect(page.getByLabel('Changes used 0 of 1')).toBeVisible();
+    await expect(page.getByLabel('Changes 0, par 1')).toBeVisible();
     await run(page).click();
     const card = page.getByRole('dialog');
     await expect(card).toContainText('Solved in 2 Runs');
     await expect(card).toContainText('1 hint used');
     await expect(card.getByRole('img', { name: '1 of 3 stars' })).toBeVisible();
+    // A replay of a solved level starts clean, without the hint's move.
+    await card.getByRole('button', { name: 'Replay' }).click();
+    await expect(page.locator('.switch.is-hinted')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
   });
 
   test('a first-Run solve earns 3 stars; Close shows the machine and Replay starts fresh', async ({
@@ -109,6 +113,34 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
     await expect(run(page)).toHaveText('Run');
+  });
+
+  test('a missed first Run stays spent after leaving the level, so the solve earns 2 stars', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await dismissIntro(page);
+    await solve(page, ['A']);
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
+    await expect(board(page)).toBeVisible();
+    await run(page).click();
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+    await page.getByRole('button', { name: 'Levels', exact: true }).click();
+    await page.reload();
+    // The app reopens on the first unsolved level, with the first Run still spent.
+    await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
+    await solve(page, ['A']);
+    const card = page.getByRole('dialog');
+    await expect(card.getByRole('img', { name: '2 of 3 stars' })).toBeVisible();
+    await expect(card).toContainText('Not your first Run');
+    await card.getByRole('button', { name: 'Levels' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Level 2, Reverse Logic, solved, 2 of 3 stars' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Level 1, First Spark, solved, 3 of 3 stars' }),
+    ).toBeVisible();
   });
 
   test('progress survives a reload', async ({ page }) => {
@@ -162,7 +194,7 @@ test.describe('with reduced motion', () => {
     await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
   });
 
-  test('the change budget, undo and reset stay in step', async ({ page }) => {
+  test('changes, undo and reset stay in step, with no limit', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() =>
       localStorage.setItem(
@@ -178,12 +210,12 @@ test.describe('with reduced motion', () => {
     const meter = page.locator('.meter-count');
     await page.getByRole('button', { name: /^Switch A,/ }).click();
     await page.getByRole('button', { name: /^Switch B,/ }).click();
-    await expect(meter).toHaveText('2/2');
+    await expect(meter).toHaveText('2 · par 2');
     await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(meter).toHaveText('1/2');
+    await expect(meter).toHaveText('1 · par 2');
     await expect(page.getByRole('button', { name: /^Switch B, on/ })).toBeVisible();
     await page.getByRole('button', { name: 'Reset' }).click();
-    await expect(meter).toHaveText('0/2');
+    await expect(meter).toHaveText('0 · par 2');
     await expect(page.getByRole('button', { name: /^Switch A, off/ })).toBeVisible();
   });
 });
@@ -305,7 +337,7 @@ test('hints: two free moves, then the demo shop, and they last across reloads', 
   await page.getByRole('button', { name: 'Use 1 hint' }).click();
   await expect(hinted).toHaveCount(1);
   await expect(hinted).toHaveAttribute('aria-label', /^Switch D,.*set by a hint/);
-  await expect(page.getByLabel('Changes used 0 of 4')).toBeVisible();
+  await expect(page.getByLabel('Changes 0, par 4')).toBeVisible();
   await hinted.click({ force: true });
   await expect(hinted).toHaveCount(1);
 
@@ -328,7 +360,7 @@ test('hints: two free moves, then the demo shop, and they last across reloads', 
   await page.reload();
   await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeVisible();
   await expect(hinted).toHaveCount(3);
-  await expect(page.getByLabel('Changes used 0 of 4')).toBeVisible();
+  await expect(page.getByLabel('Changes 0, par 4')).toBeVisible();
 });
 
 test.describe('on the smallest phone', () => {

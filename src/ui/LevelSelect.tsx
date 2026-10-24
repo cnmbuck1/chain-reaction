@@ -36,18 +36,21 @@ export function LevelSelect({ levels, progress, onPlay, onSettings }: Props) {
                 className={`level-card ${record ? 'solved' : ''}`}
                 disabled={!open}
                 onClick={() => onPlay(i)}
-                aria-label={`Level ${i + 1}, ${level.name}${record ? ', solved' : open ? '' : ', locked'}`}
+                aria-label={`Level ${i + 1}, ${level.name}${record ? `, solved, ${record.stars} of 3 stars` : open ? '' : ', locked'}`}
               >
                 <span className="level-num">{String(i + 1).padStart(2, '0')}</span>
                 <span className="level-name">{level.name}</span>
                 <span className="level-state">
-                  {record
-                    ? record.bestAttempts === 1
-                      ? 'First run'
-                      : 'Solved'
-                    : open
-                      ? 'Play'
-                      : 'Locked'}
+                  {record ? (
+                    <span className="mini-stars">
+                      {'★'.repeat(record.stars)}
+                      <span className="dim">{'☆'.repeat(3 - record.stars)}</span>
+                    </span>
+                  ) : open ? (
+                    'Play'
+                  ) : (
+                    'Locked'
+                  )}
                 </span>
               </button>
             </li>

@@ -4,12 +4,14 @@ import { levels } from '../src/levels/index';
 let failed = false;
 for (const level of levels) {
   const { errors, warnings, report } = checkLevel(level);
-  console.log(`\n${level.id}  ${level.name}  (${level.difficulty}, budget ${level.maxToggles})`);
+  console.log(`\n${level.id}  ${level.name}  (${level.difficulty})`);
   if (report) {
     console.log(
-      `  min changes ${report.minChanges ?? '-'} | solution [${report.solution?.join(', ') ?? ''}]` +
-        ` | winning ${report.winningConfigs}/${report.reachableConfigs} reachable` +
-        ` | all-ON wins ${report.allOnWins ? 'yes' : 'no'} | greedy wins ${report.greedySolves ? 'yes' : 'no'}`,
+      `  par ${report.minChanges ?? '-'} | solution [${report.solution?.join(', ') ?? ''}]` +
+        ` | par wins ${report.parWins.length} | all wins ${report.winningConfigs}/${report.reachableConfigs}` +
+        ` | first-Run guess 1 in ${report.guessOdds ?? '-'}` +
+        ` | idle switches [${report.idleSwitches.join(', ')}]` +
+        ` | all-ON wins ${report.allOnWins ? 'yes' : 'no'} | greedy wins at par ${report.greedySolves ? 'yes' : 'no'}`,
     );
   }
   for (const w of warnings) console.log(`  warn  ${w.code}: ${w.message}`);

@@ -57,8 +57,9 @@ the Playwright suite, on every push.
   not a miss: the attempt count stays the same.
 - **Ball.** Follows the track from the start. It stops at the first closed gate or dead end.
   Reaching a goal wins.
-- **Budget.** `maxToggles` limits how many switches may differ from the level's starting position.
-  Flipping a changed switch back refunds it. The limit holds across attempts. On staged boards
+- **Changes and par.** A change is a switch that differs from the level's starting position, so
+  flipping one back undoes it. There is no limit. `meta.minChanges` is the level's par, shown
+  beside the change count; a solve at par can earn the third star. On staged boards
   each part gets its own `maxToggles`.
 - **Run** keeps switch positions after a failure and clears Undo. **Undo** reverses the last toggle
   since the last run. **Reset** restores the starting positions, and on staged boards goes back to part A.
@@ -93,38 +94,39 @@ consecutive pair is a directed link, and junction exits live on the junction nod
 coaching line, used on tutorial levels and where a new part appears. `boardHeight` (layout
 pixels, default 400) gives fork levels room for two lanes, and two-part boards room for both parts. The validator reports every problem with a code:
 `DUPLICATE_ID`, `UNKNOWN_NODE`, `BAD_EDGE`, `SIGNAL_CYCLE`, `SWITCH_NO_INPUT`, `GATE_NO_INPUT`,
-`GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`, `BAD_BUDGET`,
+`GATE_ARITY`, `TRACK_SHAPE`, `TRACK_CYCLE`, `NOT_ON_TRACK`, `BAD_POSITION`,
 `BAD_STAGE`, plus the
 solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 
 ## Levels
 
-| #   | Name             | Teaches                                                    | Budget | Min |
-| --- | ---------------- | ---------------------------------------------------------- | ------ | --- |
-| 1   | First Spark      | A powered switch opens the gate it feeds                   | 1      | 1   |
-| 2   | Reverse Logic    | OFF gates open only without power                          | 1      | 1   |
-| 3   | Double Duty      | One switch can feed two gates                              | 2      | 2   |
-| 4   | The Tradeoff     | Switch chains: B only has power if A does                  | 2      | 2   |
-| 5   | Two Conditions   | ALL ON gates need every wire powered                       | 3      | 3   |
-| 6   | False Friend     | ANY ON gates; the obvious fix blocks a later gate          | 2      | 2   |
-| 7   | Minimal Moves    | The step-by-step route costs 3; one switch fixes two gates | 2      | 2   |
-| 8   | Split Signal     | One switch feeds three; choose which branches stay dark    | 3      | 3   |
-| 9   | Interlock        | A forbidden route forces you to build the other one        | 3      | 3   |
-| 10  | Master Circuit   | Chains, splits, ALL/ANY gates and a false friend together  | 4      | 4   |
-| 11  | Fork in the Road | A fork picks the lane; change the route, not the gates     | 1      | 1   |
-| 12  | Dead Lane        | A lane whose gates contradict each other can never open    | 2      | 2   |
-| 13  | Long Way Round   | Count what each lane costs; rerouting can be cheaper       | 2      | 2   |
-| 14  | Switchyard       | One switch both picks the lane and guards the other one    | 2      | 2   |
-| 15  | Grand Junction   | Rule out a lane, then follow a chain on the other one      | 3      | 3   |
-| 16  | Two Parts        | Clear part A, then part B opens                            | 1 + 1  | 2   |
-| 17  | Second Wind      | Each part has its own changes to spend                     | 2 + 2  | 4   |
-| 18  | Carry Over       | A wire crosses into part B, so clear part A the right way  | 1 + 1  | 2   |
-| 19  | Relay Race       | Spend a spare change in part A to set up part B            | 2 + 2  | 4   |
-| 20  | Grand Finale     | Plan both parts before the first run                       | 2 + 2  | 4   |
+| #   | Name             | Teaches                                                    | Par | Guess   |
+| --- | ---------------- | ---------------------------------------------------------- | --- | ------- |
+| 1   | First Spark      | A powered switch opens the gate it feeds                   | 1   | 1 in 1  |
+| 2   | Reverse Logic    | OFF gates open only without power                          | 1   | 1 in 1  |
+| 3   | Double Duty      | One switch can feed two gates                              | 2   | 1 in 1  |
+| 4   | The Tradeoff     | Switch chains: B only has power if A does                  | 2   | 1 in 1  |
+| 5   | Two Conditions   | ALL ON gates need every wire powered                       | 3   | 1 in 1  |
+| 6   | False Friend     | ANY ON gates; the obvious fix blocks a later gate          | 2   | 1 in 3  |
+| 7   | Minimal Moves    | The step-by-step route costs 3; one switch fixes two gates | 2   | 1 in 6  |
+| 8   | Split Signal     | One switch feeds three; choose which branches stay dark    | 3   | 1 in 4  |
+| 9   | Interlock        | A forbidden route forces you to build the other one        | 3   | 1 in 4  |
+| 10  | Master Circuit   | Chains, splits, ALL/ANY gates and a false friend together  | 4   | 1 in 5  |
+| 11  | Fork in the Road | A fork picks the lane; change the route, not the gates     | 1   | 1 in 3  |
+| 12  | Dead Lane        | A lane whose gates contradict each other can never open    | 2   | 1 in 3  |
+| 13  | Long Way Round   | Count what each lane costs; rerouting can be cheaper       | 2   | 1 in 6  |
+| 14  | Switchyard       | One switch both picks the lane and guards the other one    | 2   | 1 in 3  |
+| 15  | Grand Junction   | Rule out a lane, then follow a chain on the other one      | 3   | 1 in 4  |
+| 16  | Two Parts        | Clear part A, then part B opens                            | 2   | 1 in 6  |
+| 17  | Second Wind      | Each part is its own puzzle: clear one, then the next      | 4   | 1 in 15 |
+| 18  | Carry Over       | A wire crosses into part B, so clear part A the right way  | 2   | 1 in 3  |
+| 19  | Relay Race       | A change in part A can set up part B                       | 4   | 1 in 5  |
+| 20  | Grand Finale     | Plan both parts before the first run                       | 4   | 1 in 5  |
 
-Each of levels 4 to 20 has exactly one winning position within its budget, and turning every
-switch ON never wins. From level 5 on, a greedy player who fixes whatever blocked the ball also
-fails, except on the `easy` levels 4, 11, 16 and 17, which introduce a new idea. On levels 18
+Every level has exactly one winning position at par, and from level 4 on turning every switch
+ON never wins. Without a change limit some levels also have longer wins, which earn at most two
+stars. From level 5 on, a greedy player who fixes whatever blocked the ball never wins at par,
+except on the `easy` levels 4, 11, 16 and 17, which introduce a new idea. On levels 18
 to 20 the greedy player clears part A the obvious way and finds part B out of reach; the game
 then says so and suggests Reset.
 
@@ -159,8 +161,24 @@ is the same frame the full animation ends on. Reduced motion shows it at once.
 After a miss, the gate or fork that stopped the ball stays outlined and the status line says what
 it needed. Run reads **Retry** until a switch moves. There is no failure pop-up.
 
-Stars (`src/game/scoring.ts`): 1 for the goal, 2 with no hints on that solve, 3 with no hints on
-the first Run. Saving the best stars per level comes in the next milestone.
+## Stars
+
+`src/game/scoring.ts`: 1 star for reaching the goal, 2 with no hints on that solve, 3 with no hints,
+on the level's first Run, at par.
+
+The first Run is the first Run ever made on that level. It is spent, and saved, the moment any
+Run ends (won or missed), or when the player resets or leaves after clearing a part of a two-part
+board. Leaving, reloading or replaying never gives it back, so only a level's very first solve can
+earn three stars. Runs themselves are unlimited.
+
+Progress (`chain-reaction/progress`, version 2) keeps per level the best stars, fewest Runs, fewest
+changes and the first time it was solved, plus which levels have spent their first Run. A later
+result never lowers an earlier one, and recording the same win twice changes nothing. Version 1
+saves upgrade in place: a first-Run solve becomes 3 stars, a later one 2, and a level that had
+hint moves 1 (the old change limit equalled par, so every old solve was at par).
+
+A replay of a solved level starts without the hint moves of an earlier visit, so its stars can be
+earned back. Hints already spent are not refunded.
 
 ## Hints
 
@@ -215,7 +233,12 @@ Observe without coaching, as the build sheet asks.
 
 ## Solver report
 
-`npm run levels` lists, per level: minimum changes, one shortest solution, winning positions out of
-those reachable within the budget, whether turning every switch ON wins, and whether a greedy "fix
-whatever blocked the ball" player wins. For `medium` and `hard` levels the last two are errors,
-because those levels should need deduction.
+`npm run levels` lists, per level: par, one shortest solution, how many positions win at par (it
+must be one) and in all, the first-Run guess odds, idle switches (ones no gate or fork depends on),
+whether turning every switch ON wins, and whether a greedy "fix whatever blocked the ball" player
+wins at par. For `medium` and `hard` levels the last two are errors, because those levels should
+need deduction.
+
+**Guess odds** ("Guess" in the level table) answer "how often does a random pick of par-many
+switches win on the first Run?". 1 in 3 means a guesser earns three stars a third of the time;
+levels from 21 on should aim much lower.

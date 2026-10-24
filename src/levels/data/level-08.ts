@@ -5,7 +5,6 @@ export const level08: LevelDef = {
   id: 'level-08',
   name: 'Split Signal',
   difficulty: 'medium',
-  maxToggles: 3,
   nodes: [
     {
       id: 'source',
