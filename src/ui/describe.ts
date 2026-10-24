@@ -19,7 +19,19 @@ export function gateRequirement(level: LevelDef, id: NodeId): string {
 
 /** Says where and why the ball stopped, without giving away the solution. */
 export function explainRun(level: LevelDef, run: RunResult): string {
+  const trips = run.events.flatMap((e) => (e.type === 'ballTrip' ? [e] : []));
+  const why = explainStop(level, run);
+  if (trips.length === 0 || run.outcome.kind === 'goal') return why;
+  const flipped = trips.map((e) => nodeName(level, e.switchId)).join(', then ');
+  const plates = trips.length === 1 ? 'a trip plate' : 'trip plates';
+  return `${why} On the way, ${plates} flipped ${flipped}.`;
+}
+
+function explainStop(level: LevelDef, run: RunResult): string {
   const { outcome } = run;
+  // After a trip plate, the power and gate events that count are the last ones.
+  const lastTrip = run.events.findLastIndex((e) => e.type === 'ballTrip');
+  const picture = run.events.slice(lastTrip + 1);
   switch (outcome.kind) {
     case 'goal':
       return 'The ball reached the goal.';
@@ -43,7 +55,7 @@ export function explainRun(level: LevelDef, run: RunResult): string {
     case 'blocked': {
       const node = indexLevel(level).nodes.get(outcome.gateId);
       const name = nodeName(level, outcome.gateId);
-      const wires = run.events.filter((e) => e.type === 'wire' && e.to === outcome.gateId);
+      const wires = picture.filter((e) => e.type === 'wire' && e.to === outcome.gateId);
       const lit = wires.filter((e) => e.type === 'wire' && e.value).length;
       if (node?.type === 'gate' && node.combine === 'and' && node.requiredSignal)
         return lit === 0
@@ -53,7 +65,7 @@ export function explainRun(level: LevelDef, run: RunResult): string {
         return `Stopped at ${name}: it needs power on at least one wire, but none had it.`;
       if (node?.type === 'gate' && node.combine === 'or')
         return `Stopped at ${name}: it needs every wire dark, but ${lit} had power.`;
-      const gate = run.events.find((e) => e.type === 'gate' && e.gateId === outcome.gateId);
+      const gate = picture.find((e) => e.type === 'gate' && e.gateId === outcome.gateId);
       const got = gate?.type === 'gate' && gate.input ? 'got power' : 'got no power';
       const needs = node?.type === 'gate' && node.requiredSignal ? 'needs power' : 'needs no power';
       return `Stopped at ${name}: it ${needs} but ${got}.`;

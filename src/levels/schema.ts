@@ -15,7 +15,8 @@ export type ValidationCode =
   | 'BAD_POSITION'
   | 'BAD_STAGE'
   | 'BAD_GEAR'
-  | 'BAD_KEY';
+  | 'BAD_KEY'
+  | 'BAD_TRIP';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -34,6 +35,7 @@ const TRACK_TYPES = new Set<LevelNode['type']>([
   'checkpoint',
   'key',
   'lock',
+  'trip',
 ]);
 const TERMINAL = new Set<LevelNode['type']>(['goal', 'deadEnd']);
 
@@ -97,6 +99,13 @@ export function validateLevel(level: LevelDef): ValidationError[] {
   for (const n of level.nodes) {
     if (n.type === 'lock' && nodes.get(n.key)?.type !== 'key') {
       add('BAD_KEY', `Lock "${n.id}" needs key "${n.key}", which is not a key`, n.id);
+    }
+  }
+
+  // Every trip plate flips a switch.
+  for (const n of level.nodes) {
+    if (n.type === 'trip' && nodes.get(n.flips)?.type !== 'switch') {
+      add('BAD_TRIP', `Trip plate "${n.id}" flips "${n.flips}", which is not a switch`, n.id);
     }
   }
 

@@ -5,7 +5,8 @@ import type { LevelDef, NodeId, RunEvent, RunOutcome, RunResult, SwitchStates } 
 /**
  * One RUN: power propagation, then gate states, then ball travel. The ball stops at
  * the first closed gate, dead end or lock it has no key for, or at the checkpoint that
- * ends the part being played. Pure: same inputs always give the same events.
+ * ends the part being played. A trip plate flips a switch as the ball passes, and power and
+ * gates are worked out again from there. Pure: same inputs always give the same events.
  *
  * `stage` is the part being played; null runs the whole track, passing every checkpoint.
  * `keys` are the keys the ball sets off with, carried from earlier parts.
@@ -18,7 +19,8 @@ export function simulateRun(
   keys: readonly NodeId[] = [],
 ): RunResult {
   const index = indexLevel(level);
-  const evaluation = evaluate(index, switches);
+  const live: Record<NodeId, boolean> = { ...switches };
+  let evaluation = evaluate(index, live);
   const events: RunEvent[] = [...evaluation.events];
 
   let at: NodeId = stageStart(index, stage ?? 0);
@@ -63,6 +65,13 @@ export function simulateRun(
           events.push({ type: 'ballLocked', nodeId: at });
           break;
         }
+        at = moveTo(events, at, index.trackNext.get(at));
+        break;
+      case 'trip':
+        live[node.flips] = !live[node.flips];
+        events.push({ type: 'ballTrip', nodeId: at, switchId: node.flips });
+        evaluation = evaluate(index, live);
+        events.push(...evaluation.events);
         at = moveTo(events, at, index.trackNext.get(at));
         break;
       case 'junction': {

@@ -76,6 +76,16 @@ export interface LockNode extends NodeBase {
   key: NodeId;
 }
 
+/**
+ * A trip plate on the track: as the ball rolls over it, it flips the named switch, and
+ * power and gates change while the ball is still rolling. The switch springs back when the
+ * run ends.
+ */
+export interface TripNode extends NodeBase {
+  type: 'trip';
+  flips: NodeId;
+}
+
 export type LevelNode =
   | SourceNode
   | SwitchNode
@@ -86,7 +96,8 @@ export type LevelNode =
   | DeadEndNode
   | CheckpointNode
   | KeyNode
-  | LockNode;
+  | LockNode
+  | TripNode;
 
 export type NodeType = LevelNode['type'];
 
@@ -142,6 +153,8 @@ export type RunEvent =
   | { type: 'ballCheckpoint'; nodeId: NodeId }
   | { type: 'ballKey'; nodeId: NodeId }
   | { type: 'ballLocked'; nodeId: NodeId }
+  /** A trip plate flipped a switch; the power and gate events after it are the new picture. */
+  | { type: 'ballTrip'; nodeId: NodeId; switchId: NodeId }
   | { type: 'attemptEnd'; won: boolean; attempt: number };
 
 export type RunOutcome =

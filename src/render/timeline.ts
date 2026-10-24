@@ -40,7 +40,10 @@ export const edgeKey = (from: NodeId, to: NodeId) => `${from}>${to}`;
 
 export type Cue =
   | { kind: 'wire'; at: number; dur: number; from: NodeId; to: NodeId; value: boolean }
-  | { kind: 'gate'; at: number; dur: number; gateId: NodeId; open: boolean }
+  | { kind: 'gate'; at: number; dur: number; gateId: NodeId; open: boolean; from: number }
+  /** The switch and source signals from here on; a trip plate starts a new picture. */
+  | { kind: 'power'; at: number; dur: number; signals: ReadonlyMap<NodeId, boolean> }
+  | { kind: 'trip'; at: number; dur: number; nodeId: NodeId; switchId: NodeId }
   | { kind: 'ball'; at: number; dur: number; from: NodeId; to: NodeId }
   | {
       kind: 'finish';
@@ -72,36 +75,71 @@ export interface Timeline {
 export function buildTimeline(events: readonly RunEvent[], timing: Timing): Timeline {
   const cues: Cue[] = [];
   let cursor = 0;
-  let wiresEnd = 0;
-  for (const e of events) {
-    if (e.type !== 'wire') continue;
-    cues.push({
-      kind: 'wire',
-      at: cursor,
-      dur: timing.wire,
-      from: e.from,
-      to: e.to,
-      value: e.value,
-    });
-    wiresEnd = Math.max(wiresEnd, cursor + timing.wire);
-    if (e.value) cursor += timing.wireStagger;
-  }
-  cursor = wiresEnd;
+  const wireShown = new Map<string, boolean>();
+  const gateShown = new Map<NodeId, boolean>();
 
-  const gates = events.filter((e) => e.type === 'gate');
-  for (const e of gates) {
-    cues.push({ kind: 'gate', at: cursor, dur: timing.gate, gateId: e.gateId, open: e.open });
-  }
-  if (gates.length > 0) cursor += timing.gate;
+  // One picture of power: wires pulse out, then gates swing. After a trip plate, only what
+  // changed moves.
+  const power = (batch: readonly RunEvent[]) => {
+    const first = wireShown.size === 0 && gateShown.size === 0;
+    const signals = new Map<NodeId, boolean>();
+    for (const e of batch) if (e.type === 'signal') signals.set(e.nodeId, e.value);
+    cues.push({ kind: 'power', at: cursor, dur: 0, signals });
+    let at = cursor;
+    let wiresEnd = cursor;
+    for (const e of batch) {
+      if (e.type !== 'wire') continue;
+      const key = edgeKey(e.from, e.to);
+      if (!first && wireShown.get(key) === e.value) continue;
+      wireShown.set(key, e.value);
+      cues.push({ kind: 'wire', at, dur: timing.wire, from: e.from, to: e.to, value: e.value });
+      wiresEnd = Math.max(wiresEnd, at + timing.wire);
+      if (e.value) at += timing.wireStagger;
+    }
+    cursor = wiresEnd;
+    let swung = false;
+    for (const e of batch) {
+      if (e.type !== 'gate' || gateShown.get(e.gateId) === e.open) continue;
+      const was = gateShown.get(e.gateId);
+      const from = was === undefined ? GATE_NEUTRAL : was ? 1 : 0;
+      gateShown.set(e.gateId, e.open);
+      cues.push({
+        kind: 'gate',
+        at: cursor,
+        dur: timing.gate,
+        gateId: e.gateId,
+        open: e.open,
+        from,
+      });
+      swung = true;
+    }
+    if (swung) cursor += timing.gate;
+  };
 
   let ballStart: NodeId | null = null;
   const links: [NodeId, NodeId][] = [];
+  let batch: RunEvent[] = [];
   for (const e of events) {
+    if (e.type === 'signal' || e.type === 'wire' || e.type === 'gate') {
+      batch.push(e);
+      continue;
+    }
+    if (batch.length > 0) power(batch);
+    batch = [];
     if (e.type === 'ballMove') {
       links.push([e.from, e.to]);
       ballStart ??= e.from;
       cues.push({ kind: 'ball', at: cursor, dur: timing.ballSegment, from: e.from, to: e.to });
       cursor += timing.ballSegment;
+    } else if (e.type === 'ballTrip') {
+      cues.push({
+        kind: 'trip',
+        at: cursor,
+        dur: timing.gate,
+        nodeId: e.nodeId,
+        switchId: e.switchId,
+      });
+      cursor += timing.gate;
     } else if (
       e.type === 'ballBlocked' ||
       e.type === 'ballGoal' ||
@@ -120,6 +158,7 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
       }
     }
   }
+  if (batch.length > 0) power(batch);
   return { cues, duration: cursor, ballStart };
 }
 
@@ -135,6 +174,12 @@ export interface VisualState {
   finish: { result: FinishResult; nodeId: NodeId; p: number } | null;
   /** After a win, how far the light has run along the ball's route (0..1). */
   circuit: { links: readonly (readonly [NodeId, NodeId])[]; p: number } | null;
+  /** Switch and source signals for the picture on show; null before power starts. */
+  signals: ReadonlyMap<NodeId, boolean> | null;
+  /** Switches a trip plate has flipped so far this run. */
+  flipped: ReadonlySet<NodeId>;
+  /** How far each trip plate the ball has rolled over is pressed in (0..1). */
+  trips: Map<NodeId, number>;
 }
 
 /** Gate openness before a run resolves it. */
@@ -153,20 +198,35 @@ export function sampleTimeline(timeline: Timeline, t: number): VisualState {
     ball: timeline.ballStart ? { at: timeline.ballStart } : null,
     finish: null,
     circuit: null,
+    signals: null,
+    flipped: new Set(),
+    trips: new Map(),
   };
+  const flipped = new Set<NodeId>();
   for (const cue of timeline.cues) {
     if (t < cue.at) continue;
     const p = progress(cue, t);
     switch (cue.kind) {
-      case 'wire':
-        state.reached.set(edgeKey(cue.from, cue.to), p);
-        if (cue.value) state.wires.set(edgeKey(cue.from, cue.to), p);
-        break;
-      case 'gate': {
-        const target = cue.open ? 1 : 0;
-        state.gates.set(cue.gateId, GATE_NEUTRAL + (target - GATE_NEUTRAL) * easeInOut(p));
+      case 'wire': {
+        const key = edgeKey(cue.from, cue.to);
+        state.reached.set(key, Math.max(state.reached.get(key) ?? 0, p));
+        if (cue.value) state.wires.set(key, p);
+        else state.wires.delete(key);
         break;
       }
+      case 'gate': {
+        const target = cue.open ? 1 : 0;
+        state.gates.set(cue.gateId, cue.from + (target - cue.from) * easeInOut(p));
+        break;
+      }
+      case 'power':
+        state.signals = cue.signals;
+        break;
+      case 'trip':
+        if (flipped.has(cue.switchId)) flipped.delete(cue.switchId);
+        else flipped.add(cue.switchId);
+        state.trips.set(cue.nodeId, p);
+        break;
       case 'ball':
         state.ball = p >= 1 ? { at: cue.to } : { from: cue.from, to: cue.to, p };
         break;
@@ -178,5 +238,6 @@ export function sampleTimeline(timeline: Timeline, t: number): VisualState {
         break;
     }
   }
+  state.flipped = flipped;
   return state;
 }
