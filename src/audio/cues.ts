@@ -20,7 +20,11 @@ export function runSounds(timeline: Timeline): SoundCue[] {
   if (timeline.duration === 0) {
     for (const cue of timeline.cues)
       if (cue.kind === 'finish')
-        out.push({ at: 0, sound: cue.result === 'goal' ? 'chime' : 'thud', dur: 0 });
+        out.push({
+          at: 0,
+          sound: cue.result === 'goal' || cue.result === 'checkpoint' ? 'chime' : 'thud',
+          dur: 0,
+        });
     return out;
   }
   const powered = timeline.cues.filter((c) => c.kind === 'wire' && c.value);
@@ -46,7 +50,11 @@ export function runSounds(timeline: Timeline): SoundCue[] {
   }
   for (const cue of timeline.cues) {
     if (cue.kind === 'finish') {
-      out.push({ at: cue.at, sound: cue.result === 'goal' ? 'chime' : 'thud', dur: cue.dur });
+      out.push({
+        at: cue.at,
+        sound: cue.result === 'goal' || cue.result === 'checkpoint' ? 'chime' : 'thud',
+        dur: cue.dur,
+      });
     }
   }
   return out.sort((a, b) => a.at - b.at);

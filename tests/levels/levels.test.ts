@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { indexLevel, switchStage } from '../../src/engine/graph';
 import { replay } from '../../src/engine/reducer';
+import type { GameAction, LevelDef } from '../../src/engine/types';
 import { checkLevel } from '../../src/levels/check';
 import { levels } from '../../src/levels';
 
@@ -12,11 +14,16 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s', (_id, level) => {
 
   it('has a solution within budget that replays to a win', () => {
     const solution = check.report!.solution!;
-    expect(solution.length).toBeLessThanOrEqual(level.maxToggles);
-    const actions = [
-      ...solution.map((switchId) => ({ type: 'toggle' as const, switchId })),
-      { type: 'run' as const },
-    ];
+    // Each part of a staged board has its own budget, and a run between parts.
+    const stageOf = (id: string) => switchStage(indexLevel(level).nodes.get(id)!);
+    const parts = indexLevel(level).checkpoints.length + 1;
+    const actions: GameAction[] = [];
+    for (let stage = 0; stage < parts; stage++) {
+      const moves = solution.filter((id) => stageOf(id) === stage);
+      expect(moves.length).toBeLessThanOrEqual(level.maxToggles);
+      actions.push(...moves.map((switchId) => ({ type: 'toggle' as const, switchId })));
+      actions.push({ type: 'run' });
+    }
     expect(replay(level, actions).state.phase).toBe('won');
   });
 
@@ -43,6 +50,11 @@ describe('the curated set', () => {
       'Long Way Round',
       'Switchyard',
       'Grand Junction',
+      'Two Parts',
+      'Second Wind',
+      'Carry Over',
+      'Relay Race',
+      'Grand Finale',
     ]);
   });
 
@@ -70,9 +82,24 @@ describe('the curated set', () => {
     }
   });
 
+  it('splits levels 16 to 20 into two parts, with wires crossing between parts from 18', () => {
+    const staged = levels.map((l) => indexLevel(l).checkpoints.length > 0);
+    expect(staged.indexOf(true)).toBe(15);
+    expect(staged.slice(15)).toEqual([true, true, true, true, true]);
+    expect(levels[15]!.meta.prompt).toMatch(/checkpoint/);
+    const crosses = (level: LevelDef) =>
+      level.signalEdges.some((e) => {
+        const from = indexLevel(level).nodes.get(e.from)!;
+        const to = indexLevel(level).nodes.get(e.to)!;
+        return from.type === 'switch' && switchStage(from) === 0 && to.y > 0.6;
+      });
+    expect(levels.slice(15).map(crosses)).toEqual([false, false, true, true, true]);
+  });
+
   it('gets harder: budgets never shrink below the solution and grow overall', () => {
     const mins = levels.map((l) => l.meta.minChanges);
     expect(mins.at(-1)).toBeGreaterThan(mins[0]!);
-    expect(levels.every((l) => l.meta.minChanges <= l.maxToggles)).toBe(true);
+    const parts = (l: LevelDef) => indexLevel(l).checkpoints.length + 1;
+    expect(levels.every((l) => l.meta.minChanges <= l.maxToggles * parts(l))).toBe(true);
   });
 });

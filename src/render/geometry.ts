@@ -1,12 +1,14 @@
 // Board geometry: where nodes sit in pixels, where wires attach, and how they route.
 // Pure functions so routing is tested without a renderer.
 
+import type { LevelNode } from '../engine/types';
+
 export interface Point {
   x: number;
   y: number;
 }
 
-export type NodeKind = 'source' | 'switch' | 'gate' | 'junction' | 'ballStart' | 'goal' | 'deadEnd';
+export type NodeKind = LevelNode['type'];
 
 /** Half-height of the switch plate and the gate housing, in CSS pixels. */
 export const SWITCH_HALF_HEIGHT = 28;

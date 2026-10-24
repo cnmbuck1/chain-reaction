@@ -12,9 +12,18 @@ export interface LevelIndex {
   sinks: readonly NodeId[];
   switchIds: readonly NodeId[];
   ballStart: NodeId;
+  /** Checkpoint ids by the part they complete. Empty on boards without parts. */
+  checkpoints: readonly NodeId[];
   /** Next track node for every non-junction track node that has one. */
   trackNext: ReadonlyMap<NodeId, NodeId>;
 }
+
+/** The part of a staged board a switch belongs to. */
+export const switchStage = (node: LevelNode) => (node.type === 'switch' ? (node.stage ?? 0) : 0);
+
+/** Where the ball sets off for a part: the start, or the checkpoint that ended the part before. */
+export const stageStart = (index: LevelIndex, stage: number): NodeId =>
+  stage === 0 ? index.ballStart : index.checkpoints[stage - 1]!;
 
 const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -53,6 +62,9 @@ export function indexLevel(level: LevelDef): LevelIndex {
     .sort(byId);
   const ballStart = level.nodes.find((n) => n.type === 'ballStart')?.id ?? '';
 
+  const checkpoints: NodeId[] = [];
+  for (const n of level.nodes) if (n.type === 'checkpoint') checkpoints[n.stage] = n.id;
+
   const trackNext = new Map<NodeId, NodeId>();
   for (const path of level.track) {
     for (let i = 0; i + 1 < path.length; i++) trackNext.set(path[i]!, path[i + 1]!);
@@ -67,6 +79,7 @@ export function indexLevel(level: LevelDef): LevelIndex {
     sinks,
     switchIds,
     ballStart,
+    checkpoints,
     trackNext,
   };
   cache.set(level, index);

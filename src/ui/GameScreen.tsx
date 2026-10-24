@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { runSounds } from '../audio/cues';
 import { buzz, type Sound } from '../audio/sound';
+import { indexLevel, switchStage } from '../engine/graph';
 import { changesUsed, initialState, step } from '../engine/reducer';
+import { solve } from '../engine/solver';
 import type { GameAction, GameState, LevelDef, RejectReason } from '../engine/types';
 import { freeMovePlan, withFreeMoves } from '../hints/freeMoves';
 import type { HintShop } from '../monetize/hintShop';
 import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
-import { explainRun, gateRequirement, nodeName, rejectMessage } from './describe';
+import { explainRun, gateRequirement, nodeName, partName, rejectMessage } from './describe';
 import { HintPanel } from './HintPanel';
 
 interface Props {
@@ -27,8 +29,8 @@ interface Props {
     used: number;
     free: boolean;
     shop: HintShop;
-    /** Spends a hint on the next free move; false if it could not. */
-    onUse: () => boolean;
+    /** Spends a hint on the next free move (passing over `moves - 1` stale ones); false if it could not. */
+    onUse: (moves: number) => boolean;
     onGrant: (hints: number) => void;
   };
   showIntro: boolean;
@@ -58,16 +60,26 @@ export function GameScreen({
   // Free moves from hints are baked into the level: hinted switches start set and locked.
   const level = useMemo(() => withFreeMoves(baseLevel, hints.used), [baseLevel, hints.used]);
   const plan = freeMovePlan(baseLevel);
+  const partOf = (id: string) => switchStage(indexLevel(level).nodes.get(id)!);
   const [state, setState] = useState<GameState>(() => initialState(level));
   const [justHinted, setJustHinted] = useState<string | null>(null);
   const [playback, setPlayback] = useState<RunPlayback | null>(null);
   const [playing, setPlaying] = useState(false);
+  // On a run that clears a part, the view follows the ball down into the next part.
+  const [followed, setFollowed] = useState(false);
+  const follow = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(follow.current), []);
   const [notice, setNotice] = useState<RejectReason | null>(null);
   const [hintOpen, setHintOpen] = useState(false);
 
   const useHint = () => {
-    const move = plan[hints.used];
-    if (!move || playing || !hints.onUse()) return;
+    // Moves for a part already cleared are no use now, so the hint passes over them.
+    let skip = 0;
+    while (plan[hints.used + skip] && partOf(plan[hints.used + skip]!.switchId) < state.stage) {
+      skip++;
+    }
+    const move = plan[hints.used + skip];
+    if (!move || playing || !hints.onUse(skip + 1)) return;
     setState((s) => ({
       ...s,
       switches: { ...s.switches, [move.switchId]: move.on },
@@ -110,9 +122,18 @@ export function GameScreen({
     }
     if (action.type === 'run') {
       const timing = reducedMotion ? INSTANT_TIMING : NORMAL_TIMING;
-      sound.schedule(runSounds(buildTimeline(result.events, timing)));
+      const timeline = buildTimeline(result.events, timing);
+      sound.schedule(runSounds(timeline));
+      window.clearTimeout(follow.current);
+      setFollowed(false);
+      if (result.state.stage > state.stage) {
+        // Pan as the ball drops off the bottom of the part it just cleared.
+        const drop = timeline.cues.filter((c) => c.kind === 'ball').at(-1);
+        const at = drop ? drop.at + drop.dur / 2 : 0;
+        follow.current = window.setTimeout(() => setFollowed(true), at);
+      }
       runId.current += 1;
-      setPlayback({ id: runId.current, events: result.events });
+      setPlayback({ id: runId.current, events: result.events, stage: state.stage });
       setPlaying(true);
     } else {
       setPlayback(null);
@@ -125,12 +146,18 @@ export function GameScreen({
     if (state.phase === 'won') onSolved(state.attempt);
   };
 
-  const used = changesUsed(level, state.switches);
+  const used = changesUsed(level, state.switches, state.stage);
   const lastRun = state.lastRun;
+  const missed = lastRun !== null && !lastRun.won && lastRun.outcome.kind !== 'checkpoint';
+  const staged = indexLevel(level).checkpoints.length > 0;
+  // On a staged board, how an earlier part was cleared can leave a later one unsolvable.
+  const stuck = useMemo(() => state.stage > 0 && !solve(level, state).solvable, [level, state]);
 
   let status: string;
   if (notice) status = rejectMessage[notice];
   else if (playing) status = 'Running…';
+  else if (lastRun && playback && missed && stuck)
+    status = `${explainRun(level, lastRun)} ${partName(state.stage - 1)}'s switches leave no way through here. Reset to try another way.`;
   else if (lastRun && playback) status = explainRun(level, lastRun);
   else if (lastRun) status = 'Switches changed. Run again when ready.';
   else status = 'Set the switches, then press Run.';
@@ -161,7 +188,10 @@ export function GameScreen({
           </button>
         </div>
         <div className="title">
-          <span className="eyebrow">Level {number}</span>
+          <span className="eyebrow">
+            Level {number}
+            {staged && ` · ${partName(state.stage)}`}
+          </span>
           <h1>{level.name}</h1>
         </div>
         <div className="meter" aria-label={`Changes used ${used} of ${level.maxToggles}`}>
@@ -184,6 +214,7 @@ export function GameScreen({
         level={level}
         state={state}
         playback={playback}
+        stage={playing && playback ? playback.stage + (followed ? 1 : 0) : state.stage}
         reducedMotion={reducedMotion}
         locked={playing || state.phase === 'won'}
         justHinted={justHinted}
@@ -193,7 +224,7 @@ export function GameScreen({
 
       <div className="status-row">
         <p
-          className={`status ${notice ? 'warn' : lastRun && !playing && playback && !lastRun.won ? 'fail' : ''}`}
+          className={`status ${notice ? 'warn' : !playing && playback && missed ? 'fail' : ''}`}
           role="status"
           aria-live="polite"
         >

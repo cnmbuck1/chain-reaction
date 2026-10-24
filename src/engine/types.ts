@@ -19,6 +19,8 @@ export interface SwitchNode extends NodeBase {
   initialOn: boolean;
   /** Fixed in place, as when a hint has set it. Locked switches cannot be toggled. */
   locked?: boolean;
+  /** On staged boards, the part of the machine this switch belongs to (0 = the first). */
+  stage?: number;
 }
 
 export interface GateNode extends NodeBase {
@@ -48,8 +50,25 @@ export interface DeadEndNode extends NodeBase {
   type: 'deadEnd';
 }
 
+/**
+ * Where one part of a staged board ends. The ball stops here, that part's switches lock,
+ * and the next part's switches open. The next run starts from here.
+ */
+export interface CheckpointNode extends NodeBase {
+  type: 'checkpoint';
+  /** The part this checkpoint completes (0 = the first). */
+  stage: number;
+}
+
 export type LevelNode =
-  SourceNode | SwitchNode | GateNode | JunctionNode | BallStartNode | GoalNode | DeadEndNode;
+  | SourceNode
+  | SwitchNode
+  | GateNode
+  | JunctionNode
+  | BallStartNode
+  | GoalNode
+  | DeadEndNode
+  | CheckpointNode;
 
 export type NodeType = LevelNode['type'];
 
@@ -65,7 +84,10 @@ export interface LevelDef {
   id: string;
   name: string;
   difficulty: 'tutorial' | 'easy' | 'medium' | 'hard';
-  /** Maximum number of switches that may differ from their initial position. */
+  /**
+   * Maximum number of switches that may differ from their initial position. On staged
+   * boards this is per part: each part's switches get their own budget.
+   */
   maxToggles: number;
   /** Board layout height in CSS pixels at 360 wide, for levels that need more room. */
   boardHeight?: number;
@@ -81,7 +103,7 @@ export interface LevelDef {
     hint: string;
     /** Short coaching line shown before the first run (tutorial levels). */
     prompt?: string;
-    /** Minimum switch changes to win, as computed by the solver (checked in tests). */
+    /** Minimum switch changes to win, over all parts, as computed by the solver (checked in tests). */
     minChanges: number;
     /** The first switch a hint sets: one every in-budget solution changes. */
     keySwitch?: NodeId;
@@ -101,12 +123,15 @@ export type RunEvent =
   | { type: 'ballBlocked'; gateId: NodeId }
   | { type: 'ballDeadEnd'; nodeId: NodeId }
   | { type: 'ballGoal'; goalId: NodeId }
+  | { type: 'ballCheckpoint'; nodeId: NodeId }
   | { type: 'attemptEnd'; won: boolean; attempt: number };
 
 export type RunOutcome =
   | { kind: 'goal'; goalId: NodeId }
   | { kind: 'blocked'; gateId: NodeId }
-  | { kind: 'deadEnd'; nodeId: NodeId };
+  | { kind: 'deadEnd'; nodeId: NodeId }
+  /** The ball cleared a part of a staged board; the next part opens. */
+  | { kind: 'checkpoint'; nodeId: NodeId };
 
 export interface RunResult {
   won: boolean;
@@ -122,6 +147,8 @@ export interface GameState {
   undoStack: readonly NodeId[];
   /** 1-based attempt number. A failed RUN starts the next attempt. */
   attempt: number;
+  /** The part of a staged board being played (0 = the first). Always 0 on other boards. */
+  stage: number;
   phase: 'editing' | 'won';
   lastRun: RunResult | null;
 }
@@ -129,7 +156,8 @@ export interface GameState {
 export type GameAction =
   { type: 'toggle'; switchId: NodeId } | { type: 'undo' } | { type: 'run' } | { type: 'reset' };
 
-export type RejectReason = 'budget' | 'locked' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
+export type RejectReason =
+  'budget' | 'locked' | 'stageDone' | 'stageAhead' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
 
 export interface StepResult {
   state: GameState;

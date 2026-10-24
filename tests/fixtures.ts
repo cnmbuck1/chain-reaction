@@ -31,6 +31,20 @@ export const gate = (
 export const ball = (id = 'ball'): LevelNode => ({ id, type: 'ballStart', ...at });
 export const goal = (id = 'goal'): LevelNode => ({ id, type: 'goal', ...at });
 export const deadEnd = (id: string): LevelNode => ({ id, type: 'deadEnd', ...at });
+export const checkpoint = (id: string, stage: number): LevelNode => ({
+  id,
+  type: 'checkpoint',
+  stage,
+  ...at,
+});
+export const partSwitch = (id: string, stage: number, initialOn = false): LevelNode => ({
+  id,
+  type: 'switch',
+  initialOn,
+  stage,
+  ...at,
+});
+
 export const junction = (id: string, whenTrue: string, whenFalse: string): LevelNode => ({
   id,
   type: 'junction',
@@ -68,4 +82,36 @@ export const fork = makeLevel({
   ],
   track: [['ball', 'j']],
   meta: { teachingPoint: '', hint: '', minChanges: 1 },
+});
+
+/**
+ * Two parts. Part A: A or B opens gate 1. Part B: gate 2 needs B (from part A) and
+ * gate 3 needs D. So part A must be cleared with B, not A.
+ */
+export const staged = makeLevel({
+  id: 'staged',
+  maxToggles: 1,
+  nodes: [
+    source(),
+    sw('a'),
+    sw('b'),
+    gate('g1', true, 'or'),
+    checkpoint('cp', 0),
+    partSwitch('d', 1),
+    gate('g2', true),
+    gate('g3', true),
+    ball(),
+    goal(),
+  ],
+  signalEdges: [
+    { from: 'source', to: 'a' },
+    { from: 'source', to: 'b' },
+    { from: 'source', to: 'd' },
+    { from: 'a', to: 'g1' },
+    { from: 'b', to: 'g1' },
+    { from: 'b', to: 'g2' },
+    { from: 'd', to: 'g3' },
+  ],
+  track: [['ball', 'g1', 'cp', 'g2', 'g3', 'goal']],
+  meta: { teachingPoint: '', hint: '', minChanges: 2 },
 });

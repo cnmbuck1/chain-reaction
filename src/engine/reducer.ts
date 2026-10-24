@@ -1,6 +1,13 @@
-import { indexLevel } from './graph';
+import { indexLevel, switchStage } from './graph';
 import { simulateRun } from './simulate';
-import type { GameAction, GameState, LevelDef, StepResult, SwitchStates } from './types';
+import type {
+  GameAction,
+  GameState,
+  LevelDef,
+  RejectReason,
+  StepResult,
+  SwitchStates,
+} from './types';
 
 export function initialSwitches(level: LevelDef): SwitchStates {
   const switches: Record<string, boolean> = {};
@@ -15,27 +22,43 @@ export function initialState(level: LevelDef): GameState {
     switches: initialSwitches(level),
     undoStack: [],
     attempt: 1,
+    stage: 0,
     phase: 'editing',
     lastRun: null,
   };
 }
 
-/** Budget used: how many switches differ from the level's starting position. */
-export function changesUsed(level: LevelDef, switches: SwitchStates): number {
+/**
+ * Budget used: how many switches differ from the level's starting position. On staged
+ * boards only the given part's switches count, since each part has its own budget.
+ */
+export function changesUsed(level: LevelDef, switches: SwitchStates, stage = 0): number {
   let count = 0;
   for (const node of level.nodes) {
-    if (node.type === 'switch' && switches[node.id] !== node.initialOn) count++;
+    if (node.type !== 'switch' || switchStage(node) !== stage) continue;
+    if (switches[node.id] !== node.initialOn) count++;
   }
   return count;
 }
 
+/** Why a switch can't be toggled right now, regardless of the budget. */
+function blockedReason(level: LevelDef, state: GameState, switchId: string): RejectReason | null {
+  const node = indexLevel(level).nodes.get(switchId);
+  if (node?.type !== 'switch') return 'notASwitch';
+  if (state.phase === 'won') return 'levelWon';
+  if (node.locked) return 'locked';
+  const stage = switchStage(node);
+  if (stage < state.stage) return 'stageDone';
+  if (stage > state.stage) return 'stageAhead';
+  return null;
+}
+
 /** Whether toggling this switch now is allowed by the budget. */
 export function canToggle(level: LevelDef, state: GameState, switchId: string): boolean {
-  if (state.phase === 'won') return false;
-  const node = indexLevel(level).nodes.get(switchId);
-  if (node?.type !== 'switch' || node.locked) return false;
-  const isChanged = state.switches[switchId] !== node.initialOn;
-  return isChanged || changesUsed(level, state.switches) < level.maxToggles;
+  if (blockedReason(level, state, switchId)) return false;
+  const node = indexLevel(level).nodes.get(switchId)!;
+  const isChanged = state.switches[switchId] !== (node.type === 'switch' && node.initialOn);
+  return isChanged || changesUsed(level, state.switches, state.stage) < level.maxToggles;
 }
 
 /**
@@ -45,10 +68,8 @@ export function canToggle(level: LevelDef, state: GameState, switchId: string): 
 export function step(level: LevelDef, state: GameState, action: GameAction): StepResult {
   switch (action.type) {
     case 'toggle': {
-      const node = indexLevel(level).nodes.get(action.switchId);
-      if (node?.type !== 'switch') return { state, events: [], rejected: 'notASwitch' };
-      if (state.phase === 'won') return { state, events: [], rejected: 'levelWon' };
-      if (node.locked) return { state, events: [], rejected: 'locked' };
+      const blocked = blockedReason(level, state, action.switchId);
+      if (blocked) return { state, events: [], rejected: blocked };
       if (!canToggle(level, state, action.switchId)) {
         return { state, events: [], rejected: 'budget' };
       }
@@ -76,18 +97,22 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
     }
     case 'run': {
       if (state.phase === 'won') return { state, events: [], rejected: 'levelWon' };
-      const result = simulateRun(level, state.switches, state.attempt);
+      const result = simulateRun(level, state.switches, state.attempt, state.stage);
+      // Reaching a checkpoint is progress, not a miss: the next part opens, same attempt.
+      const cleared = result.outcome.kind === 'checkpoint';
       return {
         state: {
           ...state,
           undoStack: [],
-          attempt: result.won ? state.attempt : state.attempt + 1,
+          attempt: result.won || cleared ? state.attempt : state.attempt + 1,
+          stage: cleared ? state.stage + 1 : state.stage,
           phase: result.won ? 'won' : 'editing',
           lastRun: result,
         },
         events: result.events,
       };
     }
+    // Reset starts the whole machine over, since earlier parts can decide later ones.
     case 'reset':
       return {
         state: { ...initialState(level), attempt: state.attempt },
