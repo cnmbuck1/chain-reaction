@@ -63,7 +63,7 @@ test.describe('with reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
   test('a new player opens on level 1 and can play every level', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(SOLUTIONS.length * 9_000);
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await dismissIntro(page);
@@ -432,7 +432,7 @@ test.describe('on the smallest phone', () => {
   test.use({ viewport: { width: 320, height: 568 } });
 
   test('every level fits the board, with no labels or switches overlapping', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(SOLUTIONS.length * 6_000);
     const completed = Object.fromEntries(
       SOLUTIONS.map((_, i) => [`level-${String(i + 1).padStart(2, '0')}`, { bestAttempts: 1 }]),
     );
