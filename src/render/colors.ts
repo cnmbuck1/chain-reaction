@@ -16,3 +16,15 @@ export function signalColor(level: LevelDef, id: NodeId): string {
 }
 
 export const toHex = (css: string) => parseInt(css.slice(1), 16);
+
+// Keys are metals, so they never read as a switch's wire: gold, then silver, then copper. A lock
+// takes its key's metal.
+const KEY_COLORS = ['#f0d08a', '#dfe6ee', '#e8935f'] as const;
+
+/** CSS color for a key, or for the key a lock needs; the first key on a board is gold. */
+export function keyColor(level: LevelDef, id: NodeId): string {
+  const node = indexLevel(level).nodes.get(id);
+  const keyId = node?.type === 'lock' ? node.key : id;
+  const i = level.nodes.filter((n) => n.type === 'key').findIndex((n) => n.id === keyId);
+  return KEY_COLORS[Math.max(i, 0) % KEY_COLORS.length]!;
+}

@@ -2,7 +2,7 @@ import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 
 import { evaluate } from '../engine/evaluate';
 import { indexLevel, stageStart } from '../engine/graph';
 import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
-import { signalColor, toHex } from './colors';
+import { keyColor, signalColor, toHex } from './colors';
 import {
   GATE_HALF_HEIGHT,
   partialPath,
@@ -356,22 +356,24 @@ export class Board {
           g.circle(p.x, p.y, 13).fill(C.recess);
           g.circle(p.x, p.y, 13).stroke({ width: 1.5, color: C.brassDark });
           break;
-        case 'key':
+        case 'key': {
+          const metal = toHex(keyColor(level, node.id));
           // A brass plate in the track with a key lying on it.
           g.circle(p.x + 2, p.y + 3, 16).fill({ color: 0x000000, alpha: 0.35 });
           g.circle(p.x, p.y, 15).fill(this.gradients.brass);
           g.circle(p.x, p.y, 11).fill(C.recess);
-          g.circle(p.x - 4, p.y, 3.6).stroke({ width: 2.2, color: C.brassLight });
+          g.circle(p.x - 4, p.y, 3.6).stroke({ width: 2.2, color: metal });
           g.moveTo(p.x - 0.5, p.y)
             .lineTo(p.x + 7, p.y)
-            .stroke({ width: 2.2, color: C.brassLight });
+            .stroke({ width: 2.2, color: metal });
           g.moveTo(p.x + 4, p.y)
             .lineTo(p.x + 4, p.y + 3.5)
-            .stroke({ width: 2, color: C.brassLight });
+            .stroke({ width: 2, color: metal });
           g.moveTo(p.x + 6.5, p.y)
             .lineTo(p.x + 6.5, p.y + 3)
-            .stroke({ width: 2, color: C.brassLight });
+            .stroke({ width: 2, color: metal });
           break;
+        }
         case 'lock':
           // A padlock bolted across the track.
           g.roundRect(p.x - 14 + 2, p.y - 15 + 3, 28, 30, 6).fill({ color: 0x000000, alpha: 0.35 });
@@ -381,7 +383,7 @@ export class Board {
           g.moveTo(p.x - 6, p.y - 2)
             .arc(p.x, p.y - 2, 6, Math.PI, 0)
             .stroke({ width: 2.4, color: C.brassDark });
-          g.roundRect(p.x - 8, p.y - 3, 16, 12, 2).fill(C.gold);
+          g.roundRect(p.x - 8, p.y - 3, 16, 12, 2).fill(toHex(keyColor(level, node.id)));
           g.circle(p.x, p.y + 2, 1.8).fill(C.recess);
           g.rect(p.x - 0.7, p.y + 2, 1.4, 4).fill(C.recess);
           break;

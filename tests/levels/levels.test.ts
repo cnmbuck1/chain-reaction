@@ -81,6 +81,11 @@ describe('the curated set', () => {
       'Pressure Point',
       'Switchback',
       'Double Trip',
+      'Two Keys',
+      'Gold and Silver',
+      'Key Chain',
+      'Locksmith',
+      'Keymaster',
     ]);
   });
 
@@ -200,6 +205,36 @@ describe('the curated set', () => {
       const fork = level.nodes.some((n) => n.type === 'junction');
       expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(fork ? 6 : 10);
     }
+  });
+
+  it('asks for two keys from 46: each lock needs its own, and gears join in from 47', () => {
+    const keys = (l: LevelDef) => l.nodes.filter((n) => n.type === 'key').length;
+    expect(levels.findIndex((l) => keys(l) > 1)).toBe(45);
+    expect(levels[45]!.meta.prompt).toMatch(/two keys/i);
+    for (const level of levels.slice(45, 50)) {
+      const report = checkLevel(level).report!;
+      expect(report.parWins, level.id).toHaveLength(1);
+      expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(50);
+      // Without either lock, a cheaper win appears: both keys cost changes.
+      for (const lock of level.nodes.filter((n) => n.type === 'lock')) {
+        const next = indexLevel(level).trackNext.get(lock.id)!;
+        const open: LevelDef = {
+          ...level,
+          nodes: level.nodes.filter((n) => n.id !== lock.id),
+          track: level.track
+            .map((path) => path.map((id) => (id === lock.id ? next : id)))
+            .map((path) => path.filter((id, i) => id !== path[i - 1]))
+            .filter((path) => path.length > 1),
+        };
+        expect(checkLevel(open).report!.minChanges!, `${level.id} ${lock.id}`).toBeLessThan(
+          level.meta.minChanges,
+        );
+      }
+    }
+    const geared = levels
+      .slice(46, 50)
+      .map((l) => l.nodes.some((n) => n.type === 'switch' && n.turns));
+    expect(geared).toEqual([true, true, true, true]);
   });
 
   it('gets harder: par grows overall', () => {

@@ -11,7 +11,7 @@ import {
   wireRoutes,
 } from '../render/layout';
 import type { Point } from '../render/geometry';
-import { signalColor } from '../render/colors';
+import { keyColor, signalColor } from '../render/colors';
 import { INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { gateRequirement, nodeName, partName } from './describe';
 
@@ -67,6 +67,7 @@ export function BoardView({
   const hostRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const height = boardHeight(level);
+  const severalKeys = level.nodes.filter((n) => n.type === 'key').length > 1;
   const routes = useMemo(() => wireRoutes(level), [level]);
   const dividers = useMemo(() => partDividers(level), [level]);
   // On staged boards the screen shows one part at a time, filling the frame, and pans
@@ -329,8 +330,16 @@ export function BoardView({
             case 'key':
             case 'lock':
               return (
-                <div key={node.id} className="tag below" style={style} aria-hidden="true">
-                  {nodeName(level, node.id)}
+                <div
+                  key={node.id}
+                  className="tag below"
+                  style={{ ...style, color: keyColor(level, node.id) }}
+                  aria-hidden="true"
+                >
+                  {/* With several keys, the metal names the pair and the icon tells key from lock. */}
+                  {severalKeys
+                    ? nodeName(level, node.id).replace(/ (key|lock)$/i, '')
+                    : nodeName(level, node.id)}
                 </div>
               );
             case 'goal':

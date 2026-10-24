@@ -60,6 +60,11 @@ const SOLUTIONS = [
   { name: 'Pressure Point', switches: ['A', 'B', 'D'] },
   { name: 'Switchback', switches: ['C', 'F'] },
   { name: 'Double Trip', switches: ['A', 'B', 'D'] },
+  { name: 'Two Keys', switches: ['B', 'F', PART, 'D', 'I'] },
+  { name: 'Gold and Silver', switches: ['A', 'F', PART, 'D', 'E'] },
+  { name: 'Key Chain', switches: ['C', 'F', PART, 'E', 'H'] },
+  { name: 'Locksmith', switches: ['A', 'C', 'F', PART, 'E', 'H'] },
+  { name: 'Keymaster', switches: ['C', 'F', PART, 'E', 'H', 'I'] },
 ];
 
 async function solve(page: Page, switches: string[]) {

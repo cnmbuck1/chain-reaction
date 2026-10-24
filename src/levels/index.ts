@@ -44,6 +44,11 @@ import { level42 } from './data/level-42';
 import { level43 } from './data/level-43';
 import { level44 } from './data/level-44';
 import { level45 } from './data/level-45';
+import { level46 } from './data/level-46';
+import { level47 } from './data/level-47';
+import { level48 } from './data/level-48';
+import { level49 } from './data/level-49';
+import { level50 } from './data/level-50';
 
 /** Curated levels in play order. */
 export const levels: readonly LevelDef[] = [
@@ -92,4 +97,9 @@ export const levels: readonly LevelDef[] = [
   level43,
   level44,
   level45,
+  level46,
+  level47,
+  level48,
+  level49,
+  level50,
 ];
