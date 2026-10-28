@@ -3,7 +3,7 @@ import type { LevelDef } from '../../engine/types';
 export const level42: LevelDef = {
   schemaVersion: 1,
   id: 'level-42',
-  name: 'Tripwire',
+  name: 'Gear Train',
   difficulty: 'medium',
   boardHeight: 420,
   nodes: [
@@ -12,7 +12,7 @@ export const level42: LevelDef = {
       type: 'switch',
       x: 0.16,
       y: 0.16,
-      initialOn: false,
+      initialOn: true,
       label: 'A',
     },
     {
@@ -22,21 +22,23 @@ export const level42: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'B',
+      turns: ['d'],
     },
     {
       id: 'c',
       type: 'switch',
       x: 0.84,
       y: 0.16,
-      initialOn: true,
+      initialOn: false,
       label: 'C',
+      turns: ['e'],
     },
     {
       id: 'd',
       type: 'switch',
       x: 0.33,
       y: 0.46,
-      initialOn: false,
+      initialOn: true,
       label: 'D',
     },
     {
@@ -44,13 +46,13 @@ export const level42: LevelDef = {
       type: 'switch',
       x: 0.67,
       y: 0.46,
-      initialOn: true,
+      initialOn: false,
       label: 'E',
     },
     {
       id: 'g1',
       type: 'gate',
-      x: 0.17,
+      x: 0.24,
       y: 1,
       combine: 'and',
       requiredSignal: false,
@@ -59,7 +61,7 @@ export const level42: LevelDef = {
     {
       id: 'g2',
       type: 'gate',
-      x: 0.5,
+      x: 0.515,
       y: 1,
       combine: 'and',
       requiredSignal: true,
@@ -68,19 +70,11 @@ export const level42: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.8,
+      x: 0.79,
       y: 1,
-      combine: 'single',
-      requiredSignal: false,
+      combine: 'or',
+      requiredSignal: true,
       label: 'Gate 3',
-    },
-    {
-      id: 't1',
-      type: 'trip',
-      x: 0.335,
-      y: 1,
-      flips: 'a',
-      label: 'Trip plate',
     },
     {
       id: 'source',
@@ -118,11 +112,11 @@ export const level42: LevelDef = {
       to: 'c',
     },
     {
-      from: 'source',
+      from: 'b',
       to: 'd',
     },
     {
-      from: 'source',
+      from: 'b',
       to: 'e',
     },
     {
@@ -135,11 +129,7 @@ export const level42: LevelDef = {
     },
     {
       from: 'd',
-      to: 'g2',
-    },
-    {
-      from: 'e',
-      to: 'g2',
+      to: 'g1',
     },
     {
       from: 'c',
@@ -147,15 +137,30 @@ export const level42: LevelDef = {
     },
     {
       from: 'a',
+      to: 'g2',
+    },
+    {
+      from: 'e',
+      to: 'g2',
+    },
+    {
+      from: 'e',
+      to: 'g3',
+    },
+    {
+      from: 'c',
+      to: 'g3',
+    },
+    {
+      from: 'b',
       to: 'g3',
     },
   ],
-  track: [['ball', 'g1', 't1', 'g2', 'g3', 'goal']],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
-    teachingPoint:
-      'Set a switch the opposite way when a plate will flip it before the gate that reads it.',
-    hint: 'Gate 3 needs A off, yet the plate flips A on the way. Turn A on, and the plate turns it off in time.',
+    teachingPoint: 'One turn can set two switches: let the gears do the work.',
+    hint: 'Gate 2 needs C and E on, and E gets its power through B. Turning C turns E too.',
     minChanges: 2,
-    keySwitch: 'a',
+    keySwitch: 'b',
   },
 };

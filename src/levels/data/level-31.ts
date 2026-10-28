@@ -3,7 +3,7 @@ import type { LevelDef } from '../../engine/types';
 export const level31: LevelDef = {
   schemaVersion: 1,
   id: 'level-31',
-  name: 'Meshed',
+  name: 'Inverter',
   difficulty: 'easy',
   boardHeight: 420,
   nodes: [
@@ -22,14 +22,13 @@ export const level31: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'B',
-      turns: ['c'],
     },
     {
       id: 'c',
       type: 'switch',
       x: 0.84,
       y: 0.16,
-      initialOn: true,
+      initialOn: false,
       label: 'C',
     },
     {
@@ -37,7 +36,7 @@ export const level31: LevelDef = {
       type: 'switch',
       x: 0.33,
       y: 0.46,
-      initialOn: true,
+      initialOn: false,
       label: 'D',
     },
     {
@@ -45,15 +44,15 @@ export const level31: LevelDef = {
       type: 'switch',
       x: 0.67,
       y: 0.46,
-      initialOn: true,
+      initialOn: false,
       label: 'E',
     },
     {
       id: 'g1',
       type: 'gate',
-      x: 0.25,
+      x: 0.18,
       y: 1,
-      combine: 'and',
+      combine: 'single',
       requiredSignal: false,
       label: 'Gate 1',
     },
@@ -62,7 +61,7 @@ export const level31: LevelDef = {
       type: 'gate',
       x: 0.5,
       y: 1,
-      combine: 'or',
+      combine: 'and',
       requiredSignal: true,
       label: 'Gate 2',
     },
@@ -111,11 +110,11 @@ export const level31: LevelDef = {
       to: 'c',
     },
     {
-      from: 'source',
+      from: 'b',
       to: 'd',
     },
     {
-      from: 'c',
+      from: 'source',
       to: 'e',
     },
     {
@@ -123,32 +122,29 @@ export const level31: LevelDef = {
       to: 'g1',
     },
     {
-      from: 'a',
-      to: 'g1',
-    },
-    {
-      from: 'd',
+      from: 'c',
       to: 'g2',
     },
     {
-      from: 'e',
+      from: 'a',
       to: 'g2',
     },
     {
       from: 'e',
       to: 'g3',
+      invert: true,
     },
     {
-      from: 'b',
+      from: 'c',
       to: 'g3',
     },
   ],
   track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
-    teachingPoint: 'A gear turns its partner too, so you may need to turn the partner back.',
-    prompt: 'New: gears. Turning a switch with a cog badge turns its partner too.',
-    hint: "Gate 3 needs B on, but B's gear turns C off, and E gets its power through C.",
+    teachingPoint: 'A NOT wire carries the opposite of its switch.',
+    prompt: 'New part: a NOT wire has power while its switch is off.',
+    hint: 'NOT E is powered while E is off. Gates 2 and 3 both need C.',
     minChanges: 2,
-    keySwitch: 'b',
+    keySwitch: 'a',
   },
 };

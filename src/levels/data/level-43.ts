@@ -3,7 +3,7 @@ import type { LevelDef } from '../../engine/types';
 export const level43: LevelDef = {
   schemaVersion: 1,
   id: 'level-43',
-  name: 'Pressure Point',
+  name: 'Chain Drive',
   difficulty: 'medium',
   boardHeight: 420,
   nodes: [
@@ -14,6 +14,7 @@ export const level43: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'A',
+      turns: ['b'],
     },
     {
       id: 'b',
@@ -22,6 +23,7 @@ export const level43: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'B',
+      turns: ['d'],
     },
     {
       id: 'c',
@@ -36,7 +38,7 @@ export const level43: LevelDef = {
       type: 'switch',
       x: 0.33,
       y: 0.46,
-      initialOn: true,
+      initialOn: false,
       label: 'D',
     },
     {
@@ -44,15 +46,15 @@ export const level43: LevelDef = {
       type: 'switch',
       x: 0.67,
       y: 0.46,
-      initialOn: true,
+      initialOn: false,
       label: 'E',
     },
     {
       id: 'g1',
       type: 'gate',
-      x: 0.17,
+      x: 0.25,
       y: 1,
-      combine: 'or',
+      combine: 'and',
       requiredSignal: true,
       label: 'Gate 1',
     },
@@ -68,19 +70,11 @@ export const level43: LevelDef = {
     {
       id: 'g3',
       type: 'gate',
-      x: 0.8,
+      x: 0.78,
       y: 1,
       combine: 'and',
-      requiredSignal: true,
+      requiredSignal: false,
       label: 'Gate 3',
-    },
-    {
-      id: 't1',
-      type: 'trip',
-      x: 0.335,
-      y: 1,
-      flips: 'c',
-      label: 'Trip plate',
     },
     {
       id: 'source',
@@ -126,12 +120,16 @@ export const level43: LevelDef = {
       to: 'e',
     },
     {
+      from: 'd',
+      to: 'g1',
+    },
+    {
       from: 'a',
       to: 'g1',
     },
     {
-      from: 'c',
-      to: 'g1',
+      from: 'd',
+      to: 'g2',
     },
     {
       from: 'c',
@@ -142,23 +140,23 @@ export const level43: LevelDef = {
       to: 'g2',
     },
     {
-      from: 'a',
-      to: 'g2',
-    },
-    {
-      from: 'd',
-      to: 'g3',
-      invert: true,
-    },
-    {
       from: 'e',
       to: 'g3',
     },
+    {
+      from: 'c',
+      to: 'g3',
+    },
+    {
+      from: 'b',
+      to: 'g3',
+    },
   ],
-  track: [['ball', 'g1', 't1', 'g2', 'g3', 'goal']],
+  track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
-    teachingPoint: 'Count on the flip: a switch the plate turns on later has to start off.',
-    hint: 'The plate turns C on after Gate 1, so Gate 2 gets C without your help. Gate 1 then needs A.',
+    teachingPoint:
+      "Gears turn one step only: a switch moved by a gear doesn't turn its own partner.",
+    hint: 'Turning A brings B along. D still needs a turn by hand.',
     minChanges: 3,
     keySwitch: 'a',
   },

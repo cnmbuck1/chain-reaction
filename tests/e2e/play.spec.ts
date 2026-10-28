@@ -35,6 +35,16 @@ const SOLUTIONS = [
   { name: 'Carry Over', switches: ['B', PART, 'D'] },
   { name: 'Relay Race', switches: ['A', 'C', PART, 'D', 'E'] },
   { name: 'Grand Finale', switches: ['B', 'C', PART, 'D', 'E'] },
+  { name: 'Crossroads', switches: ['F', PART, 'D'] },
+  { name: 'Detour', switches: ['F', PART, 'E'] },
+  { name: 'Stay the Course', switches: ['B', PART, 'D', 'E'] },
+  { name: 'Through Traffic', switches: ['A', 'F', PART, 'D'] },
+  { name: 'Crossover', switches: ['B', 'C', 'F', PART, 'D'] },
+  { name: 'Branch Line', switches: ['A', 'B', PART, 'H'] },
+  { name: 'Signal Box', switches: ['A', PART, 'D', 'G'] },
+  { name: 'Junction Box', switches: ['B', 'C', PART, 'H'] },
+  { name: 'Double Junction', switches: ['A', 'F', PART, 'D'] },
+  { name: 'Grand Central', switches: ['A', 'B', 'F', PART, 'H'] },
   { name: 'Inverter', switches: ['A', 'C'] },
   { name: 'Opposite Day', switches: ['B', 'D'] },
   { name: 'Contrary Fork', switches: ['A', 'B'] },
@@ -317,7 +327,7 @@ test('a trip plate flips its switch mid-run, and the switch springs back after',
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('switch', { name: 'Unlock all levels' }).click();
   await page.getByRole('button', { name: '‹ Levels' }).click();
-  await page.getByRole('button', { name: /^Level 41, Trip Plate$/ }).click();
+  await page.getByRole('button', { name: /^Level 51, Trip Plate$/ }).click();
   await expect(status(page)).toContainText('New: trip plates');
   await page.getByRole('button', { name: /^Switch B,/ }).click();
   await run(page).click();
