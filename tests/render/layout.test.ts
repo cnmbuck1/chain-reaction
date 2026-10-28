@@ -5,6 +5,7 @@ import { initialSwitches } from '../../src/engine/reducer';
 import { flipFraction, pathLength, pointAlong, slicePath } from '../../src/render/geometry';
 import {
   BOARD_HEIGHT,
+  BOARD_WIDTH,
   boardHeight,
   boardPoint,
   forkExits,
@@ -67,8 +68,8 @@ describe('path slicing', () => {
 
 describe('board layout', () => {
   it('maps level coordinates inside the padding, with taller boards for forks', () => {
-    expect(boardPoint(0, 0)).toEqual({ x: 28, y: 28 });
-    expect(boardPoint(1, 1).x).toBe(332);
+    expect(boardPoint(0, 0)).toEqual({ x: 24, y: 28 });
+    expect(boardPoint(1, 1).x).toBe(BOARD_WIDTH - 24);
     expect(boardHeight(byName('First Spark'))).toBe(BOARD_HEIGHT);
     expect(boardHeight(withNot)).toBe(BOARD_HEIGHT);
     expect(boardHeight(byName('Fork in the Road'))).toBeGreaterThan(BOARD_HEIGHT);

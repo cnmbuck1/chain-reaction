@@ -35,6 +35,12 @@ export const CHAPTERS: readonly Chapter[] = [
     intro: 'Clear part A, and the ball drops into part B',
     levelIds: range(16, 20),
   },
+  {
+    id: 'inversions',
+    name: 'Inversions',
+    intro: 'A NOT wire carries power while its switch is off',
+    levelIds: range(21, 30),
+  },
 ];
 
 export interface ChapterView {

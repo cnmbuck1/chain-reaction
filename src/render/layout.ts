@@ -7,9 +7,9 @@ import { edgeKey } from './timeline';
 // the DOM overlays share one source of positions, and it is tested without a renderer.
 
 /** The board's default layout size in CSS pixels. The UI scales it to fit the screen. */
-export const BOARD_WIDTH = 360;
+export const BOARD_WIDTH = 312;
 export const BOARD_HEIGHT = 400;
-const PAD_X = 28;
+const PAD_X = 24;
 const PAD_TOP = 28;
 /** Room under the lowest row for gate labels. */
 const PAD_BOTTOM = 92;

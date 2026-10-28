@@ -133,12 +133,30 @@ h2 {
 }
 
 .prompt {
-  margin: 0;
-  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--energy) 10%, var(--bg-raise));
   border: 1px solid color-mix(in srgb, var(--energy) 35%, transparent);
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.prompt p {
+  flex: 1;
+  margin: 0;
+}
+.prompt-close {
+  flex: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--energy) 35%, transparent);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
 }
 
 .board {
@@ -155,18 +173,18 @@ h2 {
 .board-stage {
   /*
    * Out of flow, so the frame's size never depends on the scale it is used to compute.
-   * The view (the whole board, or one part of a staged board) is centred in the frame and
-   * scaled about its own centre; moving to the next part pans down to it.
+   * The view (the whole board, or one part of a staged board) sits at the top of the frame,
+   * centred across it and scaled about its top edge, so spare height falls below the board
+   * rather than above it. Moving to the next part pans down to it.
    */
-  --view-mid: calc(var(--view-top, 0px) + var(--view-h, var(--h, 400px)) / 2);
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: 360px;
+  top: 0;
+  width: var(--w, 360px);
   height: var(--h, 400px);
-  margin: calc(-1 * var(--view-mid)) 0 0 -180px;
+  margin: calc(-1 * var(--view-top, 0px)) 0 0 calc(var(--w, 360px) / -2);
   transform: scale(var(--k, 1));
-  transform-origin: 180px var(--view-mid);
+  transform-origin: calc(var(--w, 360px) / 2) var(--view-top, 0px);
   /* Only the view shows, with the panel's rounded corners. */
   clip-path: inset(
     var(--view-top, 0px) 0
@@ -271,7 +289,7 @@ h2 {
 }
 
 .switch {
-  width: 60px;
+  width: 56px;
   height: 56px;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -729,6 +747,35 @@ button:disabled {
   }
   .title h1 {
     font-size: 1.3rem;
+  }
+}
+
+/* Short screens, such as a phone app's sheet: give the board every spare pixel. */
+@media (max-height: 700px) {
+  .game {
+    gap: 8px;
+    padding-top: 8px;
+  }
+  .topbar .ghost {
+    min-height: 40px;
+    width: 40px;
+  }
+  .eyebrow {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .title h1 {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .status {
+    font-size: 0.9rem;
+  }
+  .controls button {
+    min-height: 44px;
   }
 }
 
