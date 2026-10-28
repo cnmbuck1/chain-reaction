@@ -46,7 +46,7 @@ the Playwright suite, on every push.
   `requiredSignal`, so `false` makes a normally-open gate.
 - **NOT wires.** A wire with `invert` flips its signal. The board draws a NOT part on the wire,
   lit before it when the switch is live and after it when not. Playtesting found NOT hard this
-  early, so no level uses it before level 21; a test enforces that.
+  early, so no level uses it before level 31; a test enforces that.
 - **Forks (junctions).** Route the ball to `whenTrue` (ON lane) or `whenFalse` (OFF lane) from one
   signal input. The board shows a pointer aimed down the lane the fork will take.
 - **Parts (checkpoints).** A staged board is split into parts by `checkpoint` nodes on the
@@ -125,57 +125,73 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 18  | Carry Over       | A wire crosses into part B, so clear part A the right way  | 2   | 1 in 3  |
 | 19  | Relay Race       | A change in part A can set up part B                       | 4   | 1 in 5  |
 | 20  | Grand Finale     | Plan both parts before the first run                       | 4   | 1 in 5  |
-| 21  | Inverter         | A NOT wire carries the opposite of its switch              | 2   | 1 in 10 |
-| 22  | Opposite Day     | To turn a NOT wire off, turn its switch on                 | 2   | 1 in 10 |
-| 23  | Contrary Fork    | A NOT on the fork wire flips which lane the ball takes     | 2   | 1 in 6  |
-| 24  | Upside Down      | Read every NOT before flipping anything                    | 2   | 1 in 6  |
-| 25  | Double Negative  | Powering a NOT's switch through a chain                    | 3   | 1 in 10 |
-| 26  | Mirror Stage     | NOT wires on a two-part board                              | 3   | 1 in 20 |
-| 27  | Dark Crossing    | One switch feeds a plain wire and a NOT wire               | 4   | 1 in 15 |
-| 28  | Long Haul        | Set part A's switches for part B before leaving            | 4   | 1 in 35 |
-| 29  | Backwire         | A wire from part A decides a NOT gate in part B            | 3   | 1 in 35 |
-| 30  | Grand Inversion  | Turning one switch on turns a NOT off somewhere else       | 4   | 1 in 35 |
-| 31  | Meshed           | A gear turns its partner, so you may turn it back          | 2   | 1 in 10 |
-| 32  | Gear Train       | Let the gears do the work                                  | 2   | 1 in 10 |
-| 33  | Chain Drive      | Gears turn one step only                                   | 3   | 1 in 10 |
-| 34  | Clockwork        | One gear turns two switches                                | 3   | 1 in 20 |
-| 35  | Escapement       | Plan which switch to turn by hand                          | 4   | 1 in 15 |
-| 36  | Skeleton Key     | The lock opens only if the ball rolled past the key        | 2   | 1 in 6  |
-| 37  | Key Ring         | Clearing part A isn't enough without the key               | 3   | 1 in 35 |
-| 38  | Lockstep         | Keys and gears together                                    | 3   | 1 in 35 |
-| 39  | Turnkey          | A geared switch isn't always the cheapest turn             | 4   | 1 in 35 |
-| 40  | Master Key       | Pick the gear that moves only what you need                | 4   | 1 in 35 |
-| 41  | Trip Plate       | A plate flips its switch while the ball rolls              | 2   | 1 in 10 |
-| 42  | Tripwire         | Set a switch the wrong way for the plate to fix            | 2   | 1 in 10 |
-| 43  | Pressure Point   | A switch the plate turns on must start off                 | 3   | 1 in 10 |
-| 44  | Switchback       | A plate before the fork turns it after you set it          | 2   | 1 in 6  |
-| 45  | Double Trip      | Two flips cancel out                                       | 3   | 1 in 10 |
-| 46  | Two Keys         | Each lock needs its own key                                | 4   | 1 in 70 |
-| 47  | Gold and Silver  | A gear can move a switch you needed anyway                 | 4   | 1 in 70 |
-| 48  | Key Chain        | One geared turn opens two gates                            | 4   | 1 in 70 |
-| 49  | Locksmith        | Gears and keys in both parts                               | 5   | 1 in 56 |
-| 50  | Keymaster        | Plan both parts before the first run                       | 5   | 1 in 56 |
+| 21  | Crossroads       | Pick the lane that can open before changing anything       | 2   | 1 in 6  |
+| 22  | Detour           | A lane that needs a switch both ways can never open        | 2   | 1 in 10 |
+| 23  | Stay the Course  | Count each lane's cost before flipping the fork            | 3   | 1 in 10 |
+| 24  | Through Traffic  | Part B can read a switch from part A                       | 3   | 1 in 10 |
+| 25  | Crossover        | A switch part B needs closes part A's easy lane            | 4   | 1 in 15 |
+| 26  | Branch Line      | A fork in part B gives part B two ways through             | 3   | 1 in 10 |
+| 27  | Signal Box       | A part A switch sets the fork in part B                    | 3   | 1 in 10 |
+| 28  | Junction Box     | What part A needs can shut a lane in part B                | 3   | 1 in 20 |
+| 29  | Double Junction  | Two forks: plan both lanes before the first run            | 3   | 1 in 20 |
+| 30  | Grand Central    | Price every lane in both parts                             | 4   | 1 in 15 |
+| 31  | Inverter         | A NOT wire carries the opposite of its switch              | 2   | 1 in 10 |
+| 32  | Opposite Day     | To turn a NOT wire off, turn its switch on                 | 2   | 1 in 10 |
+| 33  | Contrary Fork    | A NOT on the fork wire flips which lane the ball takes     | 2   | 1 in 6  |
+| 34  | Upside Down      | Read every NOT before flipping anything                    | 2   | 1 in 6  |
+| 35  | Double Negative  | Powering a NOT's switch through a chain                    | 3   | 1 in 10 |
+| 36  | Mirror Stage     | NOT wires on a two-part board                              | 3   | 1 in 20 |
+| 37  | Dark Crossing    | One switch feeds a plain wire and a NOT wire               | 4   | 1 in 15 |
+| 38  | Long Haul        | Set part A's switches for part B before leaving            | 4   | 1 in 35 |
+| 39  | Backwire         | A wire from part A decides a NOT gate in part B            | 3   | 1 in 35 |
+| 40  | Grand Inversion  | Turning one switch on turns a NOT off somewhere else       | 4   | 1 in 35 |
+| 41  | Meshed           | A gear turns its partner, so you may turn it back          | 2   | 1 in 10 |
+| 42  | Gear Train       | Let the gears do the work                                  | 2   | 1 in 10 |
+| 43  | Chain Drive      | Gears turn one step only                                   | 3   | 1 in 10 |
+| 44  | Clockwork        | One gear turns two switches                                | 3   | 1 in 20 |
+| 45  | Escapement       | Plan which switch to turn by hand                          | 4   | 1 in 15 |
+| 46  | Skeleton Key     | The lock opens only if the ball rolled past the key        | 2   | 1 in 6  |
+| 47  | Key Ring         | Clearing part A isn't enough without the key               | 3   | 1 in 35 |
+| 48  | Lockstep         | Keys and gears together                                    | 3   | 1 in 35 |
+| 49  | Turnkey          | A geared switch isn't always the cheapest turn             | 4   | 1 in 35 |
+| 50  | Master Key       | Pick the gear that moves only what you need                | 4   | 1 in 35 |
+| 51  | Trip Plate       | A plate flips its switch while the ball rolls              | 2   | 1 in 10 |
+| 52  | Tripwire         | Set a switch the wrong way for the plate to fix            | 2   | 1 in 10 |
+| 53  | Pressure Point   | A switch the plate turns on must start off                 | 3   | 1 in 10 |
+| 54  | Switchback       | A plate before the fork turns it after you set it          | 2   | 1 in 6  |
+| 55  | Double Trip      | Two flips cancel out                                       | 3   | 1 in 10 |
+| 56  | Two Keys         | Each lock needs its own key                                | 4   | 1 in 70 |
+| 57  | Gold and Silver  | A gear can move a switch you needed anyway                 | 4   | 1 in 70 |
+| 58  | Key Chain        | One geared turn opens two gates                            | 4   | 1 in 70 |
+| 59  | Locksmith        | Gears and keys in both parts                               | 5   | 1 in 56 |
+| 60  | Keymaster        | Plan both parts before the first run                       | 5   | 1 in 56 |
 
 Every level has exactly one winning position at par, and from level 4 on turning every switch
 ON never wins. Without a change limit some levels also have longer wins, which earn at most two
 stars. From level 5 on, a greedy player who fixes whatever blocked the ball never wins at par,
 except on the `easy` levels 4, 11, 16 and 17, which introduce a new idea. On levels 18
 to 20 the greedy player clears part A the obvious way and finds part B out of reach; the game
-then says so and suggests Reset. Levels 21 to 30 bring in NOT wires, which carry power while
+then says so and suggests Reset.
+
+Levels 21 to 30 bridge the gap to NOT wires with no new parts: forks on two-part boards. On 21
+to 25 the fork is in part A, and from 24 a part A switch also feeds a gate in part B. On 26 to
+28 the fork moves to part B (on 27 a part A switch sets it), and 29 and 30 have a fork in each
+part. Blind guessing wins at par 1 in 6 on 21, then 1 in 10 to 1 in 20, so players get used to
+bigger boards before NOT wires arrive. Levels 31 to 40 bring in NOT wires, which carry power while
 their switch is off. Blind guessing wins at par about 1 in 10 on one-part NOT boards, 1 in 6 on
 the two fork boards, and 1 in 15 to 1 in 35 on the two-part boards.
 
-Levels 31 to 35 bring in gears: a switch with a cog badge also turns the switches it names
+Levels 41 to 45 bring in gears: a switch with a cog badge also turns the switches it names
 when turned by hand (one step only, never onward). Par counts turns by hand; worked out
 drivers first, every position has exactly one set of turns (`turnsFor` in `reducer.ts`).
-Levels 36 to 40 bring in keys: the ball picks up a key as it rolls past, and a lock stops it
-unless it has that key. Keys ride along into the next part, so on 37 to 40 the lane part A
+Levels 46 to 50 bring in keys: the ball picks up a key as it rolls past, and a lock stops it
+unless it has that key. Keys ride along into the next part, so on 47 to 50 the lane part A
 takes decides whether part B can be finished.
-Levels 41 to 45 bring in trip plates: as the ball rolls over a plate, it flips the switch named
+Levels 51 to 55 bring in trip plates: as the ball rolls over a plate, it flips the switch named
 on it, and power and gates are worked out again while the ball is still rolling. The switch
 springs back when the run ends. On every plate level the par position loses with the plates
 taken out, so the flip has to be planned for.
-Levels 46 to 50 have two keys, gold and silver, with a lock for each before the goal. Part
+Levels 56 to 60 have two keys, gold and silver, with a lock for each before the goal. Part
 A's lane decides the gold key and part B's fork the silver one, and on every one of these levels
 taking out either lock opens a cheaper win. Keys are drawn in metals (gold, silver, copper) so
 they never read as a switch's wire color, and a lock takes its key's metal.
@@ -304,4 +320,4 @@ need deduction.
 
 **Guess odds** ("Guess" in the level table) answer "how often does a random pick of par-many
 switches win on the first Run?". 1 in 3 means a guesser earns three stars a third of the time;
-levels from 21 on should aim much lower.
+levels from 31 on should aim much lower.

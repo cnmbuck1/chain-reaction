@@ -36,34 +36,46 @@ export const CHAPTERS: readonly Chapter[] = [
     levelIds: range(16, 20),
   },
   {
+    id: 'crossroads',
+    name: 'Crossroads',
+    intro: 'Forks on two-part boards: pick a lane, then clear part B',
+    levelIds: range(21, 25),
+  },
+  {
+    id: 'rail-yard',
+    name: 'Rail yard',
+    intro: 'Forks in part B, set from either part',
+    levelIds: range(26, 30),
+  },
+  {
     id: 'inversions',
     name: 'Inversions',
     intro: 'A NOT wire carries power while its switch is off',
-    levelIds: range(21, 30),
+    levelIds: range(31, 40),
   },
   {
     id: 'gears',
     name: 'Gears',
     intro: 'Meshed switches: turning one turns its partner too',
-    levelIds: range(31, 35),
+    levelIds: range(41, 45),
   },
   {
     id: 'keys',
     name: 'Keys',
     intro: 'Pick up the key on the way, or the lock stops the ball',
-    levelIds: range(36, 40),
+    levelIds: range(46, 50),
   },
   {
     id: 'trips',
     name: 'Trip plates',
     intro: 'The ball flips a switch as it rolls over a plate',
-    levelIds: range(41, 45),
+    levelIds: range(51, 55),
   },
   {
     id: 'key-ring',
     name: 'Gold and silver',
     intro: 'Two keys, two locks: each lock needs its own key',
-    levelIds: range(46, 50),
+    levelIds: range(56, 60),
   },
 ];
 

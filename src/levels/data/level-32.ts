@@ -3,7 +3,7 @@ import type { LevelDef } from '../../engine/types';
 export const level32: LevelDef = {
   schemaVersion: 1,
   id: 'level-32',
-  name: 'Gear Train',
+  name: 'Opposite Day',
   difficulty: 'medium',
   boardHeight: 420,
   nodes: [
@@ -22,7 +22,6 @@ export const level32: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'B',
-      turns: ['d'],
     },
     {
       id: 'c',
@@ -31,7 +30,6 @@ export const level32: LevelDef = {
       y: 0.16,
       initialOn: false,
       label: 'C',
-      turns: ['e'],
     },
     {
       id: 'd',
@@ -52,25 +50,25 @@ export const level32: LevelDef = {
     {
       id: 'g1',
       type: 'gate',
-      x: 0.24,
+      x: 0.25,
       y: 1,
-      combine: 'and',
+      combine: 'or',
       requiredSignal: false,
       label: 'Gate 1',
     },
     {
       id: 'g2',
       type: 'gate',
-      x: 0.515,
+      x: 0.5,
       y: 1,
-      combine: 'and',
+      combine: 'single',
       requiredSignal: true,
       label: 'Gate 2',
     },
     {
       id: 'g3',
       type: 'gate',
-      x: 0.79,
+      x: 0.78,
       y: 1,
       combine: 'or',
       requiredSignal: true,
@@ -112,7 +110,7 @@ export const level32: LevelDef = {
       to: 'c',
     },
     {
-      from: 'b',
+      from: 'a',
       to: 'd',
     },
     {
@@ -120,46 +118,32 @@ export const level32: LevelDef = {
       to: 'e',
     },
     {
-      from: 'a',
-      to: 'g1',
-    },
-    {
-      from: 'b',
-      to: 'g1',
-    },
-    {
       from: 'd',
       to: 'g1',
     },
     {
-      from: 'c',
-      to: 'g2',
+      from: 'b',
+      to: 'g1',
+      invert: true,
     },
     {
       from: 'a',
       to: 'g2',
     },
     {
-      from: 'e',
-      to: 'g2',
-    },
-    {
-      from: 'e',
-      to: 'g3',
-    },
-    {
       from: 'c',
       to: 'g3',
     },
     {
-      from: 'b',
+      from: 'e',
       to: 'g3',
+      invert: true,
     },
   ],
   track: [['ball', 'g1', 'g2', 'g3', 'goal']],
   meta: {
-    teachingPoint: 'One turn can set two switches: let the gears do the work.',
-    hint: 'Gate 2 needs C and E on, and E gets its power through B. Turning C turns E too.',
+    teachingPoint: 'To turn a NOT wire off, turn its switch on.',
+    hint: 'Gate 1 wants no power at all. NOT B only goes dark when B is on.',
     minChanges: 2,
     keySwitch: 'b',
   },
