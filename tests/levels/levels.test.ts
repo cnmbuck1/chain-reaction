@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { indexLevel, switchStage } from '../../src/engine/graph';
 import { replay } from '../../src/engine/reducer';
+import { simulateRun } from '../../src/engine/simulate';
 import type { GameAction, LevelDef } from '../../src/engine/types';
 import { checkLevel } from '../../src/levels/check';
 import { levels } from '../../src/levels';
@@ -75,6 +76,16 @@ describe('the curated set', () => {
       'Lockstep',
       'Turnkey',
       'Master Key',
+      'Trip Plate',
+      'Tripwire',
+      'Pressure Point',
+      'Switchback',
+      'Double Trip',
+      'Two Keys',
+      'Gold and Silver',
+      'Key Chain',
+      'Locksmith',
+      'Keymaster',
     ]);
   });
 
@@ -174,6 +185,56 @@ describe('the curated set', () => {
     }
     const staged = levels.slice(36, 40).map((l) => indexLevel(l).checkpoints.length > 0);
     expect(staged).toEqual([true, true, true, true]);
+  });
+
+  it('brings in trip plates at 41, and every plate level needs its plates counted', () => {
+    const hasTrip = (l: LevelDef) => l.nodes.some((n) => n.type === 'trip');
+    expect(levels.findIndex(hasTrip)).toBe(40);
+    expect(levels[40]!.meta.prompt).toMatch(/trip plate/i);
+    for (const level of levels.slice(40, 45)) {
+      const report = checkLevel(level).report!;
+      expect(report.parWins, level.id).toHaveLength(1);
+      // With the plates taken out, the par position no longer wins.
+      const trips = new Set(level.nodes.filter((n) => n.type === 'trip').map((n) => n.id));
+      const plain: LevelDef = {
+        ...level,
+        nodes: level.nodes.filter((n) => !trips.has(n.id)),
+        track: level.track.map((path) => path.filter((id) => !trips.has(id))),
+      };
+      expect(simulateRun(plain, report.parWins[0]!, 1, null).won, level.id).toBe(false);
+      const fork = level.nodes.some((n) => n.type === 'junction');
+      expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(fork ? 6 : 10);
+    }
+  });
+
+  it('asks for two keys from 46: each lock needs its own, and gears join in from 47', () => {
+    const keys = (l: LevelDef) => l.nodes.filter((n) => n.type === 'key').length;
+    expect(levels.findIndex((l) => keys(l) > 1)).toBe(45);
+    expect(levels[45]!.meta.prompt).toMatch(/two keys/i);
+    for (const level of levels.slice(45, 50)) {
+      const report = checkLevel(level).report!;
+      expect(report.parWins, level.id).toHaveLength(1);
+      expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(50);
+      // Without either lock, a cheaper win appears: both keys cost changes.
+      for (const lock of level.nodes.filter((n) => n.type === 'lock')) {
+        const next = indexLevel(level).trackNext.get(lock.id)!;
+        const open: LevelDef = {
+          ...level,
+          nodes: level.nodes.filter((n) => n.id !== lock.id),
+          track: level.track
+            .map((path) => path.map((id) => (id === lock.id ? next : id)))
+            .map((path) => path.filter((id, i) => id !== path[i - 1]))
+            .filter((path) => path.length > 1),
+        };
+        expect(checkLevel(open).report!.minChanges!, `${level.id} ${lock.id}`).toBeLessThan(
+          level.meta.minChanges,
+        );
+      }
+    }
+    const geared = levels
+      .slice(46, 50)
+      .map((l) => l.nodes.some((n) => n.type === 'switch' && n.turns));
+    expect(geared).toEqual([true, true, true, true]);
   });
 
   it('gets harder: par grows overall', () => {

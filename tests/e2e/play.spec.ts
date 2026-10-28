@@ -55,6 +55,16 @@ const SOLUTIONS = [
   { name: 'Lockstep', switches: ['B', 'F', PART, 'D'] },
   { name: 'Turnkey', switches: ['C', 'F', PART, 'D', 'G'] },
   { name: 'Master Key', switches: ['A', 'B', 'F', PART, 'D'] },
+  { name: 'Trip Plate', switches: ['B', 'C'] },
+  { name: 'Tripwire', switches: ['A', 'D'] },
+  { name: 'Pressure Point', switches: ['A', 'B', 'D'] },
+  { name: 'Switchback', switches: ['C', 'F'] },
+  { name: 'Double Trip', switches: ['A', 'B', 'D'] },
+  { name: 'Two Keys', switches: ['B', 'F', PART, 'D', 'I'] },
+  { name: 'Gold and Silver', switches: ['A', 'F', PART, 'D', 'E'] },
+  { name: 'Key Chain', switches: ['C', 'F', PART, 'E', 'H'] },
+  { name: 'Locksmith', switches: ['A', 'C', 'F', PART, 'E', 'H'] },
+  { name: 'Keymaster', switches: ['C', 'F', PART, 'E', 'H', 'I'] },
 ];
 
 async function solve(page: Page, switches: string[]) {
@@ -296,6 +306,32 @@ test('the full animation plays and ends on the success card', async ({ page }) =
   );
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10_000 });
   expect(errors).toEqual([]);
+});
+
+test('a trip plate flips its switch mid-run, and the switch springs back after', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await dismissIntro(page);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('switch', { name: 'Unlock all levels' }).click();
+  await page.getByRole('button', { name: '‹ Levels' }).click();
+  await page.getByRole('button', { name: /^Level 41, Trip Plate$/ }).click();
+  await expect(status(page)).toContainText('New: trip plates');
+  await page.getByRole('button', { name: /^Switch B,/ }).click();
+  await run(page).click();
+  // D flips on as the ball rolls over the plate, so the gate after it opens.
+  await expect(
+    page.getByRole('button', { name: /^Switch D, on, flipped by a trip plate/ }),
+  ).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(status(page)).toHaveText(
+    'Stopped at Gate 3: it needs power but got no power. On the way, a trip plate flipped D.',
+    { timeout: 10_000 },
+  );
+  await expect(page.getByRole('button', { name: /^Switch D, off$/ })).toBeVisible();
 });
 
 test('Skip jumps a run straight to the result card, and completion counts once', async ({

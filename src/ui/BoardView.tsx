@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { GameState, LevelDef, RunEvent, SignalEdge } from '../engine/types';
+import type { GameState, LevelDef, NodeId, RunEvent, SignalEdge } from '../engine/types';
 import { Board } from '../render/board';
 import {
   BOARD_WIDTH,
@@ -11,7 +11,7 @@ import {
   wireRoutes,
 } from '../render/layout';
 import type { Point } from '../render/geometry';
-import { signalColor } from '../render/colors';
+import { keyColor, signalColor } from '../render/colors';
 import { INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { gateRequirement, nodeName, partName } from './describe';
 
@@ -67,6 +67,7 @@ export function BoardView({
   const hostRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const height = boardHeight(level);
+  const severalKeys = level.nodes.filter((n) => n.type === 'key').length > 1;
   const routes = useMemo(() => wireRoutes(level), [level]);
   const dividers = useMemo(() => partDividers(level), [level]);
   // On staged boards the screen shows one part at a time, filling the frame, and pans
@@ -82,6 +83,8 @@ export function BoardView({
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [tries, setTries] = useState(0);
+  // Switches a trip plate has flipped in the run on show; they spring back when it ends.
+  const [flipped, setFlipped] = useState<ReadonlySet<NodeId>>(() => new Set());
   const onPlayedRef = useRef(onPlayed);
   useEffect(() => {
     onPlayedRef.current = onPlayed;
@@ -89,6 +92,7 @@ export function BoardView({
 
   useEffect(() => {
     const board = new Board();
+    board.onFlipped = setFlipped;
     boardRef.current = board;
     let live = true;
     board.init(hostRef.current!).then(
@@ -201,8 +205,10 @@ export function BoardView({
           const style = place(boardPoint(node.x, node.y, height));
           switch (node.type) {
             case 'switch': {
-              const on = state.switches[node.id] ?? false;
-              const changed = on !== node.initialOn;
+              const set = state.switches[node.id] ?? false;
+              const tripped = locked && flipped.has(node.id);
+              const on = set !== tripped;
+              const changed = set !== node.initialOn;
               const hinted = node.locked === true;
               const part = node.stage ?? 0;
               const done = part < stage;
@@ -212,11 +218,11 @@ export function BoardView({
                 <button
                   key={node.id}
                   type="button"
-                  className={`switch ${on ? 'is-on' : 'is-off'}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}`}
+                  className={`switch ${on ? 'is-on' : 'is-off'}${hinted ? ' is-hinted' : ''}${done ? ' is-done' : ''}${ahead ? ' is-ahead' : ''}${node.id === justHinted ? ' just-hinted' : ''}${tripped ? ' is-tripped' : ''}`}
                   style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                   aria-pressed={on}
                   aria-disabled={locked || hinted || done || ahead}
-                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}${gears.length > 0 ? `, turns ${gears.join(' and ')} too` : ''}`}
+                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}${gears.length > 0 ? `, turns ${gears.join(' and ')} too` : ''}${tripped ? ', flipped by a trip plate' : ''}`}
                   onClick={() => !locked && onToggle(node.id)}
                 >
                   <span className="switch-name">{nodeName(level, node.id)}</span>
@@ -310,11 +316,30 @@ export function BoardView({
                   Checkpoint
                 </div>
               );
+            case 'trip':
+              return (
+                <div
+                  key={node.id}
+                  className="tag trip-tag"
+                  style={{ ...style, '--swatch': signalColor(level, node.flips) } as CSSProperties}
+                  aria-hidden="true"
+                >
+                  {nodeName(level, node.flips)}
+                </div>
+              );
             case 'key':
             case 'lock':
               return (
-                <div key={node.id} className="tag below" style={style} aria-hidden="true">
-                  {nodeName(level, node.id)}
+                <div
+                  key={node.id}
+                  className="tag below"
+                  style={{ ...style, color: keyColor(level, node.id) }}
+                  aria-hidden="true"
+                >
+                  {/* With several keys, the metal names the pair and the icon tells key from lock. */}
+                  {severalKeys
+                    ? nodeName(level, node.id).replace(/ (key|lock)$/i, '')
+                    : nodeName(level, node.id)}
                 </div>
               );
             case 'goal':

@@ -57,6 +57,9 @@ the Playwright suite, on every push.
   not a miss: the attempt count stays the same.
 - **Ball.** Follows the track from the start. It stops at the first closed gate or dead end.
   Reaching a goal wins.
+- **Trip plates.** A `trip` node on the track flips the switch in `flips` as the ball passes.
+  The run's event list then carries a `ballTrip` event and a fresh set of signal, wire and gate
+  events. The switch goes back to where the player set it when the run ends.
 - **Changes and par.** A change is a switch that differs from the level's starting position, so
   flipping one back undoes it. There is no limit. `meta.minChanges` is the level's par, shown
   beside the change count; a solve at par can earn the third star. On staged boards
@@ -142,6 +145,16 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 38  | Lockstep         | Keys and gears together                                    | 3   | 1 in 35 |
 | 39  | Turnkey          | A geared switch isn't always the cheapest turn             | 4   | 1 in 35 |
 | 40  | Master Key       | Pick the gear that moves only what you need                | 4   | 1 in 35 |
+| 41  | Trip Plate       | A plate flips its switch while the ball rolls              | 2   | 1 in 10 |
+| 42  | Tripwire         | Set a switch the wrong way for the plate to fix            | 2   | 1 in 10 |
+| 43  | Pressure Point   | A switch the plate turns on must start off                 | 3   | 1 in 10 |
+| 44  | Switchback       | A plate before the fork turns it after you set it          | 2   | 1 in 6  |
+| 45  | Double Trip      | Two flips cancel out                                       | 3   | 1 in 10 |
+| 46  | Two Keys         | Each lock needs its own key                                | 4   | 1 in 70 |
+| 47  | Gold and Silver  | A gear can move a switch you needed anyway                 | 4   | 1 in 70 |
+| 48  | Key Chain        | One geared turn opens two gates                            | 4   | 1 in 70 |
+| 49  | Locksmith        | Gears and keys in both parts                               | 5   | 1 in 56 |
+| 50  | Keymaster        | Plan both parts before the first run                       | 5   | 1 in 56 |
 
 Every level has exactly one winning position at par, and from level 4 on turning every switch
 ON never wins. Without a change limit some levels also have longer wins, which earn at most two
@@ -158,6 +171,14 @@ drivers first, every position has exactly one set of turns (`turnsFor` in `reduc
 Levels 36 to 40 bring in keys: the ball picks up a key as it rolls past, and a lock stops it
 unless it has that key. Keys ride along into the next part, so on 37 to 40 the lane part A
 takes decides whether part B can be finished.
+Levels 41 to 45 bring in trip plates: as the ball rolls over a plate, it flips the switch named
+on it, and power and gates are worked out again while the ball is still rolling. The switch
+springs back when the run ends. On every plate level the par position loses with the plates
+taken out, so the flip has to be planned for.
+Levels 46 to 50 have two keys, gold and silver, with a lock for each before the goal. Part
+A's lane decides the gold key and part B's fork the silver one, and on every one of these levels
+taking out either lock opens a cheaper win. Keys are drawn in metals (gold, silver, copper) so
+they never read as a switch's wire color, and a lock takes its key's metal.
 
 ## Board layout
 
