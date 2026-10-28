@@ -65,6 +65,16 @@ describe('the curated set', () => {
       'Long Haul',
       'Backwire',
       'Grand Inversion',
+      'Meshed',
+      'Gear Train',
+      'Chain Drive',
+      'Clockwork',
+      'Escapement',
+      'Skeleton Key',
+      'Key Ring',
+      'Lockstep',
+      'Turnkey',
+      'Master Key',
     ]);
   });
 
@@ -91,7 +101,7 @@ describe('the curated set', () => {
       ).toBe(false);
     }
     expect(levels[20]!.meta.prompt).toMatch(/NOT/);
-    for (const level of levels.slice(20)) {
+    for (const level of levels.slice(20, 30)) {
       expect(
         level.signalEdges.some((e) => e.invert),
         level.id,
@@ -100,14 +110,14 @@ describe('the curated set', () => {
   });
 
   it('mixes NOT wires with forks at 23 and 24, and with two parts from 26', () => {
-    const forks = levels.slice(20).map((l) => l.nodes.some((n) => n.type === 'junction'));
+    const forks = levels.slice(20, 30).map((l) => l.nodes.some((n) => n.type === 'junction'));
     expect(forks).toEqual([false, false, true, true, false, false, false, false, false, false]);
-    const staged = levels.slice(20).map((l) => indexLevel(l).checkpoints.length > 0);
+    const staged = levels.slice(20, 30).map((l) => indexLevel(l).checkpoints.length > 0);
     expect(staged).toEqual([false, false, false, false, false, true, true, true, true, true]);
   });
 
   it('keeps blind guessing at 1 in 10 or worse on NOT boards, except the fork boards', () => {
-    for (const level of levels.slice(20)) {
+    for (const level of levels.slice(20, 30)) {
       const odds = checkLevel(level).report!.guessOdds!;
       const fork = level.nodes.some((n) => n.type === 'junction');
       expect(odds, level.id).toBeGreaterThanOrEqual(fork ? 6 : 10);
@@ -126,6 +136,44 @@ describe('the curated set', () => {
         return from.type === 'switch' && switchStage(from) === 0 && to.y > 0.6;
       });
     expect(levels.slice(15, 20).map(crosses)).toEqual([false, false, true, true, true]);
+  });
+
+  it('brings in gears at 31, and every gear level needs one turned', () => {
+    const hasGears = (l: LevelDef) => l.nodes.some((n) => n.type === 'switch' && n.turns);
+    expect(levels.findIndex(hasGears)).toBe(30);
+    expect(levels[30]!.meta.prompt).toMatch(/gear/i);
+    for (const level of levels.slice(30, 35)) {
+      const report = checkLevel(level).report!;
+      const turned = report.solution!.map((id) => indexLevel(level).nodes.get(id)!);
+      expect(
+        turned.some((n) => n.type === 'switch' && n.turns),
+        level.id,
+      ).toBe(true);
+      expect(report.guessOdds!, level.id).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('brings in keys at 36, where the lock costs extra changes, and carries them across parts from 37', () => {
+    const hasLock = (l: LevelDef) => l.nodes.some((n) => n.type === 'lock');
+    expect(levels.findIndex(hasLock)).toBe(35);
+    expect(levels[35]!.meta.prompt).toMatch(/key/);
+    for (const level of levels.slice(35, 40)) {
+      // Without the lock, the lane that skips the key would win in fewer changes.
+      const open: LevelDef = {
+        ...level,
+        nodes: level.nodes.filter((n) => n.type !== 'lock'),
+        track: level.track
+          .map((path) =>
+            path.map((id) => (id === 'lock' ? indexLevel(level).trackNext.get(id)! : id)),
+          )
+          .map((path) => path.filter((id, i) => id !== path[i - 1]))
+          .filter((path) => path.length > 1),
+      };
+      const lockless = checkLevel(open).report!.minChanges!;
+      expect(lockless, level.id).toBeLessThan(level.meta.minChanges);
+    }
+    const staged = levels.slice(36, 40).map((l) => indexLevel(l).checkpoints.length > 0);
+    expect(staged).toEqual([true, true, true, true]);
   });
 
   it('gets harder: par grows overall', () => {

@@ -58,8 +58,7 @@ export const level11: LevelDef = {
   meta: {
     teachingPoint: 'A fork picks the lane. Sometimes the best move is to change the route.',
     hint: 'The bottom lane needs two changes. The top lane is already open.',
-    prompt:
-      'A fork sends the ball along its ON lane when its wire has power, and its OFF lane when not.',
+    prompt: 'A fork sends the ball down its ON lane when its wire has power, OFF lane when not.',
     minChanges: 1,
     keySwitch: 'f',
   },

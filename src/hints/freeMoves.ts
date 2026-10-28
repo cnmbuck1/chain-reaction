@@ -1,4 +1,5 @@
-import { switchStage } from '../engine/graph';
+import { indexLevel, switchStage } from '../engine/graph';
+import { turnsFor } from '../engine/reducer';
 import { solve } from '../engine/solver';
 import type { LevelDef, NodeId } from '../engine/types';
 
@@ -28,9 +29,8 @@ export function freeMovePlan(level: LevelDef): FreeMove[] {
   const win = report.parWins[0];
   const moves: FreeMove[] = [];
   if (win) {
-    const changed = level.nodes.filter(
-      (n) => n.type === 'switch' && !n.locked && win[n.id] !== n.initialOn,
-    );
+    const turned = new Set(turnsFor(level, win));
+    const changed = level.nodes.filter((n) => n.type === 'switch' && !n.locked && turned.has(n.id));
     // Part by part, so a hint always helps where the player is; the key switch leads its part.
     const key = level.meta.keySwitch;
     changed.sort(
@@ -43,16 +43,30 @@ export function freeMovePlan(level: LevelDef): FreeMove[] {
   return plan;
 }
 
-/** The level as played after `used` free moves: those switches start where hinted, locked. */
+/**
+ * The level as played after `used` free moves: those switches start turned and locked, and
+ * so do the switches their gears turn (those stay free to turn).
+ */
 export function withFreeMoves(level: LevelDef, used: number): LevelDef {
   const moves = freeMovePlan(level).slice(0, used);
   if (moves.length === 0) return level;
-  const target = new Map(moves.map((m) => [m.switchId, m.on]));
+  const hinted = new Set(moves.map((m) => m.switchId));
+  const flips = new Map<NodeId, number>();
+  const index = indexLevel(level);
+  for (const m of moves) {
+    for (const id of index.turnSets.get(m.switchId) ?? [m.switchId]) {
+      flips.set(id, (flips.get(id) ?? 0) + 1);
+    }
+  }
   return {
     ...level,
     nodes: level.nodes.map((n) =>
-      n.type === 'switch' && target.has(n.id)
-        ? { ...n, initialOn: target.get(n.id)!, locked: true }
+      n.type === 'switch' && (flips.has(n.id) || hinted.has(n.id))
+        ? {
+            ...n,
+            initialOn: (flips.get(n.id) ?? 0) % 2 === 1 ? !n.initialOn : n.initialOn,
+            ...(hinted.has(n.id) ? { locked: true } : {}),
+          }
         : n,
     ),
   };

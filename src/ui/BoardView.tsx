@@ -207,6 +207,7 @@ export function BoardView({
               const part = node.stage ?? 0;
               const done = part < stage;
               const ahead = part > stage;
+              const gears = (node.turns ?? []).map((id) => nodeName(level, id));
               return (
                 <button
                   key={node.id}
@@ -215,7 +216,7 @@ export function BoardView({
                   style={{ ...style, '--swatch': signalColor(level, node.id) } as CSSProperties}
                   aria-pressed={on}
                   aria-disabled={locked || hinted || done || ahead}
-                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}`}
+                  aria-label={`Switch ${nodeName(level, node.id)}, ${on ? 'on' : 'off'}${changed ? ', changed' : ''}${hinted ? ', set by a hint' : ''}${done ? ', part cleared' : ''}${ahead ? `, opens in ${partName(part)}` : ''}${gears.length > 0 ? `, turns ${gears.join(' and ')} too` : ''}`}
                   onClick={() => !locked && onToggle(node.id)}
                 >
                   <span className="switch-name">{nodeName(level, node.id)}</span>
@@ -229,6 +230,12 @@ export function BoardView({
                     {on ? 'ON' : 'OFF'}
                   </span>
                   {changed && <span className="changed-dot" aria-hidden="true" />}
+                  {gears.length > 0 && (
+                    <span className="gear-badge" aria-hidden="true">
+                      <GearIcon />
+                      {gears.join('')}
+                    </span>
+                  )}
                   {hinted && (
                     <span className="hint-pin" aria-hidden="true">
                       HINT
@@ -303,6 +310,13 @@ export function BoardView({
                   Checkpoint
                 </div>
               );
+            case 'key':
+            case 'lock':
+              return (
+                <div key={node.id} className="tag below" style={style} aria-hidden="true">
+                  {nodeName(level, node.id)}
+                </div>
+              );
             case 'goal':
               return (
                 <div key={node.id} className="tag below" style={style} aria-hidden="true">
@@ -328,6 +342,12 @@ export function BoardView({
               aria-hidden="true"
             >
               {partName(part)}
+              {part === stage && state.keys.length > 0 && (
+                <span className="carry-tag">
+                  {' '}
+                  · {state.keys.map((k) => nodeName(level, k)).join(', ')} aboard
+                </span>
+              )}
             </div>
           ))}
         {[...routes].map(
@@ -390,6 +410,18 @@ function BoltIcon({ crossed }: { crossed: boolean }) {
       {crossed && (
         <path d="M2 14 14 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       )}
+    </svg>
+  );
+}
+
+/** A small cog for switches that turn others. */
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M6.9 0h2.2l.4 2.1 1.3.6 1.8-1.2 1.6 1.6-1.2 1.8.6 1.3 2.1.4v2.2l-2.1.4-.6 1.3 1.2 1.8-1.6 1.6-1.8-1.2-1.3.6-.4 2.1H6.9l-.4-2.1-1.3-.6-1.8 1.2-1.6-1.6 1.2-1.8-.6-1.3L0 9.1V6.9l2.1-.4.6-1.3-1.2-1.8 1.6-1.6 1.8 1.2 1.3-.6zM8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6z"
+      />
     </svg>
   );
 }

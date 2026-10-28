@@ -11,6 +11,10 @@ export interface LevelIndex {
   /** Gates and junctions sorted by id. */
   sinks: readonly NodeId[];
   switchIds: readonly NodeId[];
+  /** What turning each switch by hand flips: itself, then the switches its gears turn. */
+  turnSets: ReadonlyMap<NodeId, readonly NodeId[]>;
+  /** Switches ordered so every switch with gears comes before the switches it turns. */
+  gearOrder: readonly NodeId[];
   ballStart: NodeId;
   /** Checkpoint ids by the part they complete. Empty on boards without parts. */
   checkpoints: readonly NodeId[];
@@ -60,6 +64,15 @@ export function indexLevel(level: LevelDef): LevelIndex {
     .filter((n) => n.type === 'switch')
     .map((n) => n.id)
     .sort(byId);
+  const turnSets = new Map<NodeId, NodeId[]>();
+  const gearEdges = new Map<NodeId, SignalEdge[]>();
+  for (const id of switchIds) gearEdges.set(id, []);
+  for (const n of level.nodes) {
+    if (n.type !== 'switch') continue;
+    turnSets.set(n.id, [n.id, ...(n.turns ?? [])]);
+    for (const to of n.turns ?? []) gearEdges.get(to)?.push({ from: n.id, to });
+  }
+  const gearOrder = topoSort([...switchIds], gearEdges);
   const ballStart = level.nodes.find((n) => n.type === 'ballStart')?.id ?? '';
 
   const checkpoints: NodeId[] = [];
@@ -78,6 +91,8 @@ export function indexLevel(level: LevelDef): LevelIndex {
     signalOrder,
     sinks,
     switchIds,
+    turnSets,
+    gearOrder,
     ballStart,
     checkpoints,
     trackNext,

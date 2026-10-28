@@ -4,6 +4,7 @@ import type {
   GameAction,
   GameState,
   LevelDef,
+  NodeId,
   RejectReason,
   StepResult,
   SwitchStates,
@@ -23,23 +24,51 @@ export function initialState(level: LevelDef): GameState {
     undoStack: [],
     attempt: 1,
     stage: 0,
+    keys: [],
     phase: 'editing',
     lastRun: null,
   };
 }
 
+/** Turns a switch by hand: it flips, and so does every switch its gears turn. */
+function turn(level: LevelDef, switches: SwitchStates, switchId: string): SwitchStates {
+  const next = { ...switches };
+  for (const id of indexLevel(level).turnSets.get(switchId) ?? [switchId]) next[id] = !next[id];
+  return next;
+}
+
 /**
- * How many switches differ from the level's starting position: all of them, or only one
- * part's on a staged board. There is no limit; a solve at `meta.minChanges` is par.
+ * The switches to turn by hand to get from the level's starting position to `switches`.
+ * Without gears that is every switch that differs. With gears there is still exactly one
+ * answer: going drivers first, a switch needs turning when it differs from where the
+ * gears already left it.
+ */
+export function turnsFor(level: LevelDef, switches: SwitchStates): NodeId[] {
+  const index = indexLevel(level);
+  const flipped = new Set<NodeId>();
+  const turned: NodeId[] = [];
+  for (const id of index.gearOrder) {
+    const node = index.nodes.get(id);
+    if (node?.type !== 'switch') continue;
+    if ((switches[id] !== node.initialOn) === flipped.has(id)) continue;
+    turned.push(id);
+    for (const other of index.turnSets.get(id)!) {
+      if (flipped.has(other)) flipped.delete(other);
+      else flipped.add(other);
+    }
+  }
+  return turned;
+}
+
+/**
+ * How many switches must be turned by hand to reach this position: on the whole board, or
+ * in one part of a staged board. There is no limit; a solve at `meta.minChanges` is par.
  */
 export function changesUsed(level: LevelDef, switches: SwitchStates, stage?: number): number {
-  let count = 0;
-  for (const node of level.nodes) {
-    if (node.type !== 'switch') continue;
-    if (stage !== undefined && switchStage(node) !== stage) continue;
-    if (switches[node.id] !== node.initialOn) count++;
-  }
-  return count;
+  const index = indexLevel(level);
+  return turnsFor(level, switches).filter(
+    (id) => stage === undefined || switchStage(index.nodes.get(id)!) === stage,
+  ).length;
 }
 
 /** Why a switch can't be toggled right now, if it can't. */
@@ -71,7 +100,7 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
       return {
         state: {
           ...state,
-          switches: { ...state.switches, [action.switchId]: !state.switches[action.switchId] },
+          switches: turn(level, state.switches, action.switchId),
           undoStack: [...state.undoStack, action.switchId],
         },
         events: [],
@@ -84,7 +113,7 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
       return {
         state: {
           ...state,
-          switches: { ...state.switches, [last]: !state.switches[last] },
+          switches: turn(level, state.switches, last),
           undoStack: state.undoStack.slice(0, -1),
         },
         events: [],
@@ -92,7 +121,7 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
     }
     case 'run': {
       if (state.phase === 'won') return { state, events: [], rejected: 'levelWon' };
-      const result = simulateRun(level, state.switches, state.attempt, state.stage);
+      const result = simulateRun(level, state.switches, state.attempt, state.stage, state.keys);
       // Reaching a checkpoint is progress, not a miss: the next part opens, same attempt.
       const cleared = result.outcome.kind === 'checkpoint';
       return {
@@ -101,6 +130,8 @@ export function step(level: LevelDef, state: GameState, action: GameAction): Ste
           undoStack: [],
           attempt: result.won || cleared ? state.attempt : state.attempt + 1,
           stage: cleared ? state.stage + 1 : state.stage,
+          // Keys go on with the ball only when it clears a part; after a miss it starts over.
+          keys: cleared ? result.keys : state.keys,
           phase: result.won ? 'won' : 'editing',
           lastRun: result,
         },

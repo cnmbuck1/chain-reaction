@@ -13,7 +13,9 @@ export type ValidationCode =
   | 'TRACK_CYCLE'
   | 'NOT_ON_TRACK'
   | 'BAD_POSITION'
-  | 'BAD_STAGE';
+  | 'BAD_STAGE'
+  | 'BAD_GEAR'
+  | 'BAD_KEY';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -30,6 +32,8 @@ const TRACK_TYPES = new Set<LevelNode['type']>([
   'goal',
   'deadEnd',
   'checkpoint',
+  'key',
+  'lock',
 ]);
 const TERMINAL = new Set<LevelNode['type']>(['goal', 'deadEnd']);
 
@@ -62,6 +66,37 @@ export function validateLevel(level: LevelDef): ValidationError[] {
     if (n.type !== 'switch' || n.stage === undefined) continue;
     if (!Number.isInteger(n.stage) || n.stage < 0 || n.stage >= parts) {
       add('BAD_STAGE', `Switch "${n.id}" is in part ${n.stage}, but the board has ${parts}`, n.id);
+    }
+  }
+
+  // Gears turn other switches in the same part, and never back round to themselves.
+  const geared = new Map<NodeId, NodeId[]>();
+  for (const n of level.nodes) {
+    if (n.type !== 'switch' || !n.turns) continue;
+    for (const to of n.turns) {
+      const other = nodes.get(to);
+      if (other?.type !== 'switch' || to === n.id) {
+        add(
+          'BAD_GEAR',
+          `Switch "${n.id}" has a gear to "${to}", which is not another switch`,
+          n.id,
+        );
+      } else if ((other.stage ?? 0) !== (n.stage ?? 0)) {
+        add('BAD_GEAR', `Switch "${n.id}" has a gear to "${to}" in another part`, n.id);
+      }
+    }
+    geared.set(n.id, n.turns);
+  }
+  const gearCycle = (id: NodeId, path: Set<NodeId>): boolean =>
+    path.has(id) || (geared.get(id) ?? []).some((to) => gearCycle(to, new Set([...path, id])));
+  for (const id of geared.keys()) {
+    if (gearCycle(id, new Set())) add('BAD_GEAR', `Gears from "${id}" turn back round to it`, id);
+  }
+
+  // Every lock names a key on the board.
+  for (const n of level.nodes) {
+    if (n.type === 'lock' && nodes.get(n.key)?.type !== 'key') {
+      add('BAD_KEY', `Lock "${n.id}" needs key "${n.key}", which is not a key`, n.id);
     }
   }
 

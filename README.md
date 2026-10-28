@@ -132,6 +132,16 @@ solver checks `UNSOLVABLE`, `TRIVIAL` and `MIN_MISMATCH`.
 | 28  | Long Haul        | Set part A's switches for part B before leaving            | 4   | 1 in 35 |
 | 29  | Backwire         | A wire from part A decides a NOT gate in part B            | 3   | 1 in 35 |
 | 30  | Grand Inversion  | Turning one switch on turns a NOT off somewhere else       | 4   | 1 in 35 |
+| 31  | Meshed           | A gear turns its partner, so you may turn it back          | 2   | 1 in 10 |
+| 32  | Gear Train       | Let the gears do the work                                  | 2   | 1 in 10 |
+| 33  | Chain Drive      | Gears turn one step only                                   | 3   | 1 in 10 |
+| 34  | Clockwork        | One gear turns two switches                                | 3   | 1 in 20 |
+| 35  | Escapement       | Plan which switch to turn by hand                          | 4   | 1 in 15 |
+| 36  | Skeleton Key     | The lock opens only if the ball rolled past the key        | 2   | 1 in 6  |
+| 37  | Key Ring         | Clearing part A isn't enough without the key               | 3   | 1 in 35 |
+| 38  | Lockstep         | Keys and gears together                                    | 3   | 1 in 35 |
+| 39  | Turnkey          | A geared switch isn't always the cheapest turn             | 4   | 1 in 35 |
+| 40  | Master Key       | Pick the gear that moves only what you need                | 4   | 1 in 35 |
 
 Every level has exactly one winning position at par, and from level 4 on turning every switch
 ON never wins. Without a change limit some levels also have longer wins, which earn at most two
@@ -142,6 +152,13 @@ then says so and suggests Reset. Levels 21 to 30 bring in NOT wires, which carry
 their switch is off. Blind guessing wins at par about 1 in 10 on one-part NOT boards, 1 in 6 on
 the two fork boards, and 1 in 15 to 1 in 35 on the two-part boards.
 
+Levels 31 to 35 bring in gears: a switch with a cog badge also turns the switches it names
+when turned by hand (one step only, never onward). Par counts turns by hand; worked out
+drivers first, every position has exactly one set of turns (`turnsFor` in `reducer.ts`).
+Levels 36 to 40 bring in keys: the ball picks up a key as it rolls past, and a lock stops it
+unless it has that key. Keys ride along into the next part, so on 37 to 40 the lane part A
+takes decides whether part B can be finished.
+
 ## Board layout
 
 The board is laid out at 312 layout pixels wide (`src/render/layout.ts`) and scaled to fit the
@@ -150,8 +167,8 @@ browser test opens every level at 320 by 568 and fails if any switch or label ov
 or leaves the board. On fork boards, wires turn just below their switch and drop straight into
 their gate, and several wires into one gate land side by side.
 
-A level's tip card sits above the board and folds away on "Got it" or the first switch change,
-so the board can grow back to the full width.
+A level's tip stands in for the status line until the first switch change, so it costs the
+board no height.
 The board sits at the top of its area, and on short screens (under 700px high, such as a phone
 app's sheet) the header and status text shrink so the board gets the room.
 

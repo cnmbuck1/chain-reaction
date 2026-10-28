@@ -52,13 +52,14 @@ export type Cue =
   | { kind: 'circuit'; at: number; dur: number; links: readonly (readonly [NodeId, NodeId])[] };
 
 /** How a run ended, as the board shows it. */
-export type FinishResult = 'goal' | 'blocked' | 'deadEnd' | 'checkpoint';
+export type FinishResult = 'goal' | 'blocked' | 'deadEnd' | 'checkpoint' | 'locked';
 
 const FINISH: Partial<Record<RunEvent['type'], FinishResult>> = {
   ballGoal: 'goal',
   ballBlocked: 'blocked',
   ballDeadEnd: 'deadEnd',
   ballCheckpoint: 'checkpoint',
+  ballLocked: 'locked',
 };
 
 export interface Timeline {
@@ -105,7 +106,8 @@ export function buildTimeline(events: readonly RunEvent[], timing: Timing): Time
       e.type === 'ballBlocked' ||
       e.type === 'ballGoal' ||
       e.type === 'ballDeadEnd' ||
-      e.type === 'ballCheckpoint'
+      e.type === 'ballCheckpoint' ||
+      e.type === 'ballLocked'
     ) {
       const result = FINISH[e.type]!;
       const nodeId =
