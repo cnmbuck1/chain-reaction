@@ -98,9 +98,8 @@ describe('level validation', () => {
     expect(codes({ ...tradeoff, track: [['ball', 'g1', 'goal']] })).toContain('NOT_ON_TRACK');
   });
 
-  it('rejects out-of-range positions and budgets', () => {
+  it('rejects out-of-range positions', () => {
     const moved = tradeoff.nodes.map((n) => (n.id === 'a' ? { ...n, x: 1.5 } : n));
     expect(codes({ ...tradeoff, nodes: moved })).toContain('BAD_POSITION');
-    expect(codes({ ...tradeoff, maxToggles: 3 })).toContain('BAD_BUDGET');
   });
 });

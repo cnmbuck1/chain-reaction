@@ -13,14 +13,41 @@ const win = simulateRun(tradeoff, { a: true, b: false }, 1);
 const blocked = simulateRun(tradeoff, { a: true, b: true }, 1);
 
 describe('animation timeline', () => {
-  it('orders wires, then gates, then the ball, then the finish', () => {
+  it('orders wires, then gates, then the ball, then the finish, then the win circuit', () => {
     const { cues } = buildTimeline(win.events, NORMAL_TIMING);
     const lastWire = Math.max(...cues.filter((c) => c.kind === 'wire').map((c) => c.at + c.dur));
     const gates = cues.filter((c) => c.kind === 'gate');
     const firstBall = cues.find((c) => c.kind === 'ball')!;
     expect(gates.every((g) => g.at >= lastWire)).toBe(true);
     expect(gates.every((g) => g.at + g.dur <= firstBall.at)).toBe(true);
-    expect(cues.at(-1)).toMatchObject({ kind: 'finish', result: 'goal', nodeId: 'goal' });
+    expect(cues.at(-2)).toMatchObject({ kind: 'finish', result: 'goal', nodeId: 'goal' });
+    expect(cues.at(-1)).toMatchObject({ kind: 'circuit' });
+  });
+
+  it('lights the win circuit along the route the ball took', () => {
+    const timeline = buildTimeline(win.events, NORMAL_TIMING);
+    const moves = win.events.flatMap((e) => (e.type === 'ballMove' ? [[e.from, e.to]] : []));
+    const circuit = timeline.cues.find((c) => c.kind === 'circuit')!;
+    expect(circuit.kind === 'circuit' && circuit.links).toEqual(moves);
+    expect(sampleTimeline(timeline, circuit.at - 1).circuit).toBeNull();
+    expect(sampleTimeline(timeline, timeline.duration).circuit?.p).toBe(1);
+  });
+
+  it('adds no win circuit to a miss', () => {
+    const { cues } = buildTimeline(blocked.events, NORMAL_TIMING);
+    expect(cues.some((c) => c.kind === 'circuit')).toBe(false);
+  });
+
+  it('skipping to the end shows the same frame as playing it out, lit circuit included', () => {
+    const normal = buildTimeline(win.events, NORMAL_TIMING);
+    const instant = buildTimeline(win.events, INSTANT_TIMING);
+    const a = sampleTimeline(normal, normal.duration);
+    const b = sampleTimeline(instant, 0);
+    expect(a.circuit?.p).toBe(1);
+    expect(b.circuit?.p).toBe(1);
+    expect(a.ball).toEqual(b.ball);
+    expect(a.finish).toEqual(b.finish);
+    expect([...a.gates]).toEqual([...b.gates]);
   });
 
   it('only energized wires glow', () => {

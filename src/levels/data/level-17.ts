@@ -5,7 +5,6 @@ export const level17: LevelDef = {
   id: 'level-17',
   name: 'Second Wind',
   difficulty: 'easy',
-  maxToggles: 2,
   boardHeight: 740,
   nodes: [
     {
@@ -184,7 +183,7 @@ export const level17: LevelDef = {
   ],
   track: [['ball', 'g1', 'g2', 'cp', 'g3', 'g4', 'goal']],
   meta: {
-    teachingPoint: 'Each part has its own changes to spend.',
+    teachingPoint: 'Each part is its own puzzle: clear one, then the next.',
     hint: 'Part A: Gate 1 needs A and B both on, and Gate 2 needs C. Part B: turn F off, and turn E on so Gate 4 gets power from both.',
     minChanges: 4,
     keySwitch: 'b',

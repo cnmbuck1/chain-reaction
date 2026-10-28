@@ -9,6 +9,8 @@ export interface Settings {
   haptics: boolean;
   /** 'system' follows prefers-reduced-motion; 'reduce' always skips animation. */
   motion: MotionSetting;
+  /** Testing aid: every level is open, whatever has been solved. */
+  unlockAll: boolean;
 }
 
 export const SETTINGS_KEY = 'chain-reaction/settings';
@@ -20,6 +22,7 @@ export const defaultSettings = (): Settings => ({
   sound: true,
   haptics: true,
   motion: 'system',
+  unlockAll: false,
 });
 
 function defaultStore(): KeyValueStore | null {
@@ -51,10 +54,11 @@ export function saveSettings(settings: Settings, store: KeyValueStore | null = d
 export function migrateSettings(data: unknown): Settings {
   const out = defaultSettings();
   if (typeof data !== 'object' || data === null) return out;
-  const { version, sound, haptics, motion } = data as Record<string, unknown>;
+  const { version, sound, haptics, motion, unlockAll } = data as Record<string, unknown>;
   if (version !== 1) return out;
   if (typeof sound === 'boolean') out.sound = sound;
   if (typeof haptics === 'boolean') out.haptics = haptics;
   if (motion === 'system' || motion === 'reduce') out.motion = motion;
+  if (typeof unlockAll === 'boolean') out.unlockAll = unlockAll;
   return out;
 }

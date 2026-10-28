@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { changesUsed, initialState, replay, step } from '../../src/engine/reducer';
 import { simulateRun } from '../../src/engine/simulate';
-import { greedySolves, solve } from '../../src/engine/solver';
+import { greedyWin, solve } from '../../src/engine/solver';
 import type { GameAction } from '../../src/engine/types';
 import { validateLevel } from '../../src/levels/schema';
 import { buildTimeline, INSTANT_TIMING } from '../../src/render/timeline';
@@ -36,10 +36,11 @@ describe('staged boards', () => {
     expect(step(staged, state, toggle('d')).rejected).toBeUndefined();
   });
 
-  it('gives each part its own budget', () => {
+  it('counts changes per part, or over the whole board', () => {
     const { state } = replay(staged, [toggle('b'), run, toggle('d')]);
     expect(changesUsed(staged, state.switches, 0)).toBe(1);
     expect(changesUsed(staged, state.switches, 1)).toBe(1);
+    expect(changesUsed(staged, state.switches)).toBe(2);
   });
 
   it('counts a miss after a checkpoint as a new attempt, and Reset starts over', () => {
@@ -60,8 +61,8 @@ describe('staged boards', () => {
   it('solves across parts, and a greedy player who clears part A the easy way gets stuck', () => {
     const report = solve(staged);
     expect(report.solution).toEqual(['b', 'd']);
-    expect(report.wins).toEqual([{ a: false, b: true, d: true }]);
-    expect(greedySolves(staged)).toBe(false);
+    expect(report.parWins).toEqual([{ a: false, b: true, d: true }]);
+    expect(greedyWin(staged)).toBeNull();
   });
 
   it('finds no way through once part A was cleared the wrong way', () => {

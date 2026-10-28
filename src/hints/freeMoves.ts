@@ -4,7 +4,7 @@ import type { LevelDef, NodeId } from '../engine/types';
 
 // A hint is a free move: the game sets one switch to where every solution needs it and
 // locks it there. The level is rebuilt with that switch's start moved to its target, so
-// the move costs nothing against the change budget and the engine needs no special case.
+// the move doesn't count as one of the player's changes and the engine needs no special case.
 
 export interface FreeMove {
   switchId: NodeId;
@@ -25,7 +25,7 @@ export function freeMovePlan(level: LevelDef): FreeMove[] {
   const cached = plans.get(level);
   if (cached) return cached;
   const report = solve(level);
-  const win = report.wins[0];
+  const win = report.parWins[0];
   const moves: FreeMove[] = [];
   if (win) {
     const changed = level.nodes.filter(

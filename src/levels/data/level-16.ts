@@ -5,7 +5,6 @@ export const level16: LevelDef = {
   id: 'level-16',
   name: 'Two Parts',
   difficulty: 'easy',
-  maxToggles: 1,
   boardHeight: 740,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0, label: 'Power' },

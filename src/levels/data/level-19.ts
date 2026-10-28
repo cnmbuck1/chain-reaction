@@ -5,7 +5,6 @@ export const level19: LevelDef = {
   id: 'level-19',
   name: 'Relay Race',
   difficulty: 'medium',
-  maxToggles: 2,
   boardHeight: 740,
   nodes: [
     {
@@ -180,7 +179,7 @@ export const level19: LevelDef = {
   ],
   track: [['ball', 'g1', 'g2', 'cp', 'g3', 'g4', 'g5', 'goal']],
   meta: {
-    teachingPoint: 'Spend a spare change in one part to set up the next.',
+    teachingPoint: 'A change in one part can set up the next.',
     hint: "C's wire runs into part B, where Gate 3 needs it dark. B alone can keep Gate 2 open, so turn C off in part A.",
     minChanges: 4,
     keySwitch: 'c',

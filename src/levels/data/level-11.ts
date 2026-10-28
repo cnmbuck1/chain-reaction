@@ -5,7 +5,6 @@ export const level11: LevelDef = {
   id: 'level-11',
   name: 'Fork in the Road',
   difficulty: 'easy',
-  maxToggles: 1,
   boardHeight: 470,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0.05, label: 'Power' },

@@ -10,14 +10,16 @@ import type { HintShop } from '../monetize/hintShop';
 import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, partName, rejectMessage } from './describe';
+import { nextStarTip, starsFor, type Solve, type Stars } from '../game/scoring';
 import { HintPanel } from './HintPanel';
+import { ResultCard } from './ResultCard';
 
 interface Props {
   level: LevelDef;
   number: number;
   hasNext: boolean;
   /** Set on the last level: how the whole run of levels went, for the closing card. */
-  finale: { firstTry: number; total: number } | null;
+  finale: { stars: number; total: number } | null;
   reducedMotion: boolean;
   sound: Sound;
   soundOn: boolean;
@@ -35,8 +37,14 @@ interface Props {
   };
   showIntro: boolean;
   onIntroDone: () => void;
-  onSolved: (attempts: number) => void;
+  /** This level's first Run is still unspent, so this visit can earn three stars. */
+  firstRunOpen: boolean;
+  /** The first Run is spent: a Run ended, or the player reset or left after clearing a part. */
+  onFirstRunUsed: () => void;
+  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => void;
   onNext: () => void;
+  /** Plays this level again from the start. */
+  onReplay: () => void;
   onLevels: () => void;
 }
 
@@ -53,8 +61,11 @@ export function GameScreen({
   hints,
   showIntro,
   onIntroDone,
+  firstRunOpen,
+  onFirstRunUsed,
   onSolved,
   onNext,
+  onReplay,
   onLevels,
 }: Props) {
   // Free moves from hints are baked into the level: hinted switches start set and locked.
@@ -93,12 +104,40 @@ export function GameScreen({
     if (haptics) buzz([12, 60, 12]);
   };
   const runId = useRef(0);
-  const nextButton = useRef<HTMLButtonElement>(null);
+  // Completion is reported once per visit, however playback ends (finished, skipped).
+  const solvedRef = useRef(false);
+  const [skipToken, setSkipToken] = useState(0);
+  const [resultOpen, setResultOpen] = useState(true);
+  // Read once: spending the first Run mid-visit must not change what this visit can earn.
+  const [firstRunLive, setFirstRunLive] = useState(firstRunOpen);
+  const [solved, setSolved] = useState<Solve | null>(null);
+
+  // Leaving after clearing a part spends the first Run, as a Reset would; otherwise
+  // backing out would dodge a part cleared the wrong way.
+  const leaving = useRef({ partCleared: false, onFirstRunUsed });
+  useEffect(() => {
+    leaving.current = {
+      partCleared: state.stage > 0 && state.phase !== 'won',
+      onFirstRunUsed,
+    };
+  });
+  useEffect(
+    () => () => {
+      if (leaving.current.partCleared) leaving.current.onFirstRunUsed();
+    },
+    [],
+  );
 
   const won = state.phase === 'won' && !playing;
-  useEffect(() => {
-    if (won) nextButton.current?.focus();
-  }, [won]);
+
+  /** Jumps the run to its last frame; the outcome is already decided. */
+  const skip = () => {
+    if (!playing) return;
+    window.clearTimeout(follow.current);
+    sound.stopAll();
+    if (state.phase === 'won') sound.play('chime');
+    setSkipToken((n) => n + 1);
+  };
 
   // Leaving the level silences any run still sounding.
   useEffect(() => () => sound.stopAll(), [sound]);
@@ -114,6 +153,11 @@ export function GameScreen({
       return;
     }
     setState(result.state);
+    const ended = action.type === 'run' && result.state.lastRun?.outcome.kind !== 'checkpoint';
+    if (ended || (action.type === 'reset' && state.stage > 0)) {
+      onFirstRunUsed();
+      if (!result.state.lastRun?.won || action.type === 'reset') setFirstRunLive(false);
+    }
     if (action.type === 'toggle') {
       sound.play('click');
       if (haptics) buzz(12);
@@ -143,19 +187,40 @@ export function GameScreen({
   const onPlayed = (id: number) => {
     if (id !== runId.current) return;
     setPlaying(false);
-    if (state.phase === 'won') onSolved(state.attempt);
+    if (state.phase !== 'won' || solvedRef.current) return;
+    solvedRef.current = true;
+    if (haptics) buzz([20, 50, 20, 50, 60]);
+    const facts: Solve = {
+      hintsUsed: hints.used,
+      firstRun: firstRunLive && state.attempt === 1,
+      changes: used,
+      par,
+    };
+    setSolved(facts);
+    setResultOpen(true);
+    onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used });
   };
 
-  const used = changesUsed(level, state.switches, state.stage);
+  // Changes over the whole machine; hinted switches start where the hint set them.
+  const used = changesUsed(level, state.switches);
+  const par = baseLevel.meta.minChanges;
   const lastRun = state.lastRun;
   const missed = lastRun !== null && !lastRun.won && lastRun.outcome.kind !== 'checkpoint';
   const staged = indexLevel(level).checkpoints.length > 0;
   // On a staged board, how an earlier part was cleared can leave a later one unsolvable.
   const stuck = useMemo(() => state.stage > 0 && !solve(level, state).solvable, [level, state]);
+  // After a miss, until a switch changes, the part that stopped the ball stays marked.
+  const showingMiss = !playing && playback !== null && missed;
+  const stoppedAt =
+    showingMiss && lastRun?.outcome.kind === 'blocked'
+      ? lastRun.outcome.gateId
+      : showingMiss && lastRun?.outcome.kind === 'deadEnd'
+        ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
+        : null;
 
   let status: string;
   if (notice) status = rejectMessage[notice];
-  else if (playing) status = 'Running…';
+  else if (playing) status = 'Running… Tap the board to skip.';
   else if (lastRun && playback && missed && stuck)
     status = `${explainRun(level, lastRun)} ${partName(state.stage - 1)}'s switches leave no way through here. Reset to try another way.`;
   else if (lastRun && playback) status = explainRun(level, lastRun);
@@ -194,15 +259,16 @@ export function GameScreen({
           </span>
           <h1>{level.name}</h1>
         </div>
-        <div className="meter" aria-label={`Changes used ${used} of ${level.maxToggles}`}>
+        <div className="meter" aria-label={`Changes ${used}, par ${par}`}>
           <span className="meter-label">Changes</span>
           <span className="pips" aria-hidden="true">
-            {Array.from({ length: level.maxToggles }, (_, i) => (
+            {Array.from({ length: par }, (_, i) => (
               <span key={i} className={i < used ? 'pip used' : 'pip'} />
             ))}
           </span>
-          <span className="meter-count">
-            {used}/{level.maxToggles}
+          <span className={`meter-count${used > par ? ' over' : ''}`}>
+            {used}
+            <span className="meter-par"> · par {par}</span>
           </span>
         </div>
       </header>
@@ -218,6 +284,9 @@ export function GameScreen({
         reducedMotion={reducedMotion}
         locked={playing || state.phase === 'won'}
         justHinted={justHinted}
+        stoppedAt={stoppedAt}
+        skipToken={skipToken}
+        onSkip={playing ? skip : undefined}
         onToggle={(switchId) => dispatch({ type: 'toggle', switchId })}
         onPlayed={onPlayed}
       />
@@ -254,17 +323,22 @@ export function GameScreen({
         >
           Undo
         </button>
-        <button type="button" onClick={() => dispatch({ type: 'reset' })} disabled={playing}>
+        <button type="button" onClick={() => dispatch({ type: 'reset' })} disabled={playing || won}>
           Reset
         </button>
-        <button
-          type="button"
-          className="run"
-          onClick={() => dispatch({ type: 'run' })}
-          disabled={playing || won}
-        >
-          Run
-        </button>
+        {playing ? (
+          <button type="button" className="run" onClick={skip}>
+            Skip
+          </button>
+        ) : won ? (
+          <button type="button" className="run" onClick={() => setResultOpen(true)}>
+            Result
+          </button>
+        ) : (
+          <button type="button" className="run" onClick={() => dispatch({ type: 'run' })}>
+            {showingMiss ? 'Retry' : 'Run'}
+          </button>
+        )}
       </div>
 
       {showIntro && (
@@ -284,7 +358,7 @@ export function GameScreen({
               </li>
               <li>
                 <strong>Press Run.</strong> The ball rolls until it reaches the goal or a closed
-                gate. Changes are limited, so plan first.
+                gate. Plan first: a first-Run solve with the fewest changes earns three stars.
               </li>
             </ol>
             <div className="card-actions single">
@@ -308,42 +382,25 @@ export function GameScreen({
         />
       )}
 
-      {won && (
-        <div className="overlay" role="dialog" aria-modal="true" aria-labelledby="solved-title">
-          <div className="card">
-            <p className="eyebrow">Level {number} solved</p>
-            <h2 id="solved-title">{level.name}</h2>
-            <p>
-              {state.attempt === 1
-                ? 'Solved on the first run.'
-                : `Solved in ${state.attempt} runs.`}{' '}
-              {level.meta.teachingPoint}
-            </p>
-            <div className="card-actions">
-              <button type="button" className="ghost" onClick={onLevels}>
-                Levels
-              </button>
-              {hasNext ? (
-                <button type="button" className="run" ref={nextButton} onClick={onNext}>
-                  Next level
-                </button>
-              ) : (
-                <button type="button" className="run" ref={nextButton} onClick={onLevels}>
-                  Done
-                </button>
-              )}
-            </div>
-            {finale && (
-              <p className="finale">
-                <strong>Every machine solved.</strong> {finale.firstTry} of {finale.total} on the
-                first run.{' '}
-                {finale.firstTry === finale.total
-                  ? 'Flawless.'
-                  : 'Replay any level to try for a first-run solve.'}
-              </p>
-            )}
-          </div>
-        </div>
+      {won && resultOpen && solved && (
+        <ResultCard
+          number={number}
+          name={level.name}
+          stars={starsFor(solved)}
+          firstRun={solved.firstRun}
+          runs={state.attempt}
+          hintsUsed={solved.hintsUsed}
+          changes={solved.changes}
+          par={solved.par}
+          tip={nextStarTip(solved)}
+          teachingPoint={level.meta.teachingPoint}
+          hasNext={hasNext}
+          finale={finale}
+          onNext={onNext}
+          onReplay={onReplay}
+          onLevels={onLevels}
+          onClose={() => setResultOpen(false)}
+        />
       )}
     </main>
   );

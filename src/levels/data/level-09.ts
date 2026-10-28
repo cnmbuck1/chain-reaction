@@ -5,7 +5,6 @@ export const level09: LevelDef = {
   id: 'level-09',
   name: 'Interlock',
   difficulty: 'hard',
-  maxToggles: 3,
   nodes: [
     {
       id: 'source',

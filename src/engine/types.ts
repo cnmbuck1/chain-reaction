@@ -84,11 +84,6 @@ export interface LevelDef {
   id: string;
   name: string;
   difficulty: 'tutorial' | 'easy' | 'medium' | 'hard';
-  /**
-   * Maximum number of switches that may differ from their initial position. On staged
-   * boards this is per part: each part's switches get their own budget.
-   */
-  maxToggles: number;
   /** Board layout height in CSS pixels at 360 wide, for levels that need more room. */
   boardHeight?: number;
   nodes: LevelNode[];
@@ -103,9 +98,12 @@ export interface LevelDef {
     hint: string;
     /** Short coaching line shown before the first run (tutorial levels). */
     prompt?: string;
-    /** Minimum switch changes to win, over all parts, as computed by the solver (checked in tests). */
+    /**
+     * Fewest switch changes that win, over all parts, as computed by the solver (checked in
+     * tests). Shown as par; a solve at par can earn the third star.
+     */
     minChanges: number;
-    /** The first switch a hint sets: one every in-budget solution changes. */
+    /** The first switch a hint sets: one every par solution changes. */
     keySwitch?: NodeId;
   };
 }
@@ -157,7 +155,7 @@ export type GameAction =
   { type: 'toggle'; switchId: NodeId } | { type: 'undo' } | { type: 'run' } | { type: 'reset' };
 
 export type RejectReason =
-  'budget' | 'locked' | 'stageDone' | 'stageAhead' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
+  'locked' | 'stageDone' | 'stageAhead' | 'notASwitch' | 'nothingToUndo' | 'levelWon';
 
 export interface StepResult {
   state: GameState;

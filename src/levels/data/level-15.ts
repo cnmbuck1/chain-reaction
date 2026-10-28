@@ -5,7 +5,6 @@ export const level15: LevelDef = {
   id: 'level-15',
   name: 'Grand Junction',
   difficulty: 'hard',
-  maxToggles: 3,
   boardHeight: 470,
   nodes: [
     { id: 'source', type: 'source', x: 0.5, y: 0.04, label: 'Power' },

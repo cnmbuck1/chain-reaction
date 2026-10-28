@@ -54,4 +54,9 @@ describe('settings storage', () => {
     expect(loadSettings(throwing)).toEqual(defaultSettings());
     expect(() => saveSettings(defaultSettings(), throwing)).not.toThrow();
   });
+  it('keeps the unlock-all testing switch, off by default', () => {
+    expect(defaultSettings().unlockAll).toBe(false);
+    expect(migrateSettings({ version: 1, unlockAll: true }).unlockAll).toBe(true);
+    expect(migrateSettings({ version: 1, unlockAll: 'yes' }).unlockAll).toBe(false);
+  });
 });

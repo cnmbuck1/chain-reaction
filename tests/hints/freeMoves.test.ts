@@ -12,10 +12,10 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s free moves', (_id, leve
   const plan = freeMovePlan(level);
   const report = solve(level);
 
-  it('starts with the key switch and only makes moves the solution needs', () => {
+  it('starts with the key switch and only makes moves the par solution needs', () => {
     expect(plan[0]!.switchId).toBe(level.meta.keySwitch);
     for (const move of plan) {
-      expect(report.wins.every((w) => w[move.switchId] === move.on)).toBe(true);
+      expect(report.parWins.every((w) => w[move.switchId] === move.on)).toBe(true);
     }
   });
 
@@ -23,7 +23,7 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s free moves', (_id, leve
     expect(plan).toHaveLength(Math.max(1, report.minChanges! - 1));
   });
 
-  it('costs nothing against the change budget, and locks the hinted switches', () => {
+  it('does not count as a change, and locks the hinted switches', () => {
     const hinted = withFreeMoves(level, plan.length);
     const state = initialState(hinted);
     expect(changesUsed(hinted, state.switches)).toBe(0);
@@ -47,7 +47,6 @@ describe.each(levels.map((l) => [l.id, l] as const))('%s free moves', (_id, leve
 describe('hint checks', () => {
   it('flag a key switch that solutions disagree on', () => {
     const level = makeLevel({
-      maxToggles: 1,
       nodes: [source(), sw('a'), sw('b'), gate('g1', true, 'or'), ball(), goal()],
       signalEdges: [
         { from: 'source', to: 'a' },

@@ -9,7 +9,6 @@ export function makeLevel(
     id: 'test',
     name: 'Test',
     difficulty: 'medium',
-    maxToggles: 2,
     meta: { teachingPoint: '', hint: '', minChanges: 0 },
     ...parts,
   };
@@ -59,7 +58,6 @@ export const junction = (id: string, whenTrue: string, whenFalse: string): Level
  */
 export const tradeoff = makeLevel({
   id: 'tradeoff',
-  maxToggles: 2,
   nodes: [source(), sw('a'), sw('b', true), gate('g1', true), gate('g2', false), ball(), goal()],
   signalEdges: [
     { from: 'source', to: 'a' },
@@ -74,7 +72,6 @@ export const tradeoff = makeLevel({
 /** A junction picks the route: ON goes to a dead end, OFF to the goal. */
 export const fork = makeLevel({
   id: 'fork',
-  maxToggles: 1,
   nodes: [source(), sw('a', true), junction('j', 'dead', 'goal'), ball(), goal(), deadEnd('dead')],
   signalEdges: [
     { from: 'source', to: 'a' },
@@ -90,7 +87,6 @@ export const fork = makeLevel({
  */
 export const staged = makeLevel({
   id: 'staged',
-  maxToggles: 1,
   nodes: [
     source(),
     sw('a'),

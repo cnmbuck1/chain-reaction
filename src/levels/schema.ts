@@ -13,7 +13,6 @@ export type ValidationCode =
   | 'TRACK_CYCLE'
   | 'NOT_ON_TRACK'
   | 'BAD_POSITION'
-  | 'BAD_BUDGET'
   | 'BAD_STAGE';
 
 export interface ValidationError {
@@ -51,15 +50,6 @@ export function validateLevel(level: LevelDef): ValidationError[] {
     if (!(n.x >= 0 && n.x <= 1 && n.y >= 0 && n.y <= 1)) {
       add('BAD_POSITION', `Node "${n.id}" position must be within 0..1`, n.id);
     }
-  }
-  const ofType = (t: LevelNode['type']) => level.nodes.filter((n) => n.type === t);
-  const switchCount = ofType('switch').length;
-  if (
-    !Number.isInteger(level.maxToggles) ||
-    level.maxToggles < 0 ||
-    level.maxToggles > switchCount
-  ) {
-    add('BAD_BUDGET', `maxToggles must be an integer from 0 to ${switchCount}`);
   }
 
   // Parts: checkpoints number them 0..n-1, and every switch belongs to one of the n+1 parts.

@@ -192,6 +192,13 @@ export class Board {
     });
   }
 
+  /** Jumps a playing run to its last frame, which is exactly where it would have ended. */
+  skip() {
+    if (!this.timeline || !this.resolvePlay) return;
+    this.startedAt = performance.now() - this.timeline.duration;
+    this.dirty = true;
+  }
+
   destroy() {
     this.destroyed = true;
     this.finishPlayback();
@@ -409,6 +416,40 @@ export class Board {
     }
   }
 
+  /**
+   * The win: light runs along the route the ball took, from the start to the goal, and
+   * each open gate's lamp flares as the light passes it. The goal stays lit afterwards.
+   */
+  private drawCircuit(level: LevelDef, circuit: NonNullable<VisualState['circuit']>) {
+    const g = this.moving;
+    const glow = this.glow;
+    const legs = circuit.links.map(([from, to]) => trackRoute(level, from, to));
+    const lengths = legs.map(pathLength);
+    const total = lengths.reduce((a, b) => a + b, 0) || 1;
+    let travelled = 0;
+    for (const [i, leg] of legs.entries()) {
+      const share = Math.min(1, Math.max(0, (circuit.p * total - travelled) / (lengths[i] || 1)));
+      travelled += lengths[i]!;
+      if (share <= 0) break;
+      const lit = partialPath(leg, share);
+      line(glow, lit, 14, C.gold, 0.22);
+      line(g, lit, 3, C.gold, 0.9);
+      const to = circuit.links[i]![1];
+      if (share >= 1 && indexLevel(level).nodes.get(to)?.type === 'gate') {
+        const p = this.at(level, to);
+        // Brightest just as the light arrives, settling to a steady glow.
+        const since = Math.min(1, (circuit.p * total - travelled) / (total * 0.2));
+        glow.circle(p.x, p.y, 30).fill({ color: C.energy, alpha: 0.12 + 0.25 * (1 - since) });
+      }
+    }
+    const goal = circuit.links.at(-1)?.[1];
+    if (goal && circuit.p >= 1) {
+      const p = this.at(level, goal);
+      glow.circle(p.x, p.y, 26).fill({ color: C.gold, alpha: 0.3 });
+      g.circle(p.x, p.y, 24).stroke({ width: 2, color: C.gold, alpha: 0.9 });
+    }
+  }
+
   /** Draws everything that moves: energy, the gear, gates, ball and effects. */
   private drawMoving(level: LevelDef, visual: VisualState, now: number) {
     const g = this.moving;
@@ -504,6 +545,7 @@ export class Board {
     }
 
     this.shadeParts(level, visual);
+    if (visual.circuit) this.drawCircuit(level, visual.circuit);
     drawFinish(g, glow, visual, at);
     const finish = visual.finish;
     const approach = finish && trackLinks(level).find(([, to]) => to === finish.nodeId)?.[0];
@@ -520,6 +562,7 @@ function emptyVisual(ballStart: NodeId | null): VisualState {
     gates: new Map(),
     ball: ballStart ? { at: ballStart } : null,
     finish: null,
+    circuit: null,
   };
 }
 
