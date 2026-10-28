@@ -71,6 +71,9 @@ export function wireRoutes(level: LevelDef): Map<string, WireRoute> {
         Math.abs(start.x - end.x) < 2
           ? [start, end]
           : [start, { x: start.x, y: bus }, { x: end.x, y: bus }, end];
+    } else if (Math.abs(start.x - end.x) < GATE_INPUT_SPACING * 1.5 && end.y > start.y) {
+      // Nearly straight down: keep the long drop straight and step aside just above the gate.
+      points = [start, { x: start.x, y: end.y - 12 }, { x: end.x, y: end.y - 12 }, end];
     } else {
       points = routeWire(start, end, lane);
     }
@@ -94,7 +97,8 @@ export function wireRoutes(level: LevelDef): Map<string, WireRoute> {
 
 /**
  * The track between two linked nodes. Links at different heights bend at a right angle:
- * out of a fork they turn first, so lanes split cleanly; elsewhere they run level first.
+ * out of a fork they turn first, so lanes split cleanly, and out of a checkpoint they
+ * drop first, down to the next part; elsewhere they run level first.
  */
 export function trackRoute(level: LevelDef, from: NodeId, to: NodeId): Point[] {
   const index = indexLevel(level);
@@ -102,10 +106,53 @@ export function trackRoute(level: LevelDef, from: NodeId, to: NodeId): Point[] {
   const a = boardPoint(index.nodes.get(from)!.x, index.nodes.get(from)!.y, height);
   const b = boardPoint(index.nodes.get(to)!.x, index.nodes.get(to)!.y, height);
   if (Math.abs(a.y - b.y) < 1 || Math.abs(a.x - b.x) < 1) return [a, b];
-  const corner =
-    index.nodes.get(from)!.type === 'junction' ? { x: a.x, y: b.y } : { x: b.x, y: a.y };
+  const turnFirst = ['junction', 'checkpoint'].includes(index.nodes.get(from)!.type);
+  const corner = turnFirst ? { x: a.x, y: b.y } : { x: b.x, y: a.y };
   return [a, corner, b];
 }
+
+/**
+ * Where each part of a staged board ends, as a height on the board: just above the
+ * highest switch or power source of the next part. One per checkpoint, in order.
+ */
+export function partDividers(level: LevelDef): number[] {
+  const index = indexLevel(level);
+  const height = boardHeight(level);
+  return index.checkpoints.map((_, stage) => {
+    const next = level.nodes.filter(
+      (n) =>
+        (n.type === 'switch' && (n.stage ?? 0) === stage + 1) ||
+        (n.type === 'source' &&
+          (index.outgoing.get(n.id) ?? []).some((e) => {
+            const to = index.nodes.get(e.to);
+            return to?.type === 'switch' && (to.stage ?? 0) === stage + 1;
+          })),
+    );
+    const top = Math.min(
+      ...next.map(
+        (n) =>
+          boardPoint(n.x, n.y, height).y -
+          (n.type === 'source' ? SOURCE_CLEARANCE : SWITCH_CLEARANCE),
+      ),
+    );
+    return Math.round(top);
+  });
+}
+/** The slice of the board each part fills the screen with: from its seam to the next one. */
+export interface PartView {
+  top: number;
+  height: number;
+}
+
+/** One view per part; a board without parts has one view, the whole board. */
+export function partViews(level: LevelDef): PartView[] {
+  const edges = [0, ...partDividers(level), boardHeight(level)];
+  return edges.slice(1).map((bottom, i) => ({ top: edges[i]!, height: bottom - edges[i]! }));
+}
+
+/** Room kept above a part's highest power source or switch, for its divider. */
+const SOURCE_CLEARANCE = 44;
+const SWITCH_CLEARANCE = 42;
 
 /** Which exit each fork sends the ball to, for the given switch signals. */
 export function forkExits(

@@ -13,7 +13,8 @@ export type ValidationCode =
   | 'TRACK_CYCLE'
   | 'NOT_ON_TRACK'
   | 'BAD_POSITION'
-  | 'BAD_BUDGET';
+  | 'BAD_BUDGET'
+  | 'BAD_STAGE';
 
 export interface ValidationError {
   code: ValidationCode;
@@ -29,6 +30,7 @@ const TRACK_TYPES = new Set<LevelNode['type']>([
   'junction',
   'goal',
   'deadEnd',
+  'checkpoint',
 ]);
 const TERMINAL = new Set<LevelNode['type']>(['goal', 'deadEnd']);
 
@@ -58,6 +60,19 @@ export function validateLevel(level: LevelDef): ValidationError[] {
     level.maxToggles > switchCount
   ) {
     add('BAD_BUDGET', `maxToggles must be an integer from 0 to ${switchCount}`);
+  }
+
+  // Parts: checkpoints number them 0..n-1, and every switch belongs to one of the n+1 parts.
+  const checkpoints = level.nodes.flatMap((n) => (n.type === 'checkpoint' ? [n.stage] : []));
+  const parts = checkpoints.length + 1;
+  if ([...checkpoints].sort((a, b) => a - b).some((stage, i) => stage !== i)) {
+    add('BAD_STAGE', `Checkpoints must complete parts 0 to ${parts - 2}, one each`);
+  }
+  for (const n of level.nodes) {
+    if (n.type !== 'switch' || n.stage === undefined) continue;
+    if (!Number.isInteger(n.stage) || n.stage < 0 || n.stage >= parts) {
+      add('BAD_STAGE', `Switch "${n.id}" is in part ${n.stage}, but the board has ${parts}`, n.id);
+    }
   }
 
   // Signal edges
@@ -219,7 +234,10 @@ function validateTrack(
   walk(starts[0]!.id);
 
   for (const n of level.nodes) {
-    if ((n.type === 'gate' || n.type === 'junction') && !reached.has(n.id)) {
+    if (
+      (n.type === 'gate' || n.type === 'junction' || n.type === 'checkpoint') &&
+      !reached.has(n.id)
+    ) {
       add('NOT_ON_TRACK', `${n.type} "${n.id}" is not reachable by the ball`, n.id);
     }
   }

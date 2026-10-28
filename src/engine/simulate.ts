@@ -1,17 +1,25 @@
 import { evaluate } from './evaluate';
-import { indexLevel } from './graph';
+import { indexLevel, stageStart } from './graph';
 import type { LevelDef, NodeId, RunEvent, RunOutcome, RunResult, SwitchStates } from './types';
 
 /**
  * One RUN: power propagation, then gate states, then ball travel. The ball stops at
- * the first closed gate or dead end. Pure: same inputs always give the same events.
+ * the first closed gate or dead end, or at the checkpoint that ends the part being
+ * played. Pure: same inputs always give the same events.
+ *
+ * `stage` is the part being played; null runs the whole track, passing every checkpoint.
  */
-export function simulateRun(level: LevelDef, switches: SwitchStates, attempt: number): RunResult {
+export function simulateRun(
+  level: LevelDef,
+  switches: SwitchStates,
+  attempt: number,
+  stage: number | null = 0,
+): RunResult {
   const index = indexLevel(level);
   const evaluation = evaluate(index, switches);
   const events: RunEvent[] = [...evaluation.events];
 
-  let at: NodeId = index.ballStart;
+  let at: NodeId = stageStart(index, stage ?? 0);
   let outcome: RunOutcome | null = null;
   // Validated tracks are acyclic, so the ball visits each node at most once.
   for (let steps = 0; steps <= level.nodes.length && outcome === null; steps++) {
@@ -29,6 +37,14 @@ export function simulateRun(level: LevelDef, switches: SwitchStates, attempt: nu
         if (!evaluation.gateOpen.get(at)) {
           outcome = { kind: 'blocked', gateId: at };
           events.push({ type: 'ballBlocked', gateId: at });
+          break;
+        }
+        at = moveTo(events, at, index.trackNext.get(at));
+        break;
+      case 'checkpoint':
+        if (node.stage === stage) {
+          outcome = { kind: 'checkpoint', nodeId: at };
+          events.push({ type: 'ballCheckpoint', nodeId: at });
           break;
         }
         at = moveTo(events, at, index.trackNext.get(at));

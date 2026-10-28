@@ -8,6 +8,7 @@ import {
   boardHeight,
   boardPoint,
   forkExits,
+  partDividers,
   trackRoute,
   wireRoutes,
 } from '../../src/render/layout';
@@ -129,5 +130,36 @@ describe('fork exits', () => {
     };
     expect(forkExits(level, signalsOf(level)).get('fork')).toBe('g1');
     expect(forkExits(level, signalsOf(level, { f: true })).get('fork')).toBe('g2');
+  });
+});
+
+describe('staged boards', () => {
+  const twoParts = levels.find((l) => l.name === 'Two Parts')!;
+  const at = (id: string) => {
+    const n = twoParts.nodes.find((node) => node.id === id)!;
+    return boardPoint(n.x, n.y, boardHeight(twoParts));
+  };
+
+  it('puts the seam between part A and part B', () => {
+    const [seam] = partDividers(twoParts);
+    expect(partDividers(levels[0]!)).toEqual([]);
+    expect(seam).toBeGreaterThan(at('g1').y + 40);
+    expect(seam).toBeLessThan(at('source2').y - 20);
+  });
+
+  it('drops from the checkpoint before turning into part B', () => {
+    const [a, corner, b] = trackRoute(twoParts, 'cp', 'g3');
+    expect(corner).toEqual({ x: a!.x, y: b!.y });
+  });
+
+  it('keeps a wire crossing into the next part straight down to its gate', () => {
+    for (const level of levels.filter((l) => partDividers(l).length > 0)) {
+      const seam = partDividers(level)[0]!;
+      for (const { points } of wireRoutes(level).values()) {
+        const crossing = points.findIndex((p, i) => i > 0 && points[i - 1]!.y < seam && p.y > seam);
+        if (crossing < 0) continue;
+        expect(points[crossing]!.x, level.id).toBe(points[crossing - 1]!.x);
+      }
+    }
   });
 });
