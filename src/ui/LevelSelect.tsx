@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import type { LevelDef } from '../engine/types';
 import { chaptersFor } from '../levels/chapters';
-import { CoinIcon, coinsText } from './coins';
+import { CoinChip } from './coins';
+import { GearIcon } from './icons';
+import { HomeBackdrop, HomeTitle, HomeTraces } from './HomeArt';
 import { isUnlocked, totalStars, type Progress } from '../storage/progress';
 
 interface Props {
@@ -15,6 +17,8 @@ interface Props {
   onPlay: (index: number) => void;
   onShop: () => void;
   onSettings: () => void;
+  /** Reduced motion: the home screen's gears and pulses stand still. */
+  still?: boolean;
 }
 
 export function LevelSelect({
@@ -26,6 +30,7 @@ export function LevelSelect({
   onPlay,
   onShop,
   onSettings,
+  still = false,
 }: Props) {
   const ids = levels.map((l) => l.id);
   const isOpen = (i: number) => unlockAll || isUnlocked(ids, progress, i);
@@ -38,32 +43,27 @@ export function LevelSelect({
   const teaserChapter = chapters.find((c) => c.indexes[0] === teaser)?.chapter;
 
   return (
-    <main className="select">
+    <main className={`select home${still ? ' still' : ''}`}>
+      <HomeBackdrop />
       <header>
         <div className="select-top">
           <p className="eyebrow">
             {solved} of {levels.length} solved
           </p>
           <div className="select-actions">
-            <button
-              type="button"
-              className="ghost small coin-button"
-              onClick={onShop}
-              aria-label={`Shop, ${coinsText(coins)}`}
-            >
-              <CoinIcon /> {coins}
-            </button>
-            <button type="button" className="ghost small" onClick={onSettings}>
-              Settings
+            <CoinChip coins={coins} onShop={onShop} />
+            <button type="button" className="ghost icon" onClick={onSettings} aria-label="Settings">
+              <GearIcon />
             </button>
           </div>
         </div>
-        <h1>Chain Reaction</h1>
+        <HomeTitle />
         <p className="tagline">Understand the machine. Find the sequence. Watch it work.</p>
         <p className="star-total" aria-label={`${stars} of ${levels.length * 3} stars`}>
           <span aria-hidden="true">★</span> {stars}
           <span className="dim"> / {levels.length * 3}</span>
         </p>
+        <HomeTraces />
       </header>
 
       {next !== -1 && (

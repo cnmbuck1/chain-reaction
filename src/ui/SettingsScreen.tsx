@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CoinChip } from './coins';
 import type { MotionSetting, Settings } from '../storage/settings';
 
 interface Props {
@@ -9,6 +10,8 @@ interface Props {
   /** Opens the play stats kept on this device. */
   onStats: () => void;
   onBack: () => void;
+  coins: number;
+  onShop: () => void;
 }
 
 export function SettingsScreen({
@@ -18,6 +21,8 @@ export function SettingsScreen({
   onResetProgress,
   onStats,
   onBack,
+  coins,
+  onShop,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [resetDone, setResetDone] = useState(false);
@@ -30,11 +35,12 @@ export function SettingsScreen({
 
   return (
     <main className="select settings">
-      <header className="settings-top">
-        <button type="button" className="ghost" onClick={onBack}>
-          ‹ Levels
+      <header className="settings-top with-coins">
+        <button type="button" className="ghost back" onClick={onBack} aria-label="Levels">
+          ‹ <span className="back-text">Levels</span>
         </button>
         <h1>Settings</h1>
+        <CoinChip coins={coins} onShop={onShop} />
       </header>
 
       <section className="setting-list" aria-label="Settings">

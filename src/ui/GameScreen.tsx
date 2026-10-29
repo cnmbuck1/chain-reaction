@@ -13,7 +13,7 @@ import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, partName, rejectMessage } from './describe';
 import { nextStarTip, starsFor, type Solve, type Stars } from '../game/scoring';
-import { CoinIcon } from './coins';
+import { CoinChip, CoinIcon } from './coins';
 import { HintPanel } from './HintPanel';
 import { RetryPanel } from './RetryPanel';
 import { ResultCard } from './ResultCard';
@@ -27,9 +27,7 @@ interface Props {
   finale: { stars: number; total: number } | null;
   reducedMotion: boolean;
   sound: Sound;
-  soundOn: boolean;
   haptics: boolean;
-  onToggleSound: () => void;
   coins: number;
   shop: Shop;
   /** Opens the coin shop over the game. */
@@ -81,9 +79,7 @@ export function GameScreen({
   finale,
   reducedMotion,
   sound,
-  soundOn,
   haptics,
-  onToggleSound,
   coins,
   shop,
   onShop,
@@ -319,15 +315,7 @@ export function GameScreen({
           >
             ‹ <span className="back-text">Levels</span>
           </button>
-          <button
-            type="button"
-            className="ghost icon"
-            onClick={onToggleSound}
-            aria-pressed={soundOn}
-            aria-label={soundOn ? 'Sound on' : 'Sound off'}
-          >
-            <SpeakerIcon muted={!soundOn} />
-          </button>
+          <CoinChip coins={coins} onShop={onShop} />
         </div>
         <div className="title">
           <span className="eyebrow">
@@ -524,30 +512,5 @@ export function GameScreen({
         />
       )}
     </main>
-  );
-}
-
-function SpeakerIcon({ muted }: { muted: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-      <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
-      {muted ? (
-        <path
-          d="M16 9l5 6M21 9l-5 6"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-        />
-      ) : (
-        <path
-          d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-        />
-      )}
-    </svg>
   );
 }

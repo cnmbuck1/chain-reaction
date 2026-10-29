@@ -43,3 +43,17 @@ export function useShopAction() {
   const status = busy ? 'Working…' : notice;
   return { busy, status, run };
 }
+
+/** The coin balance, on every screen; tapping it opens the shop. */
+export function CoinChip({ coins, onShop }: { coins: number; onShop: () => void }) {
+  return (
+    <button
+      type="button"
+      className="ghost small coin-button"
+      onClick={onShop}
+      aria-label={`Shop, ${coinsText(coins)}`}
+    >
+      <CoinIcon /> {coins}
+    </button>
+  );
+}

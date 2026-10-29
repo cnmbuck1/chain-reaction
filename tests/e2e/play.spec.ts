@@ -338,7 +338,7 @@ test('a trip plate flips its switch mid-run, and the switch springs back after',
   await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('switch', { name: 'Unlock all levels' }).click();
-  await page.getByRole('button', { name: '‹ Levels' }).click();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await page.getByRole('button', { name: /^Level 51, Trip Plate$/ }).click();
   await expect(status(page)).toContainText('New: trip plates');
   await page.getByRole('button', { name: /^Switch B,/ }).click();
@@ -400,7 +400,7 @@ test('settings persist, and resetting progress asks first', async ({ page }) => 
   await page.getByRole('button', { name: 'Reset' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Reset' }).click();
   await expect(page.getByText('Progress cleared.', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: '‹ Levels' }).click();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await expect(page.getByText(`0 of ${SOLUTIONS.length} solved`)).toBeVisible();
 });
 
@@ -411,7 +411,7 @@ test('Unlock all levels opens every level for testing', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Level 20, Grand Finale, locked' })).toBeDisabled();
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('switch', { name: 'Unlock all levels' }).click();
-  await page.getByRole('button', { name: '‹ Levels' }).click();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await page.getByRole('button', { name: /^Level 20, Grand Finale$/ }).click();
   await expect(page.getByRole('heading', { name: 'Grand Finale' })).toBeVisible();
 });
@@ -452,18 +452,26 @@ test('play stats count runs, misses and quits on this device, and can be cleared
   await expect(rows).toHaveCount(1);
 });
 
-test('the sound button mutes from the game screen', async ({ page }) => {
+test('the coin count shows on every screen and opens the shop', async ({ page }) => {
   await page.goto('/');
   await dismissIntro(page);
-  const button = page.getByRole('button', { name: /^Sound / });
-  await expect(button).toHaveAttribute('aria-pressed', 'true');
-  await button.click();
-  await expect(page.getByRole('button', { name: 'Sound off' })).toHaveAttribute(
-    'aria-pressed',
-    'false',
-  );
-  await page.reload();
-  await expect(page.getByRole('button', { name: 'Sound off' })).toBeVisible();
+  const coins = page.getByRole('button', { name: 'Shop, 20 coins' });
+  const shop = page.getByRole('dialog', { name: 'Coins' });
+  const check = async () => {
+    await coins.click();
+    await expect(shop).toBeVisible();
+    await shop.getByRole('button', { name: 'Close' }).click();
+    await expect(shop).toHaveCount(0);
+  };
+  await check();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await check();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await check();
+  await page.getByRole('button', { name: 'View' }).click();
+  await expect(page.getByRole('heading', { name: 'Play stats' })).toBeVisible();
+  await check();
 });
 
 test('the game fits a small phone without sideways scrolling', async ({ page }) => {

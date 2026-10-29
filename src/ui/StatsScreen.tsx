@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CoinChip } from './coins';
 import type { LevelDef } from '../engine/types';
 import {
   AD_PLACEMENTS,
@@ -16,6 +17,8 @@ interface Props {
   levels: readonly LevelDef[];
   onClear: () => void;
   onBack: () => void;
+  coins: number;
+  onShop: () => void;
 }
 
 const placementName: Record<AdPlacement, string> = {
@@ -28,7 +31,7 @@ const placementName: Record<AdPlacement, string> = {
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** For playtests: the play stats this device has counted, and a way to send them on. */
-export function StatsScreen({ metrics, levels, onClear, onBack }: Props) {
+export function StatsScreen({ metrics, levels, onClear, onBack, coins, onShop }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const rows = funnel(
@@ -58,11 +61,12 @@ export function StatsScreen({ metrics, levels, onClear, onBack }: Props) {
 
   return (
     <main className="select stats">
-      <header className="settings-top">
-        <button type="button" className="ghost" onClick={onBack}>
-          ‹ Settings
+      <header className="settings-top with-coins">
+        <button type="button" className="ghost back" onClick={onBack} aria-label="Settings">
+          ‹ <span className="back-text">Settings</span>
         </button>
         <h1>Play stats</h1>
+        <CoinChip coins={coins} onShop={onShop} />
       </header>
       <p className="tagline">
         Counted on this device since{' '}
