@@ -30,10 +30,9 @@ function play(ads: AdState, count: number, from = 12, clean = () => true, start 
 }
 
 describe('ads between levels', () => {
-  it('shows one after every third solve, at most one per four minutes', () => {
-    expect([INTERSTITIAL_EVERY, INTERSTITIAL_GAP_MS]).toEqual([3, 240_000]);
-    // Solves a minute apart: the 3rd shows; the 6th waits for the gap and shows on the 7th.
-    expect(play(freshAds(), 12).shown).toEqual([2, 6, 10]);
+  it('shows one after every third solve, however quick', () => {
+    expect([INTERSTITIAL_EVERY, INTERSTITIAL_GAP_MS]).toEqual([3, 0]);
+    expect(play(freshAds(), 12).shown).toEqual([2, 5, 8, 11]);
   });
 
   it('never before level 10', () => {

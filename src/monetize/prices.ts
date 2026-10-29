@@ -29,8 +29,8 @@ export const TUTORIAL_LEVELS = 3;
 export const INTERSTITIAL_EVERY = 3;
 /** ...counting only from this level on, so new players never see one... */
 export const INTERSTITIAL_FROM_LEVEL = 10;
-/** ...and never two within this long. */
-export const INTERSTITIAL_GAP_MS = 4 * 60_000;
+/** ...and never two within this long. 0: every third level, however quick (Chris's call). */
+export const INTERSTITIAL_GAP_MS = 0;
 /** The one-time purchase that turns off ads between levels. Any coin pack does too. */
 export const REMOVE_ADS = { id: 'remove_ads', price: '$2.99' } as const;
 

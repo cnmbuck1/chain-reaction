@@ -306,7 +306,6 @@ After every third solved campaign level, an ad plays once the player leaves the 
 - before level 10, so new players never see one;
 - straight after a solve with a missed Run or a hint, so it never lands on a frustrated
   player (the due ad waits for the next clean solve);
-- within 4 minutes of the last one;
 - after a daily puzzle;
 - for anyone who bought Remove ads ($2.99) or any coin pack.
 

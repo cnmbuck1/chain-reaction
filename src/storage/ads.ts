@@ -75,7 +75,7 @@ export interface Solved {
 /**
  * Counts a solved campaign level and says whether an ad is due once the player leaves the
  * result card. Never before INTERSTITIAL_FROM_LEVEL, never right after a miss or a hint,
- * never within INTERSTITIAL_GAP_MS of the last one, and never for ad-free players. A due
+ * never within INTERSTITIAL_GAP_MS of the last one (if set), and never for ad-free players. A due
  * ad that one of those rules holds back waits for the next clean solve.
  */
 export function afterSolve(
