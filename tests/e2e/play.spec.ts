@@ -506,7 +506,8 @@ test('hints cost coins or a short ad, and coins come from the shop', async ({ pa
 test('two free retries per level, then one costs coins or an ad, and solving refills them', async ({
   page,
 }) => {
-  test.setTimeout(60_000);
+  // Seven Runs: without the animations, so slower CI runners finish in time.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await openLevel(page, 11);
   await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
   const badge = page.locator('.run-badge');
@@ -555,6 +556,7 @@ test('two free retries per level, then one costs coins or an ad, and solving ref
 });
 
 test('the tutorial levels have free hints and unlimited retries', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await dismissIntro(page);
   await expect(board(page)).toBeVisible();
