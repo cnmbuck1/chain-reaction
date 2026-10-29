@@ -13,8 +13,8 @@ export const RETRY_PRICE = 5;
 /** Retries every level gives after its first Run, refilled when the level is solved. */
 export const FREE_RETRIES = 2;
 /** Coins for watching a rewarded ad in the shop, and how many such ads count each day. */
-export const AD_COINS = 5;
-export const AD_COINS_PER_DAY = 5;
+export const AD_COINS = 3;
+export const AD_COINS_PER_DAY = 3;
 /** Coins for solving the daily puzzle, once a day. */
 export const DAILY_COINS = 2;
 /** Bonus coins each time a daily streak reaches a multiple of this many days. */

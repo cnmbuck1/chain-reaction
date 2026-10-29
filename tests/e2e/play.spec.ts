@@ -496,15 +496,15 @@ test('hints cost coins or a short ad, and coins come from the shop', async ({ pa
   await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await page.getByRole('button', { name: 'Shop, 0 coins' }).click();
   const shop = page.getByRole('dialog', { name: 'Coins' });
-  await expect(shop).toContainText('5 left today');
+  await expect(shop).toContainText('3 left today');
   await shop.getByRole('button', { name: /^Watch a short ad/ }).click();
-  await expect(shop.getByText('5 coins added.')).toBeVisible();
-  await expect(shop).toContainText('4 left today');
+  await expect(shop.getByText('3 coins added.')).toBeVisible();
+  await expect(shop).toContainText('2 left today');
   await shop.getByRole('button', { name: /100 coins/ }).click();
   await expect(shop.getByText('100 coins added.')).toBeVisible();
-  await expect(shop).toContainText('105 coins');
+  await expect(shop).toContainText('103 coins');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Shop, 105 coins' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Shop, 103 coins' })).toBeVisible();
 });
 
 test('two free retries per level, then one costs coins or an ad, and solving refills them', async ({

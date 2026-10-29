@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  AD_COINS,
   AD_COINS_PER_DAY,
   FREE_RETRIES,
   HINT_PRICE,
@@ -118,7 +119,7 @@ describe('wallet', () => {
     const day1 = new Date('2026-10-28T23:00:00Z');
     let wallet = freshWallet();
     for (let i = 0; i < AD_COINS_PER_DAY; i++) wallet = rewardAd(wallet, day1)!;
-    expect(wallet.coins).toBe(STARTING_COINS + 25);
+    expect(wallet.coins).toBe(STARTING_COINS + AD_COINS * AD_COINS_PER_DAY);
     expect(adsLeftToday(wallet, day1)).toBe(0);
     expect(rewardAd(wallet, day1)).toBeNull();
     const day2 = new Date('2026-10-29T00:30:00Z');

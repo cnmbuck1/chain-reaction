@@ -282,7 +282,7 @@ One currency, coins, pays for hints and extra retries. Every price and reward li
 
 | Item  | Free                                | Rewarded ad               | Coins | Real money                   |
 | ----- | ----------------------------------- | ------------------------- | ----- | ---------------------------- |
-| Coins | 20 to start, 1 per new star         | +5, up to 5 ads a UTC day | n/a   | 100 for $0.99, 600 for $3.99 |
+| Coins | 20 to start, 1 per new star         | +3, up to 3 ads a UTC day | n/a   | 100 for $0.99, 600 for $3.99 |
 | Hint  | Levels 1 to 3                       | One hint                  | 10    | Through coins                |
 | Retry | 2 per level, refilled on solving it | One retry                 | 5     | Through coins                |
 
