@@ -6,6 +6,8 @@ interface Props {
   systemReduced: boolean;
   onChange: (next: Settings) => void;
   onResetProgress: () => void;
+  /** Opens the play stats kept on this device. */
+  onStats: () => void;
   onBack: () => void;
 }
 
@@ -14,6 +16,7 @@ export function SettingsScreen({
   systemReduced,
   onChange,
   onResetProgress,
+  onStats,
   onBack,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
@@ -86,6 +89,18 @@ export function SettingsScreen({
           on={settings.unlockAll}
           onChange={(unlockAll) => onChange({ ...settings, unlockAll })}
         />
+        <div className="setting">
+          <div className="setting-text">
+            <span className="setting-label">Play stats</span>
+            <span className="setting-detail">
+              For testing: where you got stuck, and how often you used hints, retries and ads. Kept
+              on this device only.
+            </span>
+          </div>
+          <button type="button" className="ghost small" onClick={onStats}>
+            View
+          </button>
+        </div>
         <div className="setting">
           <div className="setting-text">
             <span className="setting-label">Progress</span>

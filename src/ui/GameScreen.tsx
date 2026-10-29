@@ -66,6 +66,12 @@ interface Props {
   /** Plays this level again from the start. */
   onReplay: () => void;
   onLevels: () => void;
+  /** For play stats: the player left by the back button before solving. */
+  onQuit?: () => void;
+  /** For play stats: a Run ended (not one that only cleared a part). */
+  onRunEnded?: (won: boolean) => void;
+  /** For play stats: a panel offering a rewarded ad opened. */
+  onAdOffered?: (panel: 'hint' | 'retry') => void;
 }
 
 export function GameScreen({
@@ -92,6 +98,9 @@ export function GameScreen({
   onNext,
   onReplay,
   onLevels,
+  onRunEnded,
+  onAdOffered,
+  onQuit,
 }: Props) {
   // Free moves from hints are baked into the level: hinted switches start set and locked.
   const level = useMemo(() => withFreeMoves(baseLevel, hints.used), [baseLevel, hints.used]);
@@ -176,6 +185,7 @@ export function GameScreen({
     sound.unlock();
     if (action.type === 'run' && !paidRun && retries?.left === 0) {
       setPanel('retry');
+      onAdOffered?.('retry');
       return;
     }
     const result = step(level, state, action);
@@ -187,6 +197,7 @@ export function GameScreen({
     }
     setState(result.state);
     const ended = action.type === 'run' && result.state.lastRun?.outcome.kind !== 'checkpoint';
+    if (ended) onRunEnded?.(result.state.lastRun?.won ?? false);
     if (ended && !result.state.lastRun?.won) retries?.onMiss();
     if (ended || (action.type === 'reset' && state.stage > 0)) {
       onFirstRunUsed();
@@ -297,7 +308,15 @@ export function GameScreen({
     <main className="game">
       <header className="topbar">
         <div className="topbar-left">
-          <button type="button" className="ghost back" onClick={onLevels} aria-label="Levels">
+          <button
+            type="button"
+            className="ghost back"
+            onClick={() => {
+              if (state.phase !== 'won') onQuit?.();
+              onLevels();
+            }}
+            aria-label="Levels"
+          >
             ‹ <span className="back-text">Levels</span>
           </button>
           <button
@@ -362,7 +381,10 @@ export function GameScreen({
           <button
             type="button"
             className="ghost small hint-button"
-            onClick={() => setPanel('hint')}
+            onClick={() => {
+              setPanel('hint');
+              if (!hints.free && plan.length > hints.used) onAdOffered?.('hint');
+            }}
             disabled={playing}
             aria-label={`Hint, ${hints.free ? 'free on this level' : `${HINT_PRICE} coins`}`}
           >

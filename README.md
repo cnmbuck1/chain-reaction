@@ -344,6 +344,23 @@ Chain Reaction Daily #12
 🔥 5-day streak
 ```
 
+## Play stats
+
+The game counts how it is played, on the device only: nothing is sent anywhere
+(`src/storage/metrics.ts`, stored under `chain-reaction/metrics`). For each level it counts
+opens, Runs that ended, missed Runs, hints, retries bought, Next taps, quits (leaving by the
+back button before solving) and how the first solve went. Every daily puzzle counts under
+one Daily row. It also counts sessions, days played, rewarded ads offered and watched by
+place (hint panel, retry panel, coin shop, streak repair), ads between levels, and
+purchases. Counters stay small however long someone plays; only the last 100 events are kept
+as a list.
+
+Settings → Play stats shows the totals, the three levels with the most quits and misses, a
+level-by-level table up to the first level not yet opened, and the ad counts. "Copy stats"
+copies the whole record as JSON, so a playtester can paste it into a message. "Clear stats"
+starts the count again. Once the apps ship, the same events can feed a real analytics
+service to see the funnel across all players.
+
 ## Known limitations
 
 - Fork boards hold one fork and two lanes. A second fork would need more height and new wire
