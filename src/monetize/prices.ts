@@ -15,6 +15,13 @@ export const FREE_RETRIES = 2;
 /** Coins for watching a rewarded ad in the shop, and how many such ads count each day. */
 export const AD_COINS = 5;
 export const AD_COINS_PER_DAY = 5;
+/** Coins for solving the daily puzzle, once a day. */
+export const DAILY_COINS = 5;
+/** Bonus coins each time a daily streak reaches a multiple of this many days. */
+export const STREAK_BONUS_DAYS = 7;
+export const STREAK_BONUS_COINS = 10;
+/** Saves a streak after one missed day, once the week's free freeze is used. */
+export const STREAK_REPAIR_PRICE = 30;
 /** The tutorial: the first levels give free hints and unlimited retries. */
 export const TUTORIAL_LEVELS = 3;
 

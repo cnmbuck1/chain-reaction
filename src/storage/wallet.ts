@@ -9,6 +9,7 @@ import {
   HINT_PRICE,
   STARTING_COINS,
 } from '../monetize/prices';
+import { utcDay } from '../daily/dates';
 
 /** Upper bound on free moves per level when reading stored data. */
 const MAX_MOVES = 10;
@@ -132,6 +133,11 @@ export function grantCoins(wallet: Wallet, count: number): Wallet {
   return { ...wallet, coins: wallet.coins + Math.max(0, Math.floor(count)) };
 }
 
+/** Pays `count` coins; null if the wallet holds fewer. */
+export function spendCoins(wallet: Wallet, count: number): Wallet | null {
+  return wallet.coins < count ? null : { ...wallet, coins: wallet.coins - count };
+}
+
 /** Runs the player can still start on a level before buying a retry. */
 export const runsLeft = (wallet: Wallet, levelId: string) => wallet.runs[levelId] ?? FULL_RUNS;
 
@@ -160,9 +166,6 @@ export function refillRuns(wallet: Wallet, levelId: string): Wallet {
   delete runs[levelId];
   return { ...wallet, runs };
 }
-
-/** Today's date in UTC, the day rewarded-ad limits count by. */
-export const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
 /** Coin ads the player can still watch today. */
 export function adsLeftToday(wallet: Wallet, now: Date): number {

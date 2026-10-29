@@ -298,6 +298,38 @@ Ads and purchases go through a `Shop` (`src/monetize/shop.ts`). The current one 
 that succeeds without showing an ad or charging anything, and every panel says so. AdMob and
 App Store / Google Play in-app purchases replace it in the native-app milestone.
 
+## Daily puzzle
+
+A new puzzle every UTC day, the same for everyone, playable offline. It opens after level
+10 and sits on the home screen under Continue.
+
+Puzzles are variants of campaign levels 4 to 30 (`src/daily/transform.ts`): switches start in
+other positions, gates want the opposite signal or swap AND and OR, and switch letters are
+shuffled. `npm run daily-pool` searches seeded variants and keeps only those the level
+checks pass with exactly one par answer and first-Run guess odds of 1 in 10 or worse
+(`src/daily/rules.ts`), then writes a year of them to `src/daily/pool.ts`. A unit test
+re-checks every row. Daily #1 is 29 October 2026, and the pool repeats after 365 days. After
+launch, only append to the pool: changing a row changes that day's puzzle for everyone.
+
+Only 13 of the 27 allowed boards are big enough to pass the guess-odds filter, so a layout
+comes back about every two weeks, with different starts, gates and letters.
+
+Dailies follow the level rules for stars, hints and retries. Solving one earns 5 coins once,
+plus 10 more on every seventh day of a streak. The streak (`src/storage/daily.ts`, stored
+under `chain-reaction/daily`) counts days in a row. One missed day a week is covered by a
+free freeze, used automatically. A second missed day in that week can be repaired for 30
+coins or a rewarded ad before the next solve. Two missed days in a row end the streak.
+
+"Share result" opens the system share sheet, or copies the text where there is none. It
+shows stars, Runs, par, a block per Run and the streak, never the answer:
+
+```
+Chain Reaction Daily #12
+★★☆ 2 Runs, par
+🟥🟩
+🔥 5-day streak
+```
+
 ## Known limitations
 
 - Fork boards hold one fork and two lanes. A second fork would need more height and new wire

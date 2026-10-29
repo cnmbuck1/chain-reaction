@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Stars } from '../game/scoring';
 import { CoinIcon, coinsText } from './coins';
 
 interface Props {
-  number: number;
+  /** "Level 12", or "Daily #4". */
+  label: string;
   name: string;
   stars: Stars;
   firstRun: boolean;
@@ -17,6 +18,10 @@ interface Props {
   coinsEarned: number;
   teachingPoint: string;
   hasNext: boolean;
+  /** A line under the coins, such as the daily streak. */
+  note?: string;
+  /** Daily puzzles: shares the result; resolves to a line saying what happened. */
+  onShare?: () => Promise<string | null>;
   /** Set on the last level: how the whole run of levels went. */
   finale: { stars: number; total: number } | null;
   onNext: () => void;
@@ -28,7 +33,7 @@ interface Props {
 
 /** The solved card: stars, how the solve went, and the way on. */
 export function ResultCard({
-  number,
+  label,
   name,
   stars,
   firstRun,
@@ -38,6 +43,8 @@ export function ResultCard({
   par,
   tip,
   coinsEarned,
+  note,
+  onShare,
   teachingPoint,
   hasNext,
   finale,
@@ -47,6 +54,7 @@ export function ResultCard({
   onClose,
 }: Props) {
   const next = useRef<HTMLButtonElement>(null);
+  const [shareNote, setShareNote] = useState<string | null>(null);
   useEffect(() => next.current?.focus(), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -70,7 +78,7 @@ export function ResultCard({
         >
           ×
         </button>
-        <p className="eyebrow">Level {number} solved</p>
+        <p className="eyebrow">{label} solved</p>
         <h2 id="solved-title">{name}</h2>
         <p className="stars" role="img" aria-label={`${stars} of 3 stars`}>
           {[1, 2, 3].map((i) => (
@@ -100,6 +108,7 @@ export function ResultCard({
             <CoinIcon /> +{coinsText(coinsEarned)}
           </p>
         )}
+        {note && <p className="result-note">{note}</p>}
         {tip && <p className="result-tip">{tip}</p>}
         <p className="result-lesson">{teachingPoint}</p>
         {finale && (
@@ -110,7 +119,16 @@ export function ResultCard({
               : 'Replay any level to raise its stars.'}
           </p>
         )}
-        {hasNext ? (
+        {onShare ? (
+          <button
+            type="button"
+            className="run next-challenge"
+            ref={next}
+            onClick={() => void onShare().then(setShareNote)}
+          >
+            Share result
+          </button>
+        ) : hasNext ? (
           <button type="button" className="run next-challenge" ref={next} onClick={onNext}>
             Next challenge
           </button>
@@ -118,6 +136,11 @@ export function ResultCard({
           <button type="button" className="run next-challenge" ref={next} onClick={onLevels}>
             Done
           </button>
+        )}
+        {shareNote && (
+          <p className="hint-notice" role="status">
+            {shareNote}
+          </p>
         )}
         <div className="card-actions even">
           <button type="button" className="ghost" onClick={onReplay}>

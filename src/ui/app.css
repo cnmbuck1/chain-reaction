@@ -573,6 +573,86 @@ button:disabled {
   font-weight: 600;
   opacity: 0.85;
 }
+/* ---------- Daily puzzle ---------- */
+.daily {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--energy) 45%, var(--edge));
+  background: color-mix(in srgb, var(--energy) 6%, var(--bg-raise));
+}
+.daily.is-locked {
+  border-color: var(--edge);
+  background: var(--bg-raise);
+}
+.daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.daily-head h2 {
+  color: var(--energy);
+}
+.daily.is-locked .daily-head h2 {
+  color: var(--muted);
+}
+.daily-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--amber);
+  font-family: var(--font-label);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+.daily-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.daily-line {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+.daily-stars {
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+.daily-stars .dim {
+  color: var(--metal-dark);
+}
+.daily-play {
+  flex: none;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.daily .demo-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in srgb, var(--amber) 70%, transparent);
+  color: var(--amber);
+  font-size: 0.85rem;
+}
+.daily .hint-notice {
+  margin: 0;
+  color: var(--energy);
+}
+.card .result-note {
+  text-align: center;
+  color: var(--amber);
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+}
+
 .chapter {
   display: grid;
   gap: 8px;

@@ -20,7 +20,8 @@ import { ResultCard } from './ResultCard';
 
 interface Props {
   level: LevelDef;
-  number: number;
+  /** "Level 12", or "Daily #4". */
+  label: string;
   hasNext: boolean;
   /** Set on the last level: how the whole run of levels went, for the closing card. */
   finale: { stars: number; total: number } | null;
@@ -54,8 +55,13 @@ interface Props {
   firstRunOpen: boolean;
   /** The first Run is spent: a Run ended, or the player reset or left after clearing a part. */
   onFirstRunUsed: () => void;
-  /** Saves the win; returns the coins it earned. */
-  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => number;
+  /** Saves the win; returns the coins it earned and a line for the result card, if any. */
+  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => {
+    coins: number;
+    note?: string;
+  };
+  /** Daily puzzles: shares the result from the result card. */
+  onShare?: () => Promise<string | null>;
   onNext: () => void;
   /** Plays this level again from the start. */
   onReplay: () => void;
@@ -64,7 +70,7 @@ interface Props {
 
 export function GameScreen({
   level: baseLevel,
-  number,
+  label,
   hasNext,
   finale,
   reducedMotion,
@@ -82,6 +88,7 @@ export function GameScreen({
   firstRunOpen,
   onFirstRunUsed,
   onSolved,
+  onShare,
   onNext,
   onReplay,
   onLevels,
@@ -131,7 +138,7 @@ export function GameScreen({
   // Read once: spending the first Run mid-visit must not change what this visit can earn.
   const [firstRunLive, setFirstRunLive] = useState(firstRunOpen);
   const [solved, setSolved] = useState<Solve | null>(null);
-  const [coinsEarned, setCoinsEarned] = useState(0);
+  const [reward, setReward] = useState<{ coins: number; note?: string }>({ coins: 0 });
 
   // Leaving after clearing a part spends the first Run, as a Reset would; otherwise
   // backing out would dodge a part cleared the wrong way.
@@ -225,7 +232,7 @@ export function GameScreen({
     };
     setSolved(facts);
     setResultOpen(true);
-    setCoinsEarned(onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used }));
+    setReward(onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used }));
   };
 
   // Changes over the whole machine; hinted switches start where the hint set them.
@@ -305,7 +312,7 @@ export function GameScreen({
         </div>
         <div className="title">
           <span className="eyebrow">
-            Level {number}
+            {label}
             {staged && ` · ${partName(state.stage)}`}
           </span>
           <h1>{level.name}</h1>
@@ -473,7 +480,7 @@ export function GameScreen({
 
       {won && resultOpen && solved && (
         <ResultCard
-          number={number}
+          label={label}
           name={level.name}
           stars={starsFor(solved)}
           firstRun={solved.firstRun}
@@ -482,7 +489,9 @@ export function GameScreen({
           changes={solved.changes}
           par={solved.par}
           tip={nextStarTip(solved)}
-          coinsEarned={coinsEarned}
+          coinsEarned={reward.coins}
+          note={reward.note}
+          onShare={onShare}
           teachingPoint={level.meta.teachingPoint}
           hasNext={hasNext}
           finale={finale}

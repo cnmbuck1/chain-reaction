@@ -1,4 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dailyFor } from '../../src/daily/schedule';
+import { indexLevel, switchStage } from '../../src/engine/graph';
+import { turnsFor } from '../../src/engine/reducer';
+import { solve as solveLevel } from '../../src/engine/solver';
 
 const board = (page: Page) => page.locator('.board[data-ready="true"]');
 /** Run, which reads Retry after a miss. */
@@ -567,6 +571,101 @@ test('the tutorial levels have free hints and unlimited retries', async ({ page 
   await expect(page.locator('.run-badge')).toHaveCount(0);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Hint, free on this level' })).toBeVisible();
+});
+
+/** The daily's one par answer, by switch label, part by part, from the solver. */
+function dailySolution(day: string): string[] {
+  const { level } = dailyFor(day);
+  const turned = new Set(turnsFor(level, solveLevel(level).parWins[0]!));
+  const parts = indexLevel(level).checkpoints.length + 1;
+  const out: string[] = [];
+  for (let part = 0; part < parts; part++) {
+    if (part > 0) out.push(PART);
+    for (const n of level.nodes)
+      if (n.type === 'switch' && turned.has(n.id) && switchStage(n) === part) out.push(n.label!);
+  }
+  return out;
+}
+
+test('the daily puzzle: opens after level 10, earns coins and a streak, and shares', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  // No share sheet in the test browser, so sharing falls back to the clipboard.
+  await page.addInitScript(() => Object.defineProperty(navigator, 'share', { value: undefined }));
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.clock.setFixedTime(new Date('2026-10-29T12:00:00Z'));
+
+  // A new player sees it locked.
+  await page.goto('/');
+  await dismissIntro(page);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const card = page.getByRole('region', { name: 'Daily puzzle #1' });
+  await expect(card).toContainText('Opens after 10 more levels');
+  await expect(card.getByRole('button')).toHaveCount(0);
+
+  await openLevel(page, 11);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await card.getByRole('button', { name: 'Play the daily puzzle' }).click();
+  await expect(page.getByRole('heading', { name: 'Thursday 29 Oct' })).toBeVisible();
+  await solve(page, dailySolution('2026-10-29'));
+  const result = page.getByRole('dialog', { name: 'Thursday 29 Oct' });
+  await expect(result).toContainText('Daily #1 solved');
+  await expect(result.getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+  await expect(result).toContainText('+5 coins');
+  await result.getByRole('button', { name: 'Share result' }).click();
+  await expect(result.getByText('Copied. Paste it anywhere.')).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    'Chain Reaction Daily #1\n★★★ first Run, par\n🟩',
+  );
+  await result.getByRole('button', { name: 'Levels' }).click();
+  await expect(card).toContainText('Solved.');
+  await expect(card.getByLabel('1-day streak')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Shop, 25 coins' })).toBeVisible();
+
+  // The next day brings the next puzzle, and the streak waits on it.
+  await page.clock.setFixedTime(new Date('2026-10-30T08:00:00Z'));
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const tomorrow = page.getByRole('region', { name: 'Daily puzzle #2' });
+  await expect(tomorrow).toContainText('Solve today to make it a 2-day streak.');
+  await tomorrow.getByRole('button', { name: 'Play the daily puzzle' }).click();
+  await solve(page, dailySolution('2026-10-30'));
+  await expect(page.getByRole('dialog', { name: 'Friday 30 Oct' })).toContainText('2-day streak');
+});
+
+test('a missed day after the weekly freeze can be repaired with coins or an ad', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date('2026-10-29T12:00:00Z'));
+  await openLevel(page, 11);
+  // Solved up to Tuesday 27 October with the week's freeze spent; Wednesday 28 was missed.
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'chain-reaction/daily',
+      JSON.stringify({
+        version: 1,
+        results: {},
+        streak: 3,
+        best: 3,
+        lastDay: '2026-10-27',
+        freezes: ['2026-10-26'],
+      }),
+    ),
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const card = page.getByRole('region', { name: 'Daily puzzle #1' });
+  await expect(card).toContainText('You missed a day. Keep your 3-day streak');
+  await expect(card.getByRole('button', { name: /^Repair streak/ })).toBeDisabled();
+  await card.getByRole('button', { name: /^Repair with a short ad/ }).click();
+  await expect(card.getByText('Streak saved.')).toBeVisible();
+  await expect(card).toContainText('Solve today to make it a 4-day streak.');
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await expect(card).toContainText('Solve today to make it a 4-day streak.');
 });
 
 test.describe('on the smallest phone', () => {

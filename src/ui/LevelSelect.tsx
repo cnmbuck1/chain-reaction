@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { LevelDef } from '../engine/types';
 import { chaptersFor } from '../levels/chapters';
 import { CoinIcon, coinsText } from './coins';
@@ -9,6 +10,8 @@ interface Props {
   /** Testing aid: treat every level as open. */
   unlockAll?: boolean;
   coins: number;
+  /** The daily puzzle card, shown under Continue. */
+  daily?: ReactNode;
   onPlay: (index: number) => void;
   onShop: () => void;
   onSettings: () => void;
@@ -19,6 +22,7 @@ export function LevelSelect({
   progress,
   unlockAll = false,
   coins,
+  daily,
   onPlay,
   onShop,
   onSettings,
@@ -70,6 +74,8 @@ export function LevelSelect({
           </span>
         </button>
       )}
+
+      {daily}
 
       {chapters.map(({ chapter, indexes }) => {
         const open = isOpen(indexes[0]!);
