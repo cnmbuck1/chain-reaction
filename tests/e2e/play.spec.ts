@@ -614,7 +614,7 @@ test('the daily puzzle: opens after level 10, earns coins and a streak, and shar
   const result = page.getByRole('dialog', { name: 'Thursday 29 Oct' });
   await expect(result).toContainText('Daily #1 solved');
   await expect(result.getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
-  await expect(result).toContainText('+5 coins');
+  await expect(result).toContainText('+2 coins');
   await result.getByRole('button', { name: 'Share result' }).click();
   await expect(result.getByText('Copied. Paste it anywhere.')).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
@@ -623,7 +623,7 @@ test('the daily puzzle: opens after level 10, earns coins and a streak, and shar
   await result.getByRole('button', { name: 'Levels' }).click();
   await expect(card).toContainText('Solved.');
   await expect(card.getByLabel('1-day streak')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Shop, 25 coins' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Shop, 22 coins' })).toBeVisible();
 
   // The next day brings the next puzzle, and the streak waits on it.
   await page.clock.setFixedTime(new Date('2026-10-30T08:00:00Z'));

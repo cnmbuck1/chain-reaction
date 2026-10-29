@@ -314,8 +314,8 @@ launch, only append to the pool: changing a row changes that day's puzzle for ev
 Only 13 of the 27 allowed boards are big enough to pass the guess-odds filter, so a layout
 comes back about every two weeks, with different starts, gates and letters.
 
-Dailies follow the level rules for stars, hints and retries. Solving one earns 5 coins once,
-plus 10 more on every seventh day of a streak. The streak (`src/storage/daily.ts`, stored
+Dailies follow the level rules for stars, hints and retries. Solving one earns 2 coins once,
+plus 5 more on every seventh day of a streak. The streak (`src/storage/daily.ts`, stored
 under `chain-reaction/daily`) counts days in a row. One missed day a week is covered by a
 free freeze, used automatically. A second missed day in that week can be repaired for 30
 coins or a rewarded ad before the next solve. Two missed days in a row end the streak.
