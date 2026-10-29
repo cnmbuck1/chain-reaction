@@ -5,7 +5,7 @@ import { solve } from '../../src/engine/solver';
 import { freeMovePlan, withFreeMoves } from '../../src/hints/freeMoves';
 import { checkLevel } from '../../src/levels/check';
 import { levels } from '../../src/levels';
-import { demoHintShop } from '../../src/monetize/hintShop';
+import { demoShop } from '../../src/monetize/shop';
 import { ball, gate, goal, makeLevel, source, sw } from '../fixtures';
 
 describe.each(levels.map((l) => [l.id, l] as const))('%s free moves', (_id, level) => {
@@ -61,12 +61,12 @@ describe('hint checks', () => {
   });
 });
 
-describe('demo hint shop', () => {
-  it('grants one hint per ad and the pack size per purchase', async () => {
-    const shop = demoHintShop(0);
+describe('demo shop', () => {
+  it('finishes every ad and grants the pack size per purchase', async () => {
+    const shop = demoShop(0);
     expect(shop.demo).toBe(true);
-    expect(await shop.watchAd()).toBe(1);
-    expect(await shop.buy('hints_5')).toBe(5);
+    expect(await shop.watchAd()).toBe(true);
+    expect(await shop.buy('coins_100')).toBe(100);
     expect(await shop.buy('nope')).toBe(0);
   });
 });

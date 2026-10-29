@@ -272,12 +272,30 @@ gives at most one fewer move than its minimum changes, so the player always make
 change, except on one-change levels. `checkLevel` reports `BAD_HINT` when the key switch
 doesn't need to change or solutions disagree on it.
 
-Players start with 2 hints, stored in `chain-reaction/hints` apart from progress, so resetting
-progress doesn't refill them. Hints on levels 1 to 3 are free. Moves already made stay made,
-including on replays.
+Hints on levels 1 to 3 are free. Elsewhere a hint costs 10 coins or one rewarded ad. Moves
+already made stay made until a solved level is replayed.
 
-When hints run out, "Get more hints" calls a `HintShop` (`src/monetize/hintShop.ts`). The
-current one is a demo that grants hints without showing an ad or charging anything. AdMob and
+## Coins and retries
+
+One currency, coins, pays for hints and extra retries. Every price and reward lives in
+`src/monetize/prices.ts`:
+
+| Item  | Free                                | Rewarded ad               | Coins | Real money                   |
+| ----- | ----------------------------------- | ------------------------- | ----- | ---------------------------- |
+| Coins | 20 to start, 1 per new star         | +5, up to 5 ads a UTC day | n/a   | 100 for $0.99, 600 for $3.99 |
+| Hint  | Levels 1 to 3                       | One hint                  | 10    | Through coins                |
+| Retry | 2 per level, refilled on solving it | One retry                 | 5     | Through coins                |
+
+A level gives its first Run and 2 free retries; only a Run that misses uses one up. With none
+left, the Run button opens an offer for one more. Levels 1 to 3 have unlimited retries, so a
+new player never meets the offer while learning.
+
+The wallet (`src/storage/wallet.ts`) keeps coins, hint moves per level, Runs left per level
+and today's coin-ad count under `chain-reaction/hints`, apart from progress, so resetting
+progress refills nothing. A version 1 hint wallet converts at 10 coins per hint.
+
+Ads and purchases go through a `Shop` (`src/monetize/shop.ts`). The current one is a demo
+that succeeds without showing an ad or charging anything, and every panel says so. AdMob and
 App Store / Google Play in-app purchases replace it in the native-app milestone.
 
 ## Known limitations

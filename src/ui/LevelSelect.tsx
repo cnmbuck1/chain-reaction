@@ -1,5 +1,6 @@
 import type { LevelDef } from '../engine/types';
 import { chaptersFor } from '../levels/chapters';
+import { CoinIcon, coinsText } from './coins';
 import { isUnlocked, totalStars, type Progress } from '../storage/progress';
 
 interface Props {
@@ -7,11 +8,21 @@ interface Props {
   progress: Progress;
   /** Testing aid: treat every level as open. */
   unlockAll?: boolean;
+  coins: number;
   onPlay: (index: number) => void;
+  onShop: () => void;
   onSettings: () => void;
 }
 
-export function LevelSelect({ levels, progress, unlockAll = false, onPlay, onSettings }: Props) {
+export function LevelSelect({
+  levels,
+  progress,
+  unlockAll = false,
+  coins,
+  onPlay,
+  onShop,
+  onSettings,
+}: Props) {
   const ids = levels.map((l) => l.id);
   const isOpen = (i: number) => unlockAll || isUnlocked(ids, progress, i);
   const solved = ids.filter((id) => id in progress.completed).length;
@@ -29,9 +40,19 @@ export function LevelSelect({ levels, progress, unlockAll = false, onPlay, onSet
           <p className="eyebrow">
             {solved} of {levels.length} solved
           </p>
-          <button type="button" className="ghost small" onClick={onSettings}>
-            Settings
-          </button>
+          <div className="select-actions">
+            <button
+              type="button"
+              className="ghost small coin-button"
+              onClick={onShop}
+              aria-label={`Shop, ${coinsText(coins)}`}
+            >
+              <CoinIcon /> {coins}
+            </button>
+            <button type="button" className="ghost small" onClick={onSettings}>
+              Settings
+            </button>
+          </div>
         </div>
         <h1>Chain Reaction</h1>
         <p className="tagline">Understand the machine. Find the sequence. Watch it work.</p>

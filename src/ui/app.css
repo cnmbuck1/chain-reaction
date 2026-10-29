@@ -959,9 +959,90 @@ button:disabled {
   cursor: pointer;
 }
 .shop-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-label);
   letter-spacing: 0.06em;
   color: var(--gold);
+}
+.shop-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  text-align: left;
+}
+.shop-sub {
+  flex-basis: 100%;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.shop-item:disabled .shop-price {
+  color: var(--muted);
+}
+
+/* ---------- Coins ---------- */
+.coin-icon {
+  flex: none;
+  color: var(--gold);
+  vertical-align: -2px;
+}
+.coin-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.select-actions {
+  display: flex;
+  gap: 8px;
+}
+.coin-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-family: var(--font-label);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+.hint-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.run-button {
+  position: relative;
+}
+/* Retries left on this level, once a Run has missed. */
+.run-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-raise);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.8rem;
+  letter-spacing: 0;
+}
+.card .result-coins {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--gold);
+  font-family: var(--font-label);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  animation: rise 420ms 520ms both cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 .switch.is-hinted {
   border-color: var(--gold);

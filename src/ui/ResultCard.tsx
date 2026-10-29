@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Stars } from '../game/scoring';
+import { CoinIcon, coinsText } from './coins';
 
 interface Props {
   number: number;
@@ -12,6 +13,8 @@ interface Props {
   par: number;
   /** What the next star needs; null at three stars. */
   tip: string | null;
+  /** Coins this solve earned: one per new star. */
+  coinsEarned: number;
   teachingPoint: string;
   hasNext: boolean;
   /** Set on the last level: how the whole run of levels went. */
@@ -34,6 +37,7 @@ export function ResultCard({
   changes,
   par,
   tip,
+  coinsEarned,
   teachingPoint,
   hasNext,
   finale,
@@ -91,6 +95,11 @@ export function ResultCard({
               : `${changes} changes, par ${par}`}
           </li>
         </ul>
+        {coinsEarned > 0 && (
+          <p className="result-coins">
+            <CoinIcon /> +{coinsText(coinsEarned)}
+          </p>
+        )}
         {tip && <p className="result-tip">{tip}</p>}
         <p className="result-lesson">{teachingPoint}</p>
         {finale && (

@@ -6,12 +6,16 @@ import { changesUsed, initialState, step } from '../engine/reducer';
 import { solve } from '../engine/solver';
 import type { GameAction, GameState, LevelDef, RejectReason } from '../engine/types';
 import { freeMovePlan, withFreeMoves } from '../hints/freeMoves';
-import type { HintShop } from '../monetize/hintShop';
+import { FULL_RUNS } from '../storage/wallet';
+import { HINT_PRICE } from '../monetize/prices';
+import type { Payment, Shop } from '../monetize/shop';
 import { buildTimeline, INSTANT_TIMING, NORMAL_TIMING } from '../render/timeline';
 import { BoardView, type RunPlayback } from './BoardView';
 import { explainRun, gateRequirement, nodeName, partName, rejectMessage } from './describe';
 import { nextStarTip, starsFor, type Solve, type Stars } from '../game/scoring';
+import { CoinIcon } from './coins';
 import { HintPanel } from './HintPanel';
+import { RetryPanel } from './RetryPanel';
 import { ResultCard } from './ResultCard';
 
 interface Props {
@@ -25,23 +29,33 @@ interface Props {
   soundOn: boolean;
   haptics: boolean;
   onToggleSound: () => void;
+  coins: number;
+  shop: Shop;
+  /** Opens the coin shop over the game. */
+  onShop: () => void;
   hints: {
-    balance: number;
     /** Free moves already used on this level. */
     used: number;
     free: boolean;
-    shop: HintShop;
-    /** Spends a hint on the next free move (passing over `moves - 1` stale ones); false if it could not. */
-    onUse: (moves: number) => boolean;
-    onGrant: (hints: number) => void;
+    /** Pays for the next free move (passing over `moves - 1` stale ones); false if it could not. */
+    onUse: (moves: number, paid: Payment | 'free') => boolean;
   };
+  /** Runs left before a retry must be bought; null on levels with unlimited retries. */
+  retries: {
+    left: number;
+    /** A Run missed and used up one of the level's Runs. */
+    onMiss: () => void;
+    /** Pays for one more Run; false if it could not. */
+    onBuy: (paid: Payment) => boolean;
+  } | null;
   showIntro: boolean;
   onIntroDone: () => void;
   /** This level's first Run is still unspent, so this visit can earn three stars. */
   firstRunOpen: boolean;
   /** The first Run is spent: a Run ended, or the player reset or left after clearing a part. */
   onFirstRunUsed: () => void;
-  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => void;
+  /** Saves the win; returns the coins it earned. */
+  onSolved: (win: { stars: Stars; attempts: number; changes: number }) => number;
   onNext: () => void;
   /** Plays this level again from the start. */
   onReplay: () => void;
@@ -58,7 +72,11 @@ export function GameScreen({
   soundOn,
   haptics,
   onToggleSound,
+  coins,
+  shop,
+  onShop,
   hints,
+  retries,
   showIntro,
   onIntroDone,
   firstRunOpen,
@@ -81,18 +99,18 @@ export function GameScreen({
   const follow = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(follow.current), []);
   const [notice, setNotice] = useState<RejectReason | null>(null);
-  const [hintOpen, setHintOpen] = useState(false);
+  const [panel, setPanel] = useState<'hint' | 'retry' | null>(null);
   // The level's tip stands in for the status line until the first switch change.
   const [promptOpen, setPromptOpen] = useState(true);
 
-  const useHint = () => {
+  const useHint = (paid: Payment | 'free') => {
     // Moves for a part already cleared are no use now, so the hint passes over them.
     let skip = 0;
     while (plan[hints.used + skip] && partOf(plan[hints.used + skip]!.switchId) < state.stage) {
       skip++;
     }
     const move = plan[hints.used + skip];
-    if (!move || playing || !hints.onUse(skip + 1)) return;
+    if (!move || playing || !hints.onUse(skip + 1, paid)) return;
     setState((s) => ({
       ...s,
       switches: { ...s.switches, [move.switchId]: move.on },
@@ -100,7 +118,7 @@ export function GameScreen({
     }));
     setPlayback(null);
     setNotice(null);
-    setHintOpen(false);
+    setPanel(null);
     setJustHinted(move.switchId);
     sound.play('chime');
     if (haptics) buzz([12, 60, 12]);
@@ -113,6 +131,7 @@ export function GameScreen({
   // Read once: spending the first Run mid-visit must not change what this visit can earn.
   const [firstRunLive, setFirstRunLive] = useState(firstRunOpen);
   const [solved, setSolved] = useState<Solve | null>(null);
+  const [coinsEarned, setCoinsEarned] = useState(0);
 
   // Leaving after clearing a part spends the first Run, as a Reset would; otherwise
   // backing out would dodge a part cleared the wrong way.
@@ -144,9 +163,14 @@ export function GameScreen({
   // Leaving the level silences any run still sounding.
   useEffect(() => () => sound.stopAll(), [sound]);
 
-  const dispatch = (action: GameAction) => {
+  /** `paidRun` is a Run the player just bought, so the out-of-Runs check is already passed. */
+  const dispatch = (action: GameAction, paidRun = false) => {
     if (playing) return;
     sound.unlock();
+    if (action.type === 'run' && !paidRun && retries?.left === 0) {
+      setPanel('retry');
+      return;
+    }
     const result = step(level, state, action);
     setNotice(result.rejected ?? null);
     if (result.rejected) {
@@ -156,6 +180,7 @@ export function GameScreen({
     }
     setState(result.state);
     const ended = action.type === 'run' && result.state.lastRun?.outcome.kind !== 'checkpoint';
+    if (ended && !result.state.lastRun?.won) retries?.onMiss();
     if (ended || (action.type === 'reset' && state.stage > 0)) {
       onFirstRunUsed();
       if (!result.state.lastRun?.won || action.type === 'reset') setFirstRunLive(false);
@@ -200,7 +225,7 @@ export function GameScreen({
     };
     setSolved(facts);
     setResultOpen(true);
-    onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used });
+    setCoinsEarned(onSolved({ stars: starsFor(facts), attempts: state.attempt, changes: used }));
   };
 
   // Changes over the whole machine; hinted switches start where the hint set them.
@@ -221,6 +246,14 @@ export function GameScreen({
         : showingMiss && lastRun?.outcome.kind === 'deadEnd'
           ? (lastRun.events.findLast((e) => e.type === 'junction')?.nodeId ?? null)
           : null;
+
+  // Once a Run has missed here, the Run button carries the retries left.
+  const retryNote =
+    retries && retries.left < FULL_RUNS
+      ? retries.left === 0
+        ? 'No free retries left'
+        : `${retries.left} ${retries.left === 1 ? 'retry' : 'retries'} left`
+      : null;
 
   let status: string;
   if (notice) status = rejectMessage[notice];
@@ -322,13 +355,20 @@ export function GameScreen({
           <button
             type="button"
             className="ghost small hint-button"
-            onClick={() => setHintOpen(true)}
+            onClick={() => setPanel('hint')}
             disabled={playing}
-            aria-label={`Hint, ${hints.free ? 'free on this level' : `${hints.balance} left`}`}
+            aria-label={`Hint, ${hints.free ? 'free on this level' : `${HINT_PRICE} coins`}`}
           >
             Hint
             <span className="hint-badge" aria-hidden="true">
-              {hints.free ? 'free' : hints.balance > 0 ? hints.balance : '+'}
+              {hints.free ? (
+                'free'
+              ) : (
+                <>
+                  <CoinIcon size={12} />
+                  {HINT_PRICE}
+                </>
+              )}
             </span>
           </button>
         )}
@@ -354,8 +394,18 @@ export function GameScreen({
             Result
           </button>
         ) : (
-          <button type="button" className="run" onClick={() => dispatch({ type: 'run' })}>
+          <button
+            type="button"
+            className="run run-button"
+            onClick={() => dispatch({ type: 'run' })}
+            aria-describedby={retryNote ? 'retries-left' : undefined}
+          >
             {showingMiss ? 'Retry' : 'Run'}
+            {retryNote && (
+              <span className="run-badge" aria-hidden="true">
+                {retries!.left > 0 ? retries!.left : '+'}
+              </span>
+            )}
           </button>
         )}
       </div>
@@ -389,15 +439,35 @@ export function GameScreen({
         </div>
       )}
 
-      {hintOpen && !won && (
+      {retryNote && (
+        <span id="retries-left" className="sr-only">
+          {retryNote}
+        </span>
+      )}
+
+      {panel === 'hint' && !won && (
         <HintPanel
           remaining={plan.length - hints.used}
           free={hints.free}
-          balance={hints.balance}
-          shop={hints.shop}
+          coins={coins}
+          shop={shop}
           onUse={useHint}
-          onGrant={hints.onGrant}
-          onClose={() => setHintOpen(false)}
+          onShop={onShop}
+          onClose={() => setPanel(null)}
+        />
+      )}
+
+      {panel === 'retry' && retries && !won && (
+        <RetryPanel
+          coins={coins}
+          shop={shop}
+          onRetry={(paid) => {
+            if (!retries.onBuy(paid)) return;
+            setPanel(null);
+            dispatch({ type: 'run' }, true);
+          }}
+          onShop={onShop}
+          onClose={() => setPanel(null)}
         />
       )}
 
@@ -412,6 +482,7 @@ export function GameScreen({
           changes={solved.changes}
           par={solved.par}
           tip={nextStarTip(solved)}
+          coinsEarned={coinsEarned}
           teachingPoint={level.meta.teachingPoint}
           hasNext={hasNext}
           finale={finale}
