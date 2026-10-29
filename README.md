@@ -298,6 +298,21 @@ Ads and purchases go through a `Shop` (`src/monetize/shop.ts`). The current one 
 that succeeds without showing an ad or charging anything, and every panel says so. AdMob and
 App Store / Google Play in-app purchases replace it in the native-app milestone.
 
+## Ads between levels
+
+After every third solved campaign level, an ad plays once the player leaves the result card
+(`src/storage/ads.ts`, stored under `chain-reaction/ads`). It never plays:
+
+- before level 10, so new players never see one;
+- straight after a solve with a missed Run or a hint, so it never lands on a frustrated
+  player (the due ad waits for the next clean solve);
+- within 4 minutes of the last one;
+- after a daily puzzle;
+- for anyone who bought Remove ads ($2.99) or any coin pack.
+
+Rewarded ads for coins, hints and retries stay optional for everyone. Until AdMob is wired
+in, a demo "Ad break" card stands in, closable after 3 seconds.
+
 ## Daily puzzle
 
 A new puzzle every UTC day, the same for everyone, playable offline. It opens after level

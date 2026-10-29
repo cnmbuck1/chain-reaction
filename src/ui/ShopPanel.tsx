@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AD_COINS, HINT_PRICE, RETRY_PRICE } from '../monetize/prices';
+import { AD_COINS, HINT_PRICE, REMOVE_ADS, RETRY_PRICE } from '../monetize/prices';
 import type { Shop } from '../monetize/shop';
 import { CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
 
@@ -11,11 +11,23 @@ interface Props {
   /** A coin ad was watched to the end. */
   onAdWatched: () => void;
   onBought: (coins: number) => void;
+  /** Remove ads or a coin pack was bought before: no ads between levels. */
+  adFree: boolean;
+  onAdFree: () => void;
   onClose: () => void;
 }
 
 /** The coin shop: earn coins with an ad, buy packs, and see what coins buy. */
-export function ShopPanel({ coins, adsLeft, shop, onAdWatched, onBought, onClose }: Props) {
+export function ShopPanel({
+  coins,
+  adsLeft,
+  shop,
+  onAdWatched,
+  onBought,
+  adFree,
+  onAdFree,
+  onClose,
+}: Props) {
   const { busy, status, run } = useShopAction();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !busy && onClose();
@@ -87,6 +99,28 @@ export function ShopPanel({ coins, adsLeft, shop, onAdWatched, onBought, onClose
               <span className="shop-price">{pack.price}</span>
             </button>
           ))}
+          <button
+            type="button"
+            className="shop-item"
+            disabled={busy || adFree}
+            onClick={() =>
+              void run(async () => {
+                if (!(await shop.buyRemoveAds())) return 'Nothing was bought.';
+                onAdFree();
+                return 'Ads between levels are off for good.';
+              })
+            }
+          >
+            <span className="shop-name">
+              Remove ads
+              <span className="shop-sub">
+                {adFree
+                  ? 'Ads between levels are off'
+                  : 'No ads between levels. Optional ads stay.'}
+              </span>
+            </span>
+            <span className="shop-price">{adFree ? 'Owned' : REMOVE_ADS.price}</span>
+          </button>
         </div>
         {status && (
           <p className="hint-notice" role="status">

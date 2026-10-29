@@ -68,5 +68,7 @@ describe('demo shop', () => {
     expect(await shop.watchAd()).toBe(true);
     expect(await shop.buy('coins_100')).toBe(100);
     expect(await shop.buy('nope')).toBe(0);
+    expect(await shop.buyRemoveAds()).toBe(true);
+    await expect(shop.showInterstitial()).resolves.toBeUndefined();
   });
 });

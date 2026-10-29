@@ -1327,3 +1327,17 @@ button:disabled {
   letter-spacing: 0;
   color: var(--swatch);
 }
+
+/* ---------- Ads between levels (demo) ---------- */
+.ad-overlay {
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+.ad-card {
+  min-height: 50vh;
+  align-content: center;
+  text-align: center;
+}
+.ad-card .demo-note {
+  text-align: left;
+}
