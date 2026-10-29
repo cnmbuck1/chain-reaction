@@ -25,6 +25,15 @@ export const STREAK_REPAIR_PRICE = 30;
 /** The tutorial: the first levels give free hints and unlimited retries. */
 export const TUTORIAL_LEVELS = 3;
 
+/** Ads between levels: one after every this many solved levels... */
+export const INTERSTITIAL_EVERY = 3;
+/** ...counting only from this level on, so new players never see one... */
+export const INTERSTITIAL_FROM_LEVEL = 10;
+/** ...and never two within this long. 0: every third level, however quick (Chris's call). */
+export const INTERSTITIAL_GAP_MS = 0;
+/** The one-time purchase that turns off ads between levels. Any coin pack does too. */
+export const REMOVE_ADS = { id: 'remove_ads', price: '$2.99' } as const;
+
 export interface CoinPack {
   /** The product id the stores will know it by. */
   id: string;

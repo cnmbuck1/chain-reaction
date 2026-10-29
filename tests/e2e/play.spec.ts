@@ -99,6 +99,14 @@ test.describe('with reduced motion', () => {
   test('a new player opens on level 1 and can play every level', async ({ page }) => {
     test.setTimeout(SOLUTIONS.length * 9_000);
     await page.goto('/');
+    // Ads between levels have their own test; here they would only slow the run down.
+    await page.evaluate(() =>
+      localStorage.setItem(
+        'chain-reaction/ads',
+        JSON.stringify({ version: 1, adFree: true, solves: 0, lastAt: 0 }),
+      ),
+    );
+    await page.reload();
     await expect(page.getByRole('heading', { name: 'First Spark' })).toBeVisible();
     await dismissIntro(page);
     for (const [i, { name, switches }] of SOLUTIONS.entries()) {
@@ -666,6 +674,32 @@ test('a missed day after the weekly freeze can be repaired with coins or an ad',
   await page.reload();
   await page.getByRole('button', { name: 'Levels', exact: true }).click();
   await expect(card).toContainText('Solve today to make it a 4-day streak.');
+});
+
+test('an ad plays between levels after every third solve from level 10, until Remove ads', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openLevel(page, 10);
+  for (const i of [9, 10, 11]) {
+    await solve(page, SOLUTIONS[i]!.switches);
+    if (i < 11) await page.getByRole('button', { name: 'Next challenge' }).click();
+  }
+  await page.getByRole('button', { name: 'Next challenge' }).click();
+  const ad = page.getByRole('dialog', { name: 'Ad break' });
+  await expect(ad).toBeVisible();
+  await expect(ad.getByRole('button', { name: /^Close in/ })).toBeDisabled();
+  await ad.getByRole('button', { name: 'Close ad' }).click();
+  await expect(ad).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: SOLUTIONS[12]!.name })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await page.getByRole('button', { name: /^Shop,/ }).click();
+  const shop = page.getByRole('dialog', { name: 'Coins' });
+  await shop.getByRole('button', { name: /^Remove ads/ }).click();
+  await expect(shop.getByText('Ads between levels are off for good.')).toBeVisible();
+  await expect(shop.getByRole('button', { name: /^Remove ads/ })).toContainText('Owned');
 });
 
 test.describe('on the smallest phone', () => {

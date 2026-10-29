@@ -13,6 +13,7 @@ import {
   STREAK_REPAIR_PRICE,
   TUTORIAL_LEVELS,
 } from '../monetize/prices';
+import { afterSolve, goAdFree, loadAds, saveAds, type AdState } from '../storage/ads';
 import {
   loadDaily,
   recordDailyWin,
@@ -52,6 +53,7 @@ import { loadSettings, saveSettings, type Settings } from '../storage/settings';
 import { GameScreen } from './GameScreen';
 import { LevelSelect } from './LevelSelect';
 import { DailyCard } from './DailyCard';
+import { DemoInterstitial } from './DemoInterstitial';
 import { SettingsScreen } from './SettingsScreen';
 import { ShopPanel } from './ShopPanel';
 
@@ -95,6 +97,23 @@ export function App() {
   const [wallet, setWallet] = useState(loadWallet);
   const shop = useMemo(() => demoShop(), []);
   const [shopOpen, setShopOpen] = useState(false);
+  const [ads, setAds] = useState(loadAds);
+  const changeAds = (edit: (a: AdState) => AdState) =>
+    setAds((a) => {
+      const next = edit(a);
+      if (next !== a) saveAds(next);
+      return next;
+    });
+  // An ad between levels waits for the player to leave the result card, then plays before
+  // the next screen: `adDue` is set on the solve, `afterAd` holds where they were going.
+  const [adDue, setAdDue] = useState(false);
+  const [afterAd, setAfterAd] = useState<(() => void) | null>(null);
+  const leaveResult = (go: () => void) => {
+    if (!adDue) return go();
+    setAdDue(false);
+    if (shop.demo) setAfterAd(() => go);
+    else void shop.showInterstitial().then(go, go);
+  };
   const [daily, setDaily] = useState(loadDaily);
   const changeDaily = (edit: (d: DailyRecord) => DailyRecord | null) =>
     setDaily((d) => {
@@ -157,7 +176,12 @@ export function App() {
       adsLeft={adsLeftToday(wallet, new Date())}
       shop={shop}
       onAdWatched={() => changeWallet((w) => rewardAd(w, new Date()))}
-      onBought={(coins) => changeWallet((w) => grantCoins(w, coins))}
+      onBought={(coins) => {
+        changeWallet((w) => grantCoins(w, coins));
+        changeAds(goAdFree);
+      }}
+      adFree={ads.adFree}
+      onAdFree={() => changeAds(goAdFree)}
       onClose={() => setShopOpen(false)}
     />
   );
@@ -342,12 +366,25 @@ export function App() {
           const coins = Math.max(0, win.stars - before) * COINS_PER_NEW_STAR;
           changeWallet((w) => grantCoins(refillRuns(w, level.id), coins));
           change((p) => recordWin(p, level.id, { ...win, at: new Date().toISOString() }));
+          const clean = win.attempts === 1 && freeMovesUsed(wallet, level.id) === 0;
+          const paced = afterSolve(ads, { level: screen.index + 1, clean, now: Date.now() });
+          changeAds(() => paced.ads);
+          if (paced.show) setAdDue(true);
           return { coins };
         }}
-        onNext={() => play(screen.index + 1)}
-        onReplay={() => play(screen.index, (screen.play ?? 0) + 1)}
+        onNext={() => leaveResult(() => play(screen.index + 1))}
+        onReplay={() => leaveResult(() => play(screen.index, (screen.play ?? 0) + 1))}
+        onLevels={() => leaveResult(toLevels)}
       />
       {shopPanel}
+      {afterAd && (
+        <DemoInterstitial
+          onClose={() => {
+            setAfterAd(null);
+            afterAd();
+          }}
+        />
+      )}
     </>
   );
 }
