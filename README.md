@@ -408,3 +408,14 @@ need deduction.
 **Guess odds** ("Guess" in the level table) answer "how often does a random pick of par-many
 switches win on the first Run?". 1 in 3 means a guesser earns three stars a third of the time;
 levels from 31 on should aim much lower.
+
+## Phone apps
+
+The game is wrapped for iPhone and Android with [Capacitor](https://capacitorjs.com) (`capacitor.config.ts`,
+`ios/`, `android/`). GitHub builds both, so no Mac or Android Studio is needed:
+
+- **iPhone build to TestFlight** (`.github/workflows/ios-testflight.yml`): see [docs/APP_STORE.md](docs/APP_STORE.md).
+- **Android build** (`.github/workflows/android-play.yml`): see [docs/GOOGLE_PLAY.md](docs/GOOGLE_PLAY.md).
+
+Pull requests that touch the native projects run both as compile checks. After changing the game, run
+`npm run cap:sync` to copy the web build into the native projects locally.
