@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "levels": "vite-node scripts/level-report.ts",
+    "daily-pool": "vite-node scripts/daily-pool.ts",
     "e2e": "playwright test",
     "build:single": "tsc -b && vite build --mode single"
   },

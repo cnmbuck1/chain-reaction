@@ -12,9 +12,6 @@ export interface FreeMove {
   on: boolean;
 }
 
-/** Levels whose hints cost nothing: the tutorial. */
-export const FREE_HINT_LEVELS = 3;
-
 const plans = new WeakMap<LevelDef, FreeMove[]>();
 
 /**

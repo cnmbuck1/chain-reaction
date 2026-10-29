@@ -1,4 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dailyFor } from '../../src/daily/schedule';
+import { indexLevel, switchStage } from '../../src/engine/graph';
+import { turnsFor } from '../../src/engine/reducer';
+import { solve as solveLevel } from '../../src/engine/solver';
 
 const board = (page: Page) => page.locator('.board[data-ready="true"]');
 /** Run, which reads Retry after a miss. */
@@ -430,13 +434,13 @@ test('the game fits a small phone without sideways scrolling', async ({ page }) 
   await expect(run(page)).toBeInViewport();
 });
 
-test('hints: two free moves, then the demo shop, and they last across reloads', async ({
-  page,
-}) => {
-  // Three page loads plus the demo shop: slower CI runners need more than the default.
-  test.setTimeout(60_000);
+/** Opens the game on level `n`, with every level before it solved and the intro seen. */
+async function openLevel(page: Page, n: number) {
   const completed = Object.fromEntries(
-    [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`level-0${n}`, { bestAttempts: 1 }]),
+    Array.from({ length: n - 1 }, (_, i) => [
+      `level-${String(i + 1).padStart(2, '0')}`,
+      { bestAttempts: 1 },
+    ]),
   );
   await page.goto('/');
   await page.evaluate(
@@ -448,38 +452,220 @@ test('hints: two free moves, then the demo shop, and they last across reloads', 
     completed,
   );
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Master Circuit' })).toBeVisible();
   await expect(board(page)).toBeVisible();
-  const hinted = page.locator('.switch.is-hinted');
+}
 
-  await page.getByRole('button', { name: 'Hint, 2 left' }).click();
-  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+test('hints cost coins or a short ad, and coins come from the shop', async ({ page }) => {
+  // Two page loads plus the demo ads and purchase: slower CI runners need more than the default.
+  test.setTimeout(60_000);
+  await openLevel(page, 10);
+  await expect(page.getByRole('heading', { name: 'Master Circuit' })).toBeVisible();
+  const hinted = page.locator('.switch.is-hinted');
+  const hint = page.getByRole('button', { name: 'Hint, 10 coins' });
+
+  await hint.click();
+  await expect(page.getByRole('dialog')).toContainText('20 coins');
+  await page.getByRole('button', { name: /^Use coins/ }).click();
   await expect(hinted).toHaveCount(1);
   await expect(hinted).toHaveAttribute('aria-label', /^Switch D,.*set by a hint/);
   await expect(page.getByLabel('Changes 0, par 4')).toBeVisible();
   await hinted.click({ force: true });
   await expect(hinted).toHaveCount(1);
 
-  await page.getByRole('button', { name: 'Hint, 1 left' }).click();
-  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+  await hint.click();
+  await page.getByRole('button', { name: /^Use coins/ }).click();
   await expect(hinted).toHaveCount(2);
 
-  await page.getByRole('button', { name: 'Hint, 0 left' }).click();
-  await page.getByRole('button', { name: 'Get more hints' }).click();
+  // Out of coins: the ad pays for the move instead.
+  await hint.click();
+  await expect(page.getByRole('dialog')).toContainText('0 coins');
+  await expect(page.getByRole('button', { name: /^Use coins/ })).toBeDisabled();
   await expect(page.getByText(/^Demo: nothing is shown or charged/)).toBeVisible();
-  await page.getByRole('button', { name: /Watch a short ad/ }).click();
-  await expect(page.getByText('1 hint added.')).toBeVisible();
-  await page.getByRole('button', { name: 'Use 1 hint' }).click();
+  await page.getByRole('button', { name: /^Watch a short ad/ }).click();
   await expect(hinted).toHaveCount(3);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Hint, 0 left' }).click();
+  await hint.click();
   await expect(page.getByText('The last step is yours.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'Close' }).click();
 
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Hint, 0 left' })).toBeVisible();
   await expect(hinted).toHaveCount(3);
   await expect(page.getByLabel('Changes 0, par 4')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await page.getByRole('button', { name: 'Shop, 0 coins' }).click();
+  const shop = page.getByRole('dialog', { name: 'Coins' });
+  await expect(shop).toContainText('3 left today');
+  await shop.getByRole('button', { name: /^Watch a short ad/ }).click();
+  await expect(shop.getByText('3 coins added.')).toBeVisible();
+  await expect(shop).toContainText('2 left today');
+  await shop.getByRole('button', { name: /100 coins/ }).click();
+  await expect(shop.getByText('100 coins added.')).toBeVisible();
+  await expect(shop).toContainText('103 coins');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Shop, 103 coins' })).toBeVisible();
+});
+
+test('two free retries per level, then one costs coins or an ad, and solving refills them', async ({
+  page,
+}) => {
+  // Seven Runs: without the animations, so slower CI runners finish in time.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openLevel(page, 11);
+  await expect(page.getByRole('heading', { name: 'Fork in the Road' })).toBeVisible();
+  const badge = page.locator('.run-badge');
+  await expect(badge).toHaveCount(0);
+
+  await run(page).click();
+  await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+  await expect(badge).toHaveText('2');
+  await expect(run(page)).toHaveAccessibleDescription('2 retries left');
+  await run(page).click();
+  await expect(badge).toHaveText('1');
+  await run(page).click();
+  await expect(badge).toHaveText('+');
+
+  // Out of retries: the button asks before running.
+  await run(page).click();
+  const offer = page.getByRole('dialog', { name: 'One more try?' });
+  await expect(offer).toContainText('20 coins');
+  await offer.getByRole('button', { name: /^Retry for coins/ }).click();
+  await expect(offer).toHaveCount(0);
+  await expect(status(page)).toContainText('Stopped');
+  await expect(badge).toHaveText('+');
+
+  await run(page).click();
+  await expect(offer).toContainText('15 coins');
+  await offer.getByRole('button', { name: /^Watch a short ad/ }).click();
+  await expect(offer).toHaveCount(0);
+  await expect(status(page)).toContainText('Stopped');
+
+  // Leaving doesn't refill them.
+  await page.reload();
+  await expect(board(page)).toBeVisible();
+  await expect(badge).toHaveText('+');
+
+  await page.getByRole('button', { name: /^Switch F,/ }).click();
+  await run(page).click();
+  await offer.getByRole('button', { name: /^Retry for coins/ }).click();
+  const card = page.getByRole('dialog', { name: 'Fork in the Road' });
+  await expect(card.getByRole('img', { name: '2 of 3 stars' })).toBeVisible();
+  await expect(card).toContainText('+2 coins');
+  await card.getByRole('button', { name: 'Replay' }).click();
+  await expect(board(page)).toBeVisible();
+  await expect(badge).toHaveCount(0);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Shop, 12 coins' })).toBeVisible();
+});
+
+test('the tutorial levels have free hints and unlimited retries', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await dismissIntro(page);
+  await expect(board(page)).toBeVisible();
+  for (let i = 0; i < 4; i++) {
+    await run(page).click();
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+  }
+  await expect(page.locator('.run-badge')).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Hint, free on this level' })).toBeVisible();
+});
+
+/** The daily's one par answer, by switch label, part by part, from the solver. */
+function dailySolution(day: string): string[] {
+  const { level } = dailyFor(day);
+  const turned = new Set(turnsFor(level, solveLevel(level).parWins[0]!));
+  const parts = indexLevel(level).checkpoints.length + 1;
+  const out: string[] = [];
+  for (let part = 0; part < parts; part++) {
+    if (part > 0) out.push(PART);
+    for (const n of level.nodes)
+      if (n.type === 'switch' && turned.has(n.id) && switchStage(n) === part) out.push(n.label!);
+  }
+  return out;
+}
+
+test('the daily puzzle: opens after level 10, earns coins and a streak, and shares', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  // No share sheet in the test browser, so sharing falls back to the clipboard.
+  await page.addInitScript(() => Object.defineProperty(navigator, 'share', { value: undefined }));
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.clock.setFixedTime(new Date('2026-10-29T12:00:00Z'));
+
+  // A new player sees it locked.
+  await page.goto('/');
+  await dismissIntro(page);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const card = page.getByRole('region', { name: 'Daily puzzle #1' });
+  await expect(card).toContainText('Opens after 10 more levels');
+  await expect(card.getByRole('button')).toHaveCount(0);
+
+  await openLevel(page, 11);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await card.getByRole('button', { name: 'Play the daily puzzle' }).click();
+  await expect(page.getByRole('heading', { name: 'Thursday 29 Oct' })).toBeVisible();
+  await solve(page, dailySolution('2026-10-29'));
+  const result = page.getByRole('dialog', { name: 'Thursday 29 Oct' });
+  await expect(result).toContainText('Daily #1 solved');
+  await expect(result.getByRole('img', { name: '3 of 3 stars' })).toBeVisible();
+  await expect(result).toContainText('+2 coins');
+  await result.getByRole('button', { name: 'Share result' }).click();
+  await expect(result.getByText('Copied. Paste it anywhere.')).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    'Chain Reaction Daily #1\n★★★ first Run, par\n🟩',
+  );
+  await result.getByRole('button', { name: 'Levels' }).click();
+  await expect(card).toContainText('Solved.');
+  await expect(card.getByLabel('1-day streak')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Shop, 22 coins' })).toBeVisible();
+
+  // The next day brings the next puzzle, and the streak waits on it.
+  await page.clock.setFixedTime(new Date('2026-10-30T08:00:00Z'));
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const tomorrow = page.getByRole('region', { name: 'Daily puzzle #2' });
+  await expect(tomorrow).toContainText('Solve today to make it a 2-day streak.');
+  await tomorrow.getByRole('button', { name: 'Play the daily puzzle' }).click();
+  await solve(page, dailySolution('2026-10-30'));
+  await expect(page.getByRole('dialog', { name: 'Friday 30 Oct' })).toContainText('2-day streak');
+});
+
+test('a missed day after the weekly freeze can be repaired with coins or an ad', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date('2026-10-29T12:00:00Z'));
+  await openLevel(page, 11);
+  // Solved up to Tuesday 27 October with the week's freeze spent; Wednesday 28 was missed.
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'chain-reaction/daily',
+      JSON.stringify({
+        version: 1,
+        results: {},
+        streak: 3,
+        best: 3,
+        lastDay: '2026-10-27',
+        freezes: ['2026-10-26'],
+      }),
+    ),
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  const card = page.getByRole('region', { name: 'Daily puzzle #1' });
+  await expect(card).toContainText('You missed a day. Keep your 3-day streak');
+  await expect(card.getByRole('button', { name: /^Repair streak/ })).toBeDisabled();
+  await card.getByRole('button', { name: /^Repair with a short ad/ }).click();
+  await expect(card.getByText('Streak saved.')).toBeVisible();
+  await expect(card).toContainText('Solve today to make it a 4-day streak.');
+  await page.reload();
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await expect(card).toContainText('Solve today to make it a 4-day streak.');
 });
 
 test.describe('on the smallest phone', () => {
