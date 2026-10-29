@@ -416,6 +416,42 @@ test('Unlock all levels opens every level for testing', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Grand Finale' })).toBeVisible();
 });
 
+test('play stats count runs, misses and quits on this device, and can be cleared', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await dismissIntro(page);
+  await solve(page, ['A']);
+  await page.getByRole('button', { name: 'Next challenge' }).click();
+  await expect(page.getByRole('heading', { name: 'Reverse Logic' })).toBeVisible();
+  await run(page).click();
+  await expect(run(page)).toHaveText(/Retry/);
+  await page.getByRole('button', { name: 'Levels', exact: true }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'View' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Play stats' })).toBeVisible();
+  const totals = page.getByRole('region', { name: 'Totals' });
+  await expect(totals).toContainText('Sessions1');
+  await expect(totals).toContainText(`Levels solved1/${SOLUTIONS.length}`);
+  await expect(totals).toContainText('Runs2');
+  const rows = page.locator('.stats-table tbody tr');
+  // Level, Runs, Miss, Hint, Retry, Quit, First solve; the funnel ends at the first level not opened.
+  await expect(rows.nth(0)).toHaveText(['1', '1', '0', '0', '0', '0', '1 · ★★★'].join(''));
+  await expect(rows.nth(1)).toHaveText(['2', '1', '1', '0', '0', '1', 'not yet'].join(''));
+  await expect(rows).toHaveCount(3);
+  await expect(page.getByRole('region', { name: 'Hardest levels' })).toContainText(
+    'Level 2 · Reverse Logic1 quit, 1 missed Run',
+  );
+
+  await page.getByRole('button', { name: 'Clear stats' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Clear' }).click();
+  await expect(page.getByText('Stats cleared.')).toBeVisible();
+  await expect(totals).toContainText('Runs0');
+  await expect(rows).toHaveCount(1);
+});
+
 test('the sound button mutes from the game screen', async ({ page }) => {
   await page.goto('/');
   await dismissIntro(page);

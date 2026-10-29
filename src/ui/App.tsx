@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Sound } from '../audio/sound';
 import { freeMovePlan } from '../hints/freeMoves';
 import { addDays, utcDay } from '../daily/dates';
@@ -7,9 +7,11 @@ import { dailyFor } from '../daily/schedule';
 import { share, shareText } from '../daily/share';
 import type { LevelDef } from '../engine/types';
 import {
+  COIN_PACKS,
   COINS_PER_NEW_STAR,
   HINT_PRICE,
   RETRY_PRICE,
+  REMOVE_ADS,
   STREAK_REPAIR_PRICE,
   TUTORIAL_LEVELS,
 } from '../monetize/prices';
@@ -23,6 +25,13 @@ import {
   type DailyRecord,
 } from '../storage/daily';
 import { demoShop } from '../monetize/shop';
+import {
+  freshMetrics,
+  loadMetrics,
+  record,
+  saveMetrics,
+  type MetricEvent,
+} from '../storage/metrics';
 import { levels } from '../levels';
 import {
   emptyProgress,
@@ -55,11 +64,13 @@ import { LevelSelect } from './LevelSelect';
 import { DailyCard } from './DailyCard';
 import { DemoInterstitial } from './DemoInterstitial';
 import { SettingsScreen } from './SettingsScreen';
+import { StatsScreen } from './StatsScreen';
 import { ShopPanel } from './ShopPanel';
 
 type Screen =
   | { kind: 'select' }
   | { kind: 'settings' }
+  | { kind: 'stats' }
   /** `play` counts replays, so a replay starts the level fresh. */
   | { kind: 'game'; index: number; play?: number }
   /** The daily puzzle of `day`, kept while playing even if midnight passes. */
@@ -111,9 +122,26 @@ export function App() {
   const leaveResult = (go: () => void) => {
     if (!adDue) return go();
     setAdDue(false);
-    if (shop.demo) setAfterAd(() => go);
-    else void shop.showInterstitial().then(go, go);
+    if (shop.demo) return setAfterAd(() => go);
+    void shop.showInterstitial().then(
+      () => {
+        track({ type: 'betweenAd', closed: true });
+        go();
+      },
+      () => {
+        track({ type: 'betweenAd', closed: false });
+        go();
+      },
+    );
   };
+  const [metrics, setMetrics] = useState(loadMetrics);
+  /** Counts a play stat; stats never leave the device. */
+  const track = (event: MetricEvent) =>
+    setMetrics((m) => {
+      const next = record(m, event);
+      saveMetrics(next);
+      return next;
+    });
   const [daily, setDaily] = useState(loadDaily);
   const changeDaily = (edit: (d: DailyRecord) => DailyRecord | null) =>
     setDaily((d) => {
@@ -123,6 +151,16 @@ export function App() {
       return next;
     });
   const [screen, setScreen] = useState<Screen>(() => firstScreen(progress, settings.unlockAll));
+  const counted = useRef(false);
+  useEffect(() => {
+    // Once per launch, even when development mode runs effects twice.
+    if (counted.current) return;
+    counted.current = true;
+    track({ type: 'session', day: utcDay(new Date()) });
+    if (screen.kind === 'game') track({ type: 'start', level: ids[screen.index]! });
+    // Only the first screen counts here; later ones are counted where they open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const systemReduced = usePrefersReducedMotion();
   const reducedMotion = settings.motion === 'reduce' || systemReduced;
 
@@ -167,7 +205,12 @@ export function App() {
         return { ...w, used };
       });
     }
+    track({ type: 'start', level: id });
     setScreen({ kind: 'game', index, play: replay });
+  };
+  const openShop = () => {
+    setShopOpen(true);
+    if (adsLeftToday(wallet, new Date()) > 0) track({ type: 'adOffered', placement: 'shop' });
   };
 
   const shopPanel = shopOpen && (
@@ -175,13 +218,21 @@ export function App() {
       coins={wallet.coins}
       adsLeft={adsLeftToday(wallet, new Date())}
       shop={shop}
-      onAdWatched={() => changeWallet((w) => rewardAd(w, new Date()))}
+      onAdWatched={() => {
+        changeWallet((w) => rewardAd(w, new Date()));
+        track({ type: 'adWatched', placement: 'shop' });
+      }}
       onBought={(coins) => {
         changeWallet((w) => grantCoins(w, coins));
         changeAds(goAdFree);
+        const pack = COIN_PACKS.find((p) => p.coins === coins);
+        track({ type: 'purchase', item: pack?.id ?? `coins_${coins}` });
       }}
       adFree={ads.adFree}
-      onAdFree={() => changeAds(goAdFree)}
+      onAdFree={() => {
+        changeAds(goAdFree);
+        track({ type: 'purchase', item: REMOVE_ADS.id });
+      }}
       onClose={() => setShopOpen(false)}
     />
   );
@@ -193,7 +244,23 @@ export function App() {
         systemReduced={systemReduced}
         onChange={changeSettings}
         onResetProgress={() => update(emptyProgress())}
+        onStats={() => setScreen({ kind: 'stats' })}
         onBack={() => setScreen({ kind: 'select' })}
+      />
+    );
+  }
+
+  if (screen.kind === 'stats') {
+    return (
+      <StatsScreen
+        metrics={metrics}
+        levels={levels}
+        onClear={() => {
+          const fresh = freshMetrics();
+          setMetrics(fresh);
+          saveMetrics(fresh);
+        }}
+        onBack={() => setScreen({ kind: 'settings' })}
       />
     );
   }
@@ -224,6 +291,7 @@ export function App() {
         return { ...w, used };
       });
     }
+    track({ type: 'start', level: id });
     setScreen({ kind: 'daily', day, play: replay });
   };
 
@@ -254,6 +322,7 @@ export function App() {
                 if (!paidWallet || !repairStreak(daily, today)) return false;
                 changeDaily((d) => repairStreak(d, today));
                 changeWallet(() => paidWallet);
+                if (paid === 'ad') track({ type: 'adWatched', placement: 'repair' });
                 return true;
               }}
             />
@@ -261,7 +330,7 @@ export function App() {
           onPlay={(index) =>
             (settings.unlockAll || isUnlocked(ids, progress, index)) && play(index)
           }
-          onShop={() => setShopOpen(true)}
+          onShop={openShop}
           onSettings={() => setScreen({ kind: 'settings' })}
         />
         {shopPanel}
@@ -270,6 +339,11 @@ export function App() {
   }
 
   const toLevels = () => setScreen({ kind: 'select' });
+  /** Counts a solve for the stats; every solve passes through here. */
+  const trackSolve = (id: string, win: { stars: number; attempts: number }) => {
+    const hints = freeMovesUsed(wallet, id);
+    track({ type: 'solve', level: id, stars: win.stars, runs: win.attempts, hints });
+  };
   /** What every game needs, campaign level or daily: sound, coins, hints and retries. */
   const gameProps = (level: LevelDef, free: boolean) => ({
     level,
@@ -280,7 +354,9 @@ export function App() {
     onToggleSound: () => changeSettings({ ...settings, sound: !settings.sound }),
     coins: wallet.coins,
     shop,
-    onShop: () => setShopOpen(true),
+    onShop: openShop,
+    onRunEnded: (won: boolean) => track({ type: 'run', level: level.id, won }),
+    onAdOffered: (placement: 'hint' | 'retry') => track({ type: 'adOffered', placement }),
     hints: {
       used: freeMovesUsed(wallet, level.id),
       free,
@@ -289,7 +365,11 @@ export function App() {
         const cost = paid === 'coins' ? HINT_PRICE : 0;
         const available = freeMovePlan(level).length;
         const result = spendFreeMove(wallet, level.id, available, cost, moves);
-        if (result.ok) changeWallet(() => result.wallet);
+        if (result.ok) {
+          changeWallet(() => result.wallet);
+          track({ type: 'hint', level: level.id, paid });
+          if (paid === 'ad') track({ type: 'adWatched', placement: 'hint' });
+        }
         return result.ok;
       },
     },
@@ -300,13 +380,17 @@ export function App() {
           onMiss: () => changeWallet((w) => spendRun(w, level.id)),
           onBuy: (paid: 'coins' | 'ad') => {
             const next = buyRetry(wallet, level.id, paid === 'coins' ? RETRY_PRICE : 0);
-            if (next) changeWallet(() => next);
-            return next !== null;
+            if (!next) return false;
+            changeWallet(() => next);
+            track({ type: 'retry', level: level.id, paid });
+            if (paid === 'ad') track({ type: 'adWatched', placement: 'retry' });
+            return true;
           },
         },
     firstRunOpen: !progress.firstRunUsed[level.id],
     onFirstRunUsed: () => change((p) => spendFirstRun(p, level.id)),
     onLevels: toLevels,
+    onQuit: () => track({ type: 'quit', level: level.id }),
   });
 
   if (screen.kind === 'daily') {
@@ -323,6 +407,7 @@ export function App() {
           showIntro={false}
           onIntroDone={toLevels}
           onSolved={(win) => {
+            trackSolve(level.id, win);
             const result = {
               stars: win.stars,
               runs: win.attempts,
@@ -362,6 +447,7 @@ export function App() {
         showIntro={screen.index === 0 && !progress.seenIntro}
         onIntroDone={() => update({ ...progress, seenIntro: true })}
         onSolved={(win) => {
+          trackSolve(level.id, win);
           const before = progress.completed[level.id]?.stars ?? 0;
           const coins = Math.max(0, win.stars - before) * COINS_PER_NEW_STAR;
           changeWallet((w) => grantCoins(refillRuns(w, level.id), coins));
@@ -372,7 +458,10 @@ export function App() {
           if (paced.show) setAdDue(true);
           return { coins };
         }}
-        onNext={() => leaveResult(() => play(screen.index + 1))}
+        onNext={() => {
+          track({ type: 'next', level: level.id });
+          leaveResult(() => play(screen.index + 1));
+        }}
         onReplay={() => leaveResult(() => play(screen.index, (screen.play ?? 0) + 1))}
         onLevels={() => leaveResult(toLevels)}
       />
@@ -381,6 +470,7 @@ export function App() {
         <DemoInterstitial
           onClose={() => {
             setAfterAd(null);
+            track({ type: 'betweenAd', closed: true });
             afterAd();
           }}
         />
