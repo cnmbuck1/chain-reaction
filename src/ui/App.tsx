@@ -151,6 +151,10 @@ export function App() {
       return next;
     });
   const [screen, setScreen] = useState<Screen>(() => firstScreen(progress, settings.unlockAll));
+  // Each screen opens at its top, not at the scroll position the last one was left at.
+  useEffect(() => {
+    window.scrollTo?.(0, 0);
+  }, [screen.kind]);
   const counted = useRef(false);
   useEffect(() => {
     // Once per launch, even when development mode runs effects twice.
@@ -239,29 +243,39 @@ export function App() {
 
   if (screen.kind === 'settings') {
     return (
-      <SettingsScreen
-        settings={settings}
-        systemReduced={systemReduced}
-        onChange={changeSettings}
-        onResetProgress={() => update(emptyProgress())}
-        onStats={() => setScreen({ kind: 'stats' })}
-        onBack={() => setScreen({ kind: 'select' })}
-      />
+      <>
+        <SettingsScreen
+          settings={settings}
+          systemReduced={systemReduced}
+          onChange={changeSettings}
+          onResetProgress={() => update(emptyProgress())}
+          onStats={() => setScreen({ kind: 'stats' })}
+          onBack={() => setScreen({ kind: 'select' })}
+          coins={wallet.coins}
+          onShop={openShop}
+        />
+        {shopPanel}
+      </>
     );
   }
 
   if (screen.kind === 'stats') {
     return (
-      <StatsScreen
-        metrics={metrics}
-        levels={levels}
-        onClear={() => {
-          const fresh = freshMetrics();
-          setMetrics(fresh);
-          saveMetrics(fresh);
-        }}
-        onBack={() => setScreen({ kind: 'settings' })}
-      />
+      <>
+        <StatsScreen
+          metrics={metrics}
+          levels={levels}
+          onClear={() => {
+            const fresh = freshMetrics();
+            setMetrics(fresh);
+            saveMetrics(fresh);
+          }}
+          onBack={() => setScreen({ kind: 'settings' })}
+          coins={wallet.coins}
+          onShop={openShop}
+        />
+        {shopPanel}
+      </>
     );
   }
 
@@ -332,6 +346,7 @@ export function App() {
           }
           onShop={openShop}
           onSettings={() => setScreen({ kind: 'settings' })}
+          still={reducedMotion}
         />
         {shopPanel}
       </>
@@ -349,9 +364,7 @@ export function App() {
     level,
     reducedMotion,
     sound,
-    soundOn: settings.sound,
     haptics: settings.haptics,
-    onToggleSound: () => changeSettings({ ...settings, sound: !settings.sound }),
     coins: wallet.coins,
     shop,
     onShop: openShop,

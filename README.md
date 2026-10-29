@@ -7,7 +7,7 @@ Status: **Stage 2, S3: twenty levels, with forks from level 11 and two-part boar
 
 - a brushed-metal machine drawn in PixiJS (cable wires, brass parts, portcullis gates, glowing
   energy) and lever switches;
-- synthesized sound with a mute button, and vibration on phones that support it;
+- synthesized sound (switched off in Settings), and vibration on phones that support it;
 - a settings screen for sound, vibration, motion and resetting progress;
 - a win sequence (the goal lights, light runs back along the ball's route, a chord plays) and a
   result card with stars, Next challenge, Replay and Levels;
@@ -239,6 +239,12 @@ and Two Parts (16 to 20). Each shows its stars, a locked chapter previews its ne
 levels no chapter lists appear under "More machines", so adding levels never hides one. The
 screen shows total stars, a **Continue** button for the first unsolved level, and a card for the
 next locked machine. Settings has **Unlock all levels**, a testing switch that opens every level.
+
+The home screen title is drawn as machine parts: the i in Chain is a circuit node and the o in
+Reaction a turning gear (`src/ui/HomeArt.tsx`). Two meshing gears turn behind the header, and a
+pulse runs along circuit traces under it; all of it stands still with reduced motion. The gear
+button opens Settings. The coin balance sits at the top of every screen (home, game, daily,
+Settings, Play stats), and tapping it opens the shop.
 
 ## Stars
 
