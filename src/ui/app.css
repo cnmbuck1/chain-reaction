@@ -94,7 +94,8 @@ h2 {
 }
 .topbar {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  /* Equal side columns keep the level title centred on the screen. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
@@ -780,6 +781,15 @@ button:disabled {
   display: flex;
   gap: 6px;
 }
+/* The back button is an arrow alone, so the side columns stay narrow enough to centre the title. */
+.topbar .back-text {
+  display: none;
+}
+.topbar .ghost.back {
+  width: 44px;
+  padding: 0;
+  font-size: 1.3rem;
+}
 .ghost.icon {
   width: 44px;
   padding: 0;
@@ -793,6 +803,10 @@ button:disabled {
 @media (max-width: 360px) {
   .title h1 {
     font-size: 1.2rem;
+  }
+  /* Too narrow to centre the title and still fit both sides: let it take the middle. */
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 }
 @media (max-width: 380px) {
@@ -1086,12 +1100,24 @@ button:disabled {
 }
 .coin-button {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 1px;
+  min-width: 44px;
+  padding: 0 6px;
   color: var(--gold);
   font-family: var(--font-label);
   font-size: 1rem;
   letter-spacing: 0.04em;
+}
+.coin-button .coin-icon {
+  vertical-align: 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+.coin-count {
+  font-size: 0.8rem;
+  line-height: 1;
 }
 .hint-badge {
   display: inline-flex;
