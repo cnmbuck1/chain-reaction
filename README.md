@@ -416,6 +416,7 @@ The game is wrapped for iPhone and Android with [Capacitor](https://capacitorjs.
 
 - **iPhone build to TestFlight** (`.github/workflows/ios-testflight.yml`): see [docs/APP_STORE.md](docs/APP_STORE.md).
 - **Android build** (`.github/workflows/android-play.yml`): see [docs/GOOGLE_PLAY.md](docs/GOOGLE_PLAY.md).
+- **Ads and purchases** (AdMob and the stores, `src/monetize/nativeShop.ts`): see [docs/ADS_AND_PURCHASES.md](docs/ADS_AND_PURCHASES.md).
 
 Pull requests that touch the native projects run both as compile checks. After changing the game, run
 `npm run cap:sync` to copy the web build into the native projects locally.

@@ -1,4 +1,4 @@
-import { COIN_PACKS, type CoinPack } from './prices';
+import { COIN_PACKS, REMOVE_ADS, type CoinPack } from './prices';
 
 // Where ads and purchases happen. The game only talks to this interface, so the demo below
 // can be swapped for AdMob and the stores' in-app purchases without touching the UI. The
@@ -17,6 +17,12 @@ export interface Shop {
   buy(packId: string): Promise<number>;
   /** Runs the Remove ads purchase; resolves true once it is bought. */
   buyRemoveAds(): Promise<boolean>;
+  /** Remove ads' price, in the store's own currency once it has loaded. */
+  removeAdsPrice(): string;
+  /** Asks the store, without prompting, whether Remove ads was bought (a reinstall or a new phone). */
+  adFreeOwned(): Promise<boolean>;
+  /** The Restore purchases button: resolves true if Remove ads came back. */
+  restore(): Promise<boolean>;
   /**
    * Shows an ad between levels and resolves when it closes. The demo resolves at once:
    * the game draws its own stand-in instead.
@@ -41,6 +47,14 @@ export function demoShop(delayMs = 700): Shop {
     async buyRemoveAds() {
       await wait();
       return true;
+    },
+    removeAdsPrice: () => REMOVE_ADS.price,
+    async adFreeOwned() {
+      return false;
+    },
+    async restore() {
+      await wait();
+      return false;
     },
     async showInterstitial() {},
   };

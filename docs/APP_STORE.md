@@ -70,6 +70,5 @@ Run the workflow again whenever there's an update you want on your phone; each r
 
 - **Agreements, Tax, and Banking**: the Paid Apps agreement must be active for purchases to work. If it's
   active for Rack & Roll, it already covers this app.
-- **In-app purchases** (Monetization → In-App Purchases): `coins_100` and `coins_600` as **Consumable**,
-  `remove_ads` as **Non-Consumable** at $2.99. Prices for the coin packs are in `src/monetize/prices.ts`.
+- **In-app purchases** and AdMob: see `docs/ADS_AND_PURCHASES.md`.
 - **App Privacy**, the age rating, the store page text and screenshots come with the store pack.
