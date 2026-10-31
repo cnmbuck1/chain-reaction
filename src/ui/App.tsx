@@ -197,9 +197,10 @@ export function App() {
     saveSettings(next);
     if (next.sound) sound.unlock();
   };
-  // Solving every level wins the Cnmbuck Orb, Cnmbuck Studios' signature ball. It's the ball from then
-  // on, until the player picks one in Settings (orbAwarded marks that choice).
-  const orbWon = ids.every((id) => id in progress.completed);
+  // Solving every level wins the Cnmbuck Orb, Cnmbuck Studios' signature ball, and Remove ads (or a coin
+  // pack, which also removes ads) comes with it. It's the ball from then on, until the player picks one
+  // in Settings (orbAwarded marks that choice).
+  const orbWon = ads.adFree || ids.every((id) => id in progress.completed);
   const ball = orbWon && (settings.ball === 'orb' || !settings.orbAwarded) ? 'orb' : 'steel';
   setBallStyle(ball);
   /**

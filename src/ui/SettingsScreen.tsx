@@ -107,7 +107,7 @@ export function SettingsScreen({
             <span className="setting-detail">
               {orbWon
                 ? "The Cnmbuck Orb: Cnmbuck Studios' signature ball, in every Cnmbuck game."
-                : "Solve every level to win the Cnmbuck Orb, Cnmbuck Studios' signature ball."}
+                : "Solve every level to win the Cnmbuck Orb, Cnmbuck Studios' signature ball. It also comes with Remove ads."}
             </span>
           </div>
           <div className="segmented" role="radiogroup" aria-labelledby="ball-label">
