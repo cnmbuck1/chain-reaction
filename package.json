@@ -20,11 +20,13 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.3.0",
+    "@capacitor-firebase/analytics": "^8.5.2",
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
     "@capgo/native-purchases": "^8.9.6",
     "capacitor-plugin-safe-area": "^5.0.1",
+    "firebase": "^12.19.0",
     "pixi.js": "^8.22.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
