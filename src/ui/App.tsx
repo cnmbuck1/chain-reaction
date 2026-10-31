@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { furthestLevel, logEvent, setFurthestLevel, toAnalytics } from '../analytics/analytics';
 import { Sound } from '../audio/sound';
 import { freeMovePlan } from '../hints/freeMoves';
 import { addDays, utcDay } from '../daily/dates';
@@ -151,13 +152,15 @@ export function App() {
     );
   };
   const [metrics, setMetrics] = useState(loadMetrics);
-  /** Counts a play stat; stats never leave the device. */
-  const track = (event: MetricEvent) =>
+  /** Counts a play stat on the device, and sends level events to analytics in the apps. */
+  const track = (event: MetricEvent) => {
+    logEvent(toAnalytics(event, ids));
     setMetrics((m) => {
       const next = record(m, event);
       saveMetrics(next);
       return next;
     });
+  };
   const [daily, setDaily] = useState(loadDaily);
   const changeDaily = (edit: (d: DailyRecord) => DailyRecord | null) =>
     setDaily((d) => {
@@ -177,6 +180,7 @@ export function App() {
     if (counted.current) return;
     counted.current = true;
     track({ type: 'session', day: utcDay(new Date()) });
+    setFurthestLevel(furthestLevel(ids, progress.completed));
     if (screen.kind === 'game') track({ type: 'start', level: ids[screen.index]! });
     // Only the first screen counts here; later ones are counted where they open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -383,6 +387,7 @@ export function App() {
   const trackSolve = (id: string, win: { stars: number; attempts: number }) => {
     const hints = freeMovesUsed(wallet, id);
     track({ type: 'solve', level: id, stars: win.stars, runs: win.attempts, hints });
+    if (!(id in progress.completed)) setFurthestLevel(furthestLevel(ids, progress.completed, id));
   };
   /** What every game needs, campaign level or daily: sound, coins, hints and retries. */
   const gameProps = (level: LevelDef, free: boolean) => ({

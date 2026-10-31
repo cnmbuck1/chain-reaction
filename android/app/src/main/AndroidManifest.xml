@@ -34,6 +34,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+        <!-- Firebase Analytics: no advertising ID, play analytics need no tracking -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false"/>
         <!-- AdMob app ID: Google's test ID until the real one is set (see docs/ADS_AND_PURCHASES.md) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
