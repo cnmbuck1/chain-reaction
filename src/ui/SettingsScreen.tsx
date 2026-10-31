@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CoinChip } from './coins';
-import type { MotionSetting, Settings } from '../storage/settings';
+import type { BallStyle, MotionSetting, Settings } from '../storage/settings';
 
 interface Props {
   settings: Settings;
@@ -12,6 +12,10 @@ interface Props {
   onBack: () => void;
   coins: number;
   onShop: () => void;
+  /** Every level is solved, so the Cnmbuck Orb can be chosen. */
+  orbWon: boolean;
+  /** The ball in use. */
+  ball: BallStyle;
 }
 
 export function SettingsScreen({
@@ -23,11 +27,17 @@ export function SettingsScreen({
   onBack,
   coins,
   onShop,
+  orbWon,
+  ball,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [resetDone, setResetDone] = useState(false);
   const canVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator;
 
+  const ballOptions: { value: BallStyle; label: string }[] = [
+    { value: 'steel', label: 'Steel' },
+    { value: 'orb', label: 'Cnmbuck Orb' },
+  ];
   const motionOptions: { value: MotionSetting; label: string }[] = [
     { value: 'system', label: 'Follow device' },
     { value: 'reduce', label: 'Reduce' },
@@ -87,6 +97,38 @@ export function SettingsScreen({
                 {option.label}
               </button>
             ))}
+          </div>
+        </div>
+        <div className="setting">
+          <div className="setting-text">
+            <span className="setting-label" id="ball-label">
+              Ball
+            </span>
+            <span className="setting-detail">
+              {orbWon
+                ? "The Cnmbuck Orb: Cnmbuck Studios' signature ball, in every Cnmbuck game."
+                : "Solve every level to win the Cnmbuck Orb, Cnmbuck Studios' signature ball. It also comes with Remove ads."}
+            </span>
+          </div>
+          <div className="segmented" role="radiogroup" aria-labelledby="ball-label">
+            {ballOptions.map((option) => {
+              const current = ball === option.value;
+              const locked = option.value === 'orb' && !orbWon;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={current}
+                  disabled={locked}
+                  className={`${current ? 'active' : ''}${option.value === 'orb' ? ' orb-choice' : ''}`}
+                  onClick={() => onChange({ ...settings, ball: option.value, orbAwarded: true })}
+                >
+                  {locked ? '🔒 ' : ''}
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </div>
         <Toggle

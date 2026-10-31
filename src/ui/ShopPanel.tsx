@@ -110,7 +110,7 @@ export function ShopPanel({
               void run(async () => {
                 if (!(await shop.buyRemoveAds())) return 'Nothing was bought.';
                 onAdFree();
-                return 'Ads between levels are off for good.';
+                return 'Ads between levels are off for good, and the Cnmbuck Orb is your ball.';
               })
             }
           >
@@ -118,8 +118,8 @@ export function ShopPanel({
               Remove ads
               <span className="shop-sub">
                 {adFree
-                  ? 'Ads between levels are off'
-                  : 'No ads between levels. Optional ads stay.'}
+                  ? 'Ads between levels are off, and the Cnmbuck Orb is yours'
+                  : 'No ads between levels, plus the Cnmbuck Orb ball. Optional ads stay.'}
               </span>
             </span>
             <span className="shop-price">{adFree ? 'Owned' : shop.removeAdsPrice()}</span>
