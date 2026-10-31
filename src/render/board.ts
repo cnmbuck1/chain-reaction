@@ -64,6 +64,12 @@ const SHADE_ALPHA = 0.55;
 
 const MAX_RESOLUTION = 3;
 
+/** Which ball every board draws: the steel ball, or the Cnmbuck Orb once it's been won. */
+let ballStyle: 'steel' | 'orb' = 'steel';
+export function setBallStyle(style: 'steel' | 'orb') {
+  ballStyle = style;
+}
+
 interface Wire extends WireRoute {
   color: number;
 }
@@ -624,7 +630,16 @@ export class Board {
     const approach = finish && trackLinks(level).find(([, to]) => to === finish.nodeId)?.[0];
     const route = (from: NodeId, to: NodeId) => trackRoute(level, from, to);
     const before = approach ? route(approach, finish.nodeId).at(-2)! : null;
-    drawBall(g, glow, visual, at, route, before, this.gradients.ball);
+    drawBall(
+      g,
+      glow,
+      visual,
+      at,
+      route,
+      before,
+      ballStyle === 'orb' ? this.gradients.orb : this.gradients.ball,
+      ballStyle === 'orb',
+    );
   }
 }
 
@@ -665,6 +680,20 @@ function makeGradients() {
         { offset: 0, color: 0x4a5266 },
         { offset: 0.45, color: 0xa7afc0 },
         { offset: 1, color: 0x3f4759 },
+      ],
+      textureSpace: 'local',
+    }),
+    // The Cnmbuck Orb's deep blue glass (see drawOrb)
+    orb: new FillGradient({
+      type: 'radial',
+      center: { x: 0.35, y: 0.3 },
+      innerRadius: 0,
+      outerCenter: { x: 0.5, y: 0.5 },
+      outerRadius: 0.5,
+      colorStops: [
+        { offset: 0, color: 0x2a62e8 },
+        { offset: 0.55, color: 0x0a2470 },
+        { offset: 1, color: 0x020a1e },
       ],
       textureSpace: 'local',
     }),
@@ -803,6 +832,7 @@ function drawBall(
   route: RouteOf,
   approach: Point | null,
   fill: FillGradient,
+  orb = false,
 ) {
   const pos = ballPosition(visual, at, route);
   if (!pos) return;
@@ -827,12 +857,56 @@ function drawBall(
     for (let i = 1; i <= 3; i++) {
       glow
         .circle(x - ((b.x - a.x) / len) * i * 7, y - ((b.y - a.y) / len) * i * 7, 9 - i * 1.5)
-        .fill({ color: 0xffffff, alpha: 0.12 / i });
+        .fill({ color: orb ? ORB_CYAN : 0xffffff, alpha: (orb ? 0.3 : 0.12) / i });
     }
+  }
+  if (orb) {
+    drawOrb(g, glow, x, y, fill);
+    return;
   }
   g.circle(x + 2, y + 3, 11).fill({ color: 0x000000, alpha: 0.4 });
   g.circle(x, y, 11).fill(fill);
   g.circle(x - 3.5, y - 4, 2.6).fill({ color: 0xffffff, alpha: 0.95 });
+}
+
+const ORB_CYAN = 0x00e5ff;
+
+/**
+ * The Cnmbuck Orb, Cnmbuck Studios' signature ball (the same in every Cnmbuck game; see the brand kit in
+ * cnmbuck1/poolgolf brand/cnmbuck-orb): deep blue glass, a neon band, blue and orange rim light, a halo.
+ */
+function drawOrb(g: Graphics, glow: Graphics, x: number, y: number, fill: FillGradient) {
+  const r = 11;
+  glow.circle(x, y, r + 9).fill({ color: ORB_CYAN, alpha: 0.12 });
+  glow.circle(x, y, r + 5).fill({ color: ORB_CYAN, alpha: 0.2 });
+  g.circle(x + 2, y + 3, r).fill({ color: 0x000000, alpha: 0.4 });
+  g.circle(x, y, r + 1.2).fill({ color: 0x3a7aff });
+  // Each arc starts its own path (an arc alone would join on from the last point drawn)
+  const arc = (from: number, to: number, color: number) =>
+    g
+      .moveTo(x + Math.cos(from) * (r + 0.6), y + Math.sin(from) * (r + 0.6))
+      .arc(x, y, r + 0.6, from, to)
+      .stroke({ width: 1.6, color });
+  arc(Math.PI * 0.55, Math.PI * 1.45, 0x00d8ff);
+  arc(-Math.PI * 0.45, Math.PI * 0.45, 0xff9a1a);
+  g.circle(x, y, r).fill(fill);
+  // The band: the front of a tilted ring round the ball, with a gentle ripple
+  const pts: Point[] = [];
+  for (let i = 0; i <= 16; i++) {
+    const t = Math.PI * (0.06 + 0.88 * (i / 16));
+    const bx = -Math.cos(t),
+      by = Math.sin(t) * (0.26 + 0.05 * Math.sin(t * 3));
+    const rot = -0.42;
+    pts.push({
+      x: x + (bx * Math.cos(rot) - by * Math.sin(rot)) * r * 0.97,
+      y: y + (bx * Math.sin(rot) + by * Math.cos(rot)) * r * 0.97,
+    });
+  }
+  line(glow, pts, 6, ORB_CYAN, 0.45);
+  line(g, pts, 3.4, 0x00a8ff, 0.95);
+  line(g, pts, 1.8, ORB_CYAN);
+  line(g, pts, 0.8, 0xffffff);
+  g.circle(x - 3.6, y - 4.2, 2.3).fill({ color: 0xffffff, alpha: 0.9 });
 }
 
 function drawFinish(g: Graphics, glow: Graphics, visual: VisualState, at: (id: NodeId) => Point) {

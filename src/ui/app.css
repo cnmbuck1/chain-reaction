@@ -1615,3 +1615,23 @@ button:disabled {
 .still .home-title * {
   animation: none !important;
 }
+
+/* The Cnmbuck Orb, Cnmbuck Studios' signature ball */
+.segmented button.orb-choice:not(:disabled) {
+  color: #7fe6ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+.segmented button.orb-choice.active {
+  background: linear-gradient(
+    100deg,
+    rgba(0, 216, 255, 0.3),
+    rgba(58, 106, 255, 0.25) 55%,
+    rgba(255, 154, 26, 0.3)
+  );
+  color: #fff;
+}
+.finale .orb-won {
+  display: block;
+  margin-top: 6px;
+  color: #8fe0ff;
+}

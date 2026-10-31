@@ -2,6 +2,8 @@
 // Reads never throw: anything missing or malformed falls back to the default.
 
 export type MotionSetting = 'system' | 'reduce';
+/** The ball: the original steel ball, or the Cnmbuck Orb (won by solving every level). */
+export type BallStyle = 'steel' | 'orb';
 
 export interface Settings {
   version: 1;
@@ -11,6 +13,9 @@ export interface Settings {
   motion: MotionSetting;
   /** Testing aid: every level is open, whatever has been solved. */
   unlockAll: boolean;
+  ball: BallStyle;
+  /** The Orb has been awarded and switched on once (after that the player picks freely). */
+  orbAwarded: boolean;
 }
 
 export const SETTINGS_KEY = 'chain-reaction/settings';
@@ -26,6 +31,8 @@ export const defaultSettings = (): Settings => ({
   haptics: true,
   motion: 'system',
   unlockAll: TEST_BUILD,
+  ball: 'steel',
+  orbAwarded: false,
 });
 
 function defaultStore(): KeyValueStore | null {
@@ -57,11 +64,16 @@ export function saveSettings(settings: Settings, store: KeyValueStore | null = d
 export function migrateSettings(data: unknown): Settings {
   const out = defaultSettings();
   if (typeof data !== 'object' || data === null) return out;
-  const { version, sound, haptics, motion, unlockAll } = data as Record<string, unknown>;
+  const { version, sound, haptics, motion, unlockAll, ball, orbAwarded } = data as Record<
+    string,
+    unknown
+  >;
   if (version !== 1) return out;
   if (typeof sound === 'boolean') out.sound = sound;
   if (typeof haptics === 'boolean') out.haptics = haptics;
   if (motion === 'system' || motion === 'reduce') out.motion = motion;
   if (typeof unlockAll === 'boolean') out.unlockAll = unlockAll;
+  if (ball === 'steel' || ball === 'orb') out.ball = ball;
+  if (typeof orbAwarded === 'boolean') out.orbAwarded = orbAwarded;
   return out;
 }
