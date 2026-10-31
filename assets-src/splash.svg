@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2433"/><stop offset="1" stop-color="#0b0e15"/></linearGradient>
+  <radialGradient id="vig" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#2a3346" stop-opacity="0.9"/><stop offset="1" stop-color="#0b0e15" stop-opacity="0"/></radialGradient>
+  <radialGradient id="steel" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#d6dbe6"/><stop offset="0.8" stop-color="#7b8496"/><stop offset="1" stop-color="#3a4256"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc94"/><stop offset="0.5" stop-color="#d7ad5c"/><stop offset="1" stop-color="#8a6322"/></linearGradient>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.6"/></filter>
+</defs><rect width="2732" height="2732" fill="#0f131b"/><g transform="translate(1366 1366) scale(0.8) translate(-512 -510)"><!-- C: chain of three nodes lighting up in sequence -->
+<path d="M210 760 L512 460 L814 260" stroke="#2a3244" stroke-width="60" stroke-linecap="round" fill="none"/>
+<path d="M210 760 L512 460 L814 260" stroke="#4fd6e8" stroke-width="20" stroke-linecap="round" fill="none" filter="url(#glow)"/>
+<circle cx="210" cy="760" r="110" fill="url(#steel)" filter="url(#shadow)"/>
+<circle cx="512" cy="460" r="130" fill="#7c5cff" filter="url(#shadow)"/>
+<circle cx="512" cy="460" r="130" fill="none" stroke="#c4b5ff" stroke-width="16"/>
+<path d="M545 380 L460 480 H520 L490 560 L575 450 H515 Z" fill="#fff"/>
+<circle cx="814" cy="260" r="120" fill="url(#gold)" filter="url(#shadow)"/>
+<circle cx="814" cy="260" r="70" fill="#141a26"/>
+</g></svg>
