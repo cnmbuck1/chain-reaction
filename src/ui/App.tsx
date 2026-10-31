@@ -24,6 +24,8 @@ import {
   streakOn,
   type DailyRecord,
 } from '../storage/daily';
+import { Capacitor } from '@capacitor/core';
+import { nativeShop } from '../monetize/nativeShop';
 import { demoShop } from '../monetize/shop';
 import {
   freshMetrics,
@@ -107,7 +109,16 @@ export function App() {
   const [progress, setProgress] = useState(() => loadProgress(undefined, loadWallet().used));
   const [settings, setSettings] = useState(loadSettings);
   const [wallet, setWallet] = useState(loadWallet);
-  const shop = useMemo(() => demoShop(), []);
+  // The phone apps use AdMob and the stores; the web build only pretends.
+  const shop = useMemo(
+    () =>
+      Capacitor.isNativePlatform()
+        ? nativeShop({ startEarly: Object.keys(progress.completed).length >= TUTORIAL_LEVELS })
+        : demoShop(),
+    // Made once per launch; later progress doesn't change when ads start.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
   const [shopOpen, setShopOpen] = useState(false);
   const [ads, setAds] = useState(loadAds);
   const changeAds = (edit: (a: AdState) => AdState) =>
@@ -116,6 +127,10 @@ export function App() {
       if (next !== a) saveAds(next);
       return next;
     });
+  // Remove ads bought on another phone, or before a reinstall, comes back from the store.
+  useEffect(() => {
+    void shop.adFreeOwned().then((owned) => owned && changeAds(goAdFree));
+  }, [shop]);
   // An ad between levels waits for the player to leave the result card, then plays before
   // the next screen: `adDue` is set on the solve, `afterAd` holds where they were going.
   const [adDue, setAdDue] = useState(false);
@@ -244,6 +259,7 @@ export function App() {
         changeAds(goAdFree);
         track({ type: 'purchase', item: REMOVE_ADS.id });
       }}
+      onRestored={() => changeAds(goAdFree)}
       onClose={() => setShopOpen(false)}
     />
   );

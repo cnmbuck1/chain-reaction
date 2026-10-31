@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AD_COINS, HINT_PRICE, REMOVE_ADS, RETRY_PRICE } from '../monetize/prices';
+import { AD_COINS, HINT_PRICE, RETRY_PRICE } from '../monetize/prices';
 import type { Shop } from '../monetize/shop';
 import { CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
 
@@ -14,6 +14,8 @@ interface Props {
   /** Remove ads or a coin pack was bought before: no ads between levels. */
   adFree: boolean;
   onAdFree: () => void;
+  /** Restore purchases brought Remove ads back. */
+  onRestored: () => void;
   onClose: () => void;
 }
 
@@ -26,6 +28,7 @@ export function ShopPanel({
   onBought,
   adFree,
   onAdFree,
+  onRestored,
   onClose,
 }: Props) {
   const { busy, status, run } = useShopAction();
@@ -119,9 +122,25 @@ export function ShopPanel({
                   : 'No ads between levels, plus the Cnmbuck Orb ball. Optional ads stay.'}
               </span>
             </span>
-            <span className="shop-price">{adFree ? 'Owned' : REMOVE_ADS.price}</span>
+            <span className="shop-price">{adFree ? 'Owned' : shop.removeAdsPrice()}</span>
           </button>
         </div>
+        {!adFree && (
+          <button
+            type="button"
+            className="ghost small"
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                if (!(await shop.restore())) return 'No earlier Remove ads purchase was found.';
+                onRestored();
+                return 'Remove ads is back on.';
+              })
+            }
+          >
+            Restore purchases
+          </button>
+        )}
         {status && (
           <p className="hint-notice" role="status">
             {status}
