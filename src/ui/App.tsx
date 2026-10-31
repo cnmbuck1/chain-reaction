@@ -64,6 +64,7 @@ import { LevelSelect } from './LevelSelect';
 import { DailyCard } from './DailyCard';
 import { DemoInterstitial } from './DemoInterstitial';
 import { SettingsScreen } from './SettingsScreen';
+import { setBallStyle } from '../render/board';
 import { StatsScreen } from './StatsScreen';
 import { ShopPanel } from './ShopPanel';
 
@@ -196,6 +197,11 @@ export function App() {
     saveSettings(next);
     if (next.sound) sound.unlock();
   };
+  // Solving every level wins the Cnmbuck Orb, Cnmbuck Studios' signature ball. It's the ball from then
+  // on, until the player picks one in Settings (orbAwarded marks that choice).
+  const orbWon = ids.every((id) => id in progress.completed);
+  const ball = orbWon && (settings.ball === 'orb' || !settings.orbAwarded) ? 'orb' : 'steel';
+  setBallStyle(ball);
   /**
    * Opens a level. A level already solved starts clean, without the hint moves of an
    * earlier visit, so its stars can be earned back. Spent hints are not refunded.
@@ -253,6 +259,8 @@ export function App() {
           onBack={() => setScreen({ kind: 'select' })}
           coins={wallet.coins}
           onShop={openShop}
+          orbWon={orbWon}
+          ball={ball}
         />
         {shopPanel}
       </>

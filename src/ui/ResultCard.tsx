@@ -117,6 +117,10 @@ export function ResultCard({
             {finale.stars === finale.total * 3
               ? 'Flawless.'
               : 'Replay any level to raise its stars.'}
+            <span className="orb-won">
+              You've won the <b>Cnmbuck Orb</b>, Cnmbuck Studios' signature ball. It's your ball now
+              (change it in Settings).
+            </span>
           </p>
         )}
         {onShare ? (
