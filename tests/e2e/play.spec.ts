@@ -742,7 +742,9 @@ test('an ad plays between levels after every third solve from level 10, until Re
   await page.getByRole('button', { name: /^Shop,/ }).click();
   const shop = page.getByRole('dialog', { name: 'Coins' });
   await shop.getByRole('button', { name: /^Remove ads/ }).click();
-  await expect(shop.getByText('Ads between levels are off for good.')).toBeVisible();
+  await expect(
+    shop.getByText('Ads between levels are off for good, and the Cnmbuck Orb is your ball.'),
+  ).toBeVisible();
   await expect(shop.getByRole('button', { name: /^Remove ads/ })).toContainText('Owned');
 });
 
