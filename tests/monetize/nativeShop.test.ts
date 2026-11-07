@@ -31,21 +31,21 @@ describe('nativeShop purchases', () => {
   it('shows the store prices once they load', async () => {
     purchases.getProducts.mockResolvedValue({
       products: [
-        { identifier: 'coins_100', priceString: '0,99 €' },
+        { identifier: 'coins_30', priceString: '0,99 €' },
         { identifier: 'remove_ads', priceString: '2,99 €' },
       ],
     });
     const shop = nativeShop({ startEarly: false });
     await vi.waitFor(() => expect(shop.removeAdsPrice()).toBe('2,99 €'));
-    expect(shop.packs().map((p) => p.price)).toEqual(['0,99 €', '$3.99']);
+    expect(shop.packs().map((p) => p.price)).toEqual(['0,99 €', '$2.99']);
   });
 
   it('buys a coin pack as a consumable and returns its coins', async () => {
     purchases.purchaseProduct.mockResolvedValue({ transactionId: 't1' });
     const shop = nativeShop({ startEarly: false });
-    expect(await shop.buy('coins_600')).toBe(600);
+    expect(await shop.buy('coins_150')).toBe(150);
     expect(purchases.purchaseProduct).toHaveBeenCalledWith({
-      productIdentifier: 'coins_600',
+      productIdentifier: 'coins_150',
       productType: 'inapp',
       isConsumable: true,
     });
@@ -54,7 +54,7 @@ describe('nativeShop purchases', () => {
   it('gives nothing when the player cancels or the pack is unknown', async () => {
     purchases.purchaseProduct.mockRejectedValue(new Error('User cancelled'));
     const shop = nativeShop({ startEarly: false });
-    expect(await shop.buy('coins_100')).toBe(0);
+    expect(await shop.buy('coins_30')).toBe(0);
     expect(await shop.buy('coins_9999')).toBe(0);
     expect(await shop.buyRemoveAds()).toBe(false);
   });
@@ -70,7 +70,7 @@ describe('nativeShop purchases', () => {
 
   it('reports no Remove ads when the store has none or fails', async () => {
     purchases.getPurchases.mockResolvedValueOnce({
-      purchases: [{ productIdentifier: 'coins_100' }],
+      purchases: [{ productIdentifier: 'coins_30' }],
     });
     const shop = nativeShop({ startEarly: false });
     expect(await shop.adFreeOwned()).toBe(false);

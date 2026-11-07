@@ -66,7 +66,7 @@ describe('demo shop', () => {
     const shop = demoShop(0);
     expect(shop.demo).toBe(true);
     expect(await shop.watchAd()).toBe(true);
-    expect(await shop.buy('coins_100')).toBe(100);
+    expect(await shop.buy('coins_30')).toBe(30);
     expect(await shop.buy('nope')).toBe(0);
     expect(await shop.buyRemoveAds()).toBe(true);
     await expect(shop.showInterstitial()).resolves.toBeUndefined();

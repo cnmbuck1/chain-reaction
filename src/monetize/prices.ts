@@ -42,6 +42,6 @@ export interface CoinPack {
 }
 
 export const COIN_PACKS: readonly CoinPack[] = [
-  { id: 'coins_100', coins: 100, price: '$0.99' },
-  { id: 'coins_600', coins: 600, price: '$3.99' },
+  { id: 'coins_30', coins: 30, price: '$0.99' },
+  { id: 'coins_150', coins: 150, price: '$2.99' },
 ];
