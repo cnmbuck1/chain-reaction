@@ -14,6 +14,7 @@ import {
 } from '@capacitor-community/admob';
 import { NativePurchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { AD_UNITS_ANDROID, AD_UNITS_IOS, ADS_TESTING, isSampleUnit } from './ads.config';
+import { isStoreRelease } from '../platform/release';
 import { COIN_PACKS, REMOVE_ADS, type CoinPack } from './prices';
 import type { Shop } from './shop';
 
@@ -49,20 +50,12 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
    */
   let testAds = ADS_TESTING || isSampleUnit(units.rewarded);
   async function decideTestAds() {
-    if (testAds) return;
-    if (android) {
-      testAds = import.meta.env.VITE_REAL_ADS !== '1';
-      return;
-    }
-    try {
-      const { appTransaction } = await NativePurchases.getAppTransaction();
-      testAds = appTransaction.environment !== 'Production';
-    } catch {
-      // Can't tell (older iOS): an App Store copy.
-    }
+    if (!testAds) testAds = !(await isStoreRelease());
   }
 
   let ready: Promise<boolean> | null = null;
+  /** Google's consent form must stay reachable from Settings where the law asks for it (EU/UK). */
+  let privacyOptions = false;
   let interstitialLoaded = false;
   let rewardedLoaded = false;
 
@@ -74,6 +67,7 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
         if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
           info = await AdMob.showConsentForm();
         }
+        privacyOptions = (info.privacyOptionsRequirementStatus as string) === 'REQUIRED';
         if (!info.canRequestAds) return false;
         if (!android) {
           const tracking = await AdMob.trackingAuthorizationStatus();
@@ -224,6 +218,14 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
         return await owned(REMOVE_ADS.id);
       } catch {
         return false;
+      }
+    },
+    privacyOptionsNeeded: () => privacyOptions,
+    async showPrivacyOptions() {
+      try {
+        await AdMob.showPrivacyOptionsForm();
+      } catch {
+        // Not needed here, or the form couldn't load.
       }
     },
     async showInterstitial() {

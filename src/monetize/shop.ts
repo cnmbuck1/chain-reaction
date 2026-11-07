@@ -24,6 +24,13 @@ export interface Shop {
   /** The Restore purchases button: resolves true if Remove ads came back. */
   restore(): Promise<boolean>;
   /**
+   * True where Google's ad privacy choices must be reachable from Settings (EU/UK players).
+   * Known once ads have started; before that nothing has been asked, so there is nothing to change.
+   */
+  privacyOptionsNeeded(): boolean;
+  /** Opens Google's ad privacy choices again, so the player can change their answer. */
+  showPrivacyOptions(): Promise<void>;
+  /**
    * Shows an ad between levels and resolves when it closes. The demo resolves at once:
    * the game draws its own stand-in instead.
    */
@@ -56,6 +63,8 @@ export function demoShop(delayMs = 700): Shop {
       await wait();
       return false;
     },
+    privacyOptionsNeeded: () => false,
+    async showPrivacyOptions() {},
     async showInterstitial() {},
   };
 }

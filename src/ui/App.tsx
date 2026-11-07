@@ -68,6 +68,7 @@ import { DemoInterstitial } from './DemoInterstitial';
 import { SettingsScreen } from './SettingsScreen';
 import { setBallStyle } from '../render/board';
 import { StatsScreen } from './StatsScreen';
+import { isStoreRelease } from '../platform/release';
 import { ShopPanel } from './ShopPanel';
 
 type Screen =
@@ -120,6 +121,13 @@ export function App() {
     [],
   );
   const [shopOpen, setShopOpen] = useState(false);
+  // Unlock all levels and Play stats are for playtests: hidden in the copy players get from the
+  // store (App Review rejects testing features), kept on the web and in TestFlight.
+  const [testTools, setTestTools] = useState(() => !Capacitor.isNativePlatform());
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) void isStoreRelease().then((store) => setTestTools(!store));
+  }, []);
+  const unlockAll = settings.unlockAll && testTools;
   const [ads, setAds] = useState(loadAds);
   const changeAds = (edit: (a: AdState) => AdState) =>
     setAds((a) => {
@@ -273,6 +281,9 @@ export function App() {
           onChange={changeSettings}
           onResetProgress={() => update(emptyProgress())}
           onStats={() => setScreen({ kind: 'stats' })}
+          testTools={testTools}
+          adPrivacy={shop.privacyOptionsNeeded()}
+          onAdPrivacy={() => void shop.showPrivacyOptions()}
           onBack={() => setScreen({ kind: 'select' })}
           coins={wallet.coins}
           onShop={openShop}
@@ -309,7 +320,7 @@ export function App() {
   const todays = dailyFor(today);
   const streak = streakOn(daily, today);
   const solvedCount = ids.filter((id) => id in progress.completed).length;
-  const levelsToGo = settings.unlockAll ? 0 : Math.max(0, DAILY_UNLOCK_LEVELS - solvedCount);
+  const levelsToGo = unlockAll ? 0 : Math.max(0, DAILY_UNLOCK_LEVELS - solvedCount);
   const shareDaily = async (day: string) => {
     const result = daily.results[day];
     if (!result) return null;
@@ -340,7 +351,7 @@ export function App() {
         <LevelSelect
           levels={levels}
           progress={progress}
-          unlockAll={settings.unlockAll}
+          unlockAll={unlockAll}
           coins={wallet.coins}
           daily={
             <DailyCard
@@ -366,9 +377,7 @@ export function App() {
               }}
             />
           }
-          onPlay={(index) =>
-            (settings.unlockAll || isUnlocked(ids, progress, index)) && play(index)
-          }
+          onPlay={(index) => (unlockAll || isUnlocked(ids, progress, index)) && play(index)}
           onShop={openShop}
           onSettings={() => setScreen({ kind: 'settings' })}
           still={reducedMotion}

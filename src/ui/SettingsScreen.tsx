@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { CoinChip } from './coins';
+import { canBuzz } from '../audio/sound';
+import { PRIVACY_URL, SUPPORT_URL } from '../links';
 import type { BallStyle, MotionSetting, Settings } from '../storage/settings';
 
 interface Props {
@@ -16,6 +18,11 @@ interface Props {
   orbWon: boolean;
   /** The ball in use. */
   ball: BallStyle;
+  /** Show the playtest tools (Unlock all levels, Play stats). Off in store copies. */
+  testTools: boolean;
+  /** Google's ad privacy choices must be reachable here (EU/UK players). */
+  adPrivacy: boolean;
+  onAdPrivacy: () => void;
 }
 
 export function SettingsScreen({
@@ -29,10 +36,13 @@ export function SettingsScreen({
   onShop,
   orbWon,
   ball,
+  testTools,
+  adPrivacy,
+  onAdPrivacy,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [resetDone, setResetDone] = useState(false);
-  const canVibrate = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+  const canVibrate = canBuzz();
 
   const ballOptions: { value: BallStyle; label: string }[] = [
     { value: 'steel', label: 'Steel' },
@@ -131,24 +141,28 @@ export function SettingsScreen({
             })}
           </div>
         </div>
-        <Toggle
-          label="Unlock all levels"
-          detail="For testing: open every level without solving the ones before it. Stars still count."
-          on={settings.unlockAll}
-          onChange={(unlockAll) => onChange({ ...settings, unlockAll })}
-        />
-        <div className="setting">
-          <div className="setting-text">
-            <span className="setting-label">Play stats</span>
-            <span className="setting-detail">
-              For testing: where you got stuck, and how often you used hints, retries and ads. Kept
-              on this device only.
-            </span>
-          </div>
-          <button type="button" className="ghost small" onClick={onStats}>
-            View
-          </button>
-        </div>
+        {testTools && (
+          <>
+            <Toggle
+              label="Unlock all levels"
+              detail="For testing: open every level without solving the ones before it. Stars still count."
+              on={settings.unlockAll}
+              onChange={(unlockAll) => onChange({ ...settings, unlockAll })}
+            />
+            <div className="setting">
+              <div className="setting-text">
+                <span className="setting-label">Play stats</span>
+                <span className="setting-detail">
+                  For testing: where you got stuck, and how often you used hints, retries and ads.
+                  Kept on this device only.
+                </span>
+              </div>
+              <button type="button" className="ghost small" onClick={onStats}>
+                View
+              </button>
+            </div>
+          </>
+        )}
         <div className="setting">
           <div className="setting-text">
             <span className="setting-label">Progress</span>
@@ -162,6 +176,25 @@ export function SettingsScreen({
             Reset
           </button>
         </div>
+        {adPrivacy && (
+          <div className="setting">
+            <div className="setting-text">
+              <span className="setting-label">Ad privacy choices</span>
+              <span className="setting-detail">Change what you agreed to for ads.</span>
+            </div>
+            <button type="button" className="ghost small" onClick={onAdPrivacy}>
+              Change
+            </button>
+          </div>
+        )}
+        <p className="setting-links">
+          <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">
+            Privacy policy
+          </a>
+          <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+            Support
+          </a>
+        </p>
       </section>
 
       {confirming && (
