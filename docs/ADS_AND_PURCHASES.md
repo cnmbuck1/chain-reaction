@@ -9,7 +9,7 @@ sending Claude the IDs. Never tap your own real ads: it can get an AdMob account
 | | Where | Notes |
 |---|---|---|
 | **Rewarded ad** | Shop: *Watch a short ad*, 3 coins, 3 a day | Coins only if it's watched to the end. |
-| **Interstitial** | After every 3rd clean solve, from level 10 | Never after a miss, a hint or the daily. None after Remove ads or any coin pack. Pacing lives in `src/monetize/prices.ts`. |
+| **Interstitial** | After every 3rd clean solve, from level 10 | Never after a miss, a hint or the daily. None after Remove ads or the 150-coin pack. Pacing lives in `src/monetize/prices.ts`. |
 | **Coin packs** | Shop | `coins_30` and `coins_150`, consumable. |
 | **Remove ads** | Shop, $2.99 | `remove_ads`, non-consumable. **Restore purchases** in the shop brings it back on a new phone, and the app checks quietly at launch too. |
 

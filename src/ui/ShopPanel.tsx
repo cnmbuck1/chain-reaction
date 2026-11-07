@@ -11,7 +11,7 @@ interface Props {
   /** A coin ad was watched to the end. */
   onAdWatched: () => void;
   onBought: (coins: number) => void;
-  /** Remove ads or a coin pack was bought before: no ads between levels. */
+  /** Remove ads or the big coin pack was bought before: no ads between levels. */
   adFree: boolean;
   onAdFree: () => void;
   /** Restore purchases brought Remove ads back. */
@@ -98,6 +98,7 @@ export function ShopPanel({
             >
               <span className="shop-name">
                 <CoinIcon /> {pack.coins} coins
+                {pack.removesAds && <span className="shop-sub">Also removes ads for good</span>}
               </span>
               <span className="shop-price">{pack.price}</span>
             </button>

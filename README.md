@@ -313,7 +313,7 @@ After every third solved campaign level, an ad plays once the player leaves the 
 - straight after a solve with a missed Run or a hint, so it never lands on a frustrated
   player (the due ad waits for the next clean solve);
 - after a daily puzzle;
-- for anyone who bought Remove ads ($2.99) or any coin pack.
+- for anyone who bought Remove ads ($2.99) or the 150-coin pack.
 
 Rewarded ads for coins, hints and retries stay optional for everyone. Until AdMob is wired
 in, a demo "Ad break" card stands in, closable after 3 seconds.
