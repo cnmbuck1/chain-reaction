@@ -71,4 +71,8 @@ Run the workflow again whenever there's an update you want on your phone; each r
 - **Agreements, Tax, and Banking**: the Paid Apps agreement must be active for purchases to work. If it's
   active for Rack & Roll, it already covers this app.
 - **In-app purchases** and AdMob: see `docs/ADS_AND_PURCHASES.md`.
+- **Privacy policy and support pages** live in `site/` and publish to
+  `https://cnmbuck1.github.io/chain-reaction/privacy.html` and `.../support.html` once GitHub Pages is on
+  (repo Settings → Pages → Source: GitHub Actions, then run the "Privacy and support pages" workflow). Use
+  those two addresses for the Privacy Policy URL and Support URL in App Store Connect and Play.
 - **App Privacy**, the age rating, the store page text and screenshots come with the store pack.

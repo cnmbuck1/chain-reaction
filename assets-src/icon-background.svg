@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2433"/><stop offset="1" stop-color="#0b0e15"/></linearGradient>
+  <radialGradient id="vig" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#2a3346" stop-opacity="0.9"/><stop offset="1" stop-color="#0b0e15" stop-opacity="0"/></radialGradient>
+  <radialGradient id="steel" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.35" stop-color="#d6dbe6"/><stop offset="0.8" stop-color="#7b8496"/><stop offset="1" stop-color="#3a4256"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc94"/><stop offset="0.5" stop-color="#d7ad5c"/><stop offset="1" stop-color="#8a6322"/></linearGradient>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity="0.6"/></filter>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/>
+<rect width="1024" height="1024" fill="url(#vig)"/></svg>

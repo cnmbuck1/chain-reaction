@@ -897,6 +897,16 @@ button:disabled {
   font-size: 0.9rem;
   line-height: 1.35;
 }
+.setting-links {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 18px 0 0;
+  font-size: 0.9rem;
+}
+.setting-links a {
+  color: var(--muted);
+}
 .toggle {
   flex: none;
   position: relative;

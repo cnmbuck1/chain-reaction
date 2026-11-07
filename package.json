@@ -22,6 +22,7 @@
     "@capacitor-community/admob": "^8.3.0",
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.5.3",
     "@capgo/native-purchases": "^8.9.6",
     "capacitor-plugin-safe-area": "^5.0.1",

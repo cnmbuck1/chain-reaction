@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import type { SoundCue, SoundName } from './cues';
 
 // Every sound is synthesized with WebAudio, so the game ships no audio files.
@@ -212,10 +214,36 @@ export class Sound {
   }
 }
 
-/** A short buzz on supporting phones. iOS Safari has no vibration API, so it is a no-op there. */
-export function buzz(pattern: number | number[]) {
+/** What a buzz marks. Each has a vibration pattern on the web and a native haptic in the apps. */
+export type Buzz = 'flip' | 'hint' | 'deny' | 'win';
+
+const PATTERNS: Record<Buzz, number | number[]> = {
+  flip: 12,
+  hint: [12, 60, 12],
+  deny: [30, 40, 30],
+  win: [20, 50, 20, 50, 60],
+};
+
+/** True where buzz() can be felt: the phone apps, and browsers with a vibration API. */
+export const canBuzz = () =>
+  Capacitor.isNativePlatform() || (typeof navigator !== 'undefined' && 'vibrate' in navigator);
+
+/** A short buzz. The apps use the phone's own haptics; iOS Safari has none, so it is a no-op there. */
+export function buzz(kind: Buzz) {
+  if (Capacitor.isNativePlatform()) {
+    const done =
+      kind === 'flip'
+        ? Haptics.impact({ style: ImpactStyle.Light })
+        : kind === 'hint'
+          ? Haptics.impact({ style: ImpactStyle.Medium })
+          : Haptics.notification({
+              type: kind === 'win' ? NotificationType.Success : NotificationType.Warning,
+            });
+    void done.catch(() => undefined);
+    return;
+  }
   try {
-    navigator.vibrate?.(pattern);
+    navigator.vibrate?.(PATTERNS[kind]);
   } catch {
     // Not allowed here.
   }

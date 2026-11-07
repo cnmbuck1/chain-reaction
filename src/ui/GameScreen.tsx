@@ -133,7 +133,7 @@ export function GameScreen({
     setPanel(null);
     setJustHinted(move.switchId);
     sound.play('chime');
-    if (haptics) buzz([12, 60, 12]);
+    if (haptics) buzz('hint');
   };
   const runId = useRef(0);
   // Completion is reported once per visit, however playback ends (finished, skipped).
@@ -188,7 +188,7 @@ export function GameScreen({
     setNotice(result.rejected ?? null);
     if (result.rejected) {
       sound.play('deny');
-      if (haptics) buzz([30, 40, 30]);
+      if (haptics) buzz('deny');
       return;
     }
     setState(result.state);
@@ -201,7 +201,7 @@ export function GameScreen({
     }
     if (action.type === 'toggle') {
       sound.play('click');
-      if (haptics) buzz(12);
+      if (haptics) buzz('flip');
     } else if (action.type !== 'run') {
       sound.play('click');
     }
@@ -230,7 +230,7 @@ export function GameScreen({
     setPlaying(false);
     if (state.phase !== 'won' || solvedRef.current) return;
     solvedRef.current = true;
-    if (haptics) buzz([20, 50, 20, 50, 60]);
+    if (haptics) buzz('win');
     const facts: Solve = {
       hintsUsed: hints.used,
       firstRun: firstRunLive && state.attempt === 1,
