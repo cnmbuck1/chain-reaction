@@ -1,15 +1,15 @@
 // AdMob setup for the phone apps. See docs/ADS_AND_PURCHASES.md for the console steps.
 //
-// These are Google's public sample ad units: they always show test ads, earn nothing and are
-// safe to tap. The real units replace them once the AdMob apps exist, along with the AdMob app
-// IDs in ios/App/App/Info.plist and android/app/src/main/AndroidManifest.xml.
+// iPhone uses the real Chain Reaction units (app ID in ios/App/App/Info.plist). Android still
+// has Google's public sample units, which always show test ads, until its AdMob app exists
+// (then replace them and the app ID in android/app/src/main/AndroidManifest.xml).
 
 /** Test ads even where real units are set (TestFlight and non-production Android builds get them anyway). */
-export const ADS_TESTING = true;
+export const ADS_TESTING = false;
 
 export const AD_UNITS_IOS = {
-  interstitial: 'ca-app-pub-3940256099942544/4411468910',
-  rewarded: 'ca-app-pub-3940256099942544/1712485313',
+  interstitial: 'ca-app-pub-8965676427575286/6743155595',
+  rewarded: 'ca-app-pub-8965676427575286/4116992252',
 };
 
 export const AD_UNITS_ANDROID = {

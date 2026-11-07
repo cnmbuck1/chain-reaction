@@ -62,7 +62,7 @@
 	<key>UIRequiresFullScreen</key>
 	<true/>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-8965676427575286~9418466572</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Allowing this makes the ads that keep Chain Reaction free more relevant to you. You'll see the same number of ads either way.</string>
 	<key>SKAdNetworkItems</key>
