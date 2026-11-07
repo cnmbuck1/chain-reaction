@@ -8,8 +8,8 @@
 export const ADS_TESTING = true;
 
 export const AD_UNITS_IOS = {
-  interstitial: 'ca-app-pub-3940256099942544/4411468910',
-  rewarded: 'ca-app-pub-3940256099942544/1712485313',
+  interstitial: 'ca-app-pub-8965676427575286/6743155595',
+  rewarded: 'ca-app-pub-8965676427575286/4116992252',
 };
 
 export const AD_UNITS_ANDROID = {
