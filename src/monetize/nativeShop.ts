@@ -15,7 +15,7 @@ import {
 import { NativePurchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { AD_UNITS_ANDROID, AD_UNITS_IOS, ADS_TESTING, isSampleUnit } from './ads.config';
 import { isStoreRelease } from '../platform/release';
-import { COIN_PACKS, REMOVE_ADS, type CoinPack } from './prices';
+import { APP_STORE_IDS, COIN_PACKS, REMOVE_ADS, type CoinPack } from './prices';
 import type { Shop } from './shop';
 
 export interface NativeShopOptions {
@@ -26,7 +26,9 @@ export interface NativeShopOptions {
 export function nativeShop({ startEarly }: NativeShopOptions): Shop {
   const android = Capacitor.getPlatform() === 'android';
   const units = android ? AD_UNITS_ANDROID : AD_UNITS_IOS;
-  const productIds = [...COIN_PACKS.map((p) => p.id), REMOVE_ADS.id];
+  /** The store's own product ID: App Store Connect has these capitalized, Play needs lowercase. */
+  const sku = (id: string) => (android ? id : (APP_STORE_IDS[id] ?? id));
+  const productIds = [...COIN_PACKS.map((p) => p.id), REMOVE_ADS.id].map(sku);
   /** The stores' own, localized prices once they have loaded. */
   const prices = new Map<string, string>();
 
@@ -35,7 +37,7 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
     productType: PURCHASE_TYPE.INAPP,
   })
     .then(({ products }) => {
-      for (const p of products) prices.set(p.identifier, p.priceString);
+      for (const p of products) prices.set(p.identifier.toLowerCase(), p.priceString);
     })
     .catch(() => {
       // Not set up in the store yet, or offline: the stand-in prices stay.
@@ -158,17 +160,17 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
 
   async function owned(id: string) {
     const { purchases } = await NativePurchases.getPurchases({ onlyCurrentEntitlements: true });
-    return purchases.some((p) => p.productIdentifier === id);
+    return purchases.some((p) => p.productIdentifier === sku(id));
   }
 
   async function purchase(id: string, consumable: boolean) {
     try {
       const t = await NativePurchases.purchaseProduct({
-        productIdentifier: id,
+        productIdentifier: sku(id),
         productType: PURCHASE_TYPE.INAPP,
         isConsumable: consumable,
       });
-      return Boolean(t?.transactionId || t?.productIdentifier === id);
+      return Boolean(t?.transactionId || t?.productIdentifier === sku(id));
     } catch {
       // Cancelled, or the store refused (not set up yet, or no Paid Apps agreement).
       return false;

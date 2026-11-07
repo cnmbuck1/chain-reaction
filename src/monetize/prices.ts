@@ -43,6 +43,16 @@ export interface CoinPack {
   removesAds?: boolean;
 }
 
+/**
+ * Product IDs as created in App Store Connect, where they were saved capitalized. IDs there are
+ * case-sensitive and can't be renamed; Google Play only allows lowercase, so Play uses the ids above.
+ */
+export const APP_STORE_IDS: Readonly<Record<string, string>> = {
+  coins_30: 'Coins_30',
+  coins_150: 'Coins_150',
+  remove_ads: 'Remove_ads',
+};
+
 export const COIN_PACKS: readonly CoinPack[] = [
   { id: 'coins_30', coins: 30, price: '$0.99' },
   { id: 'coins_150', coins: 150, price: '$2.99', removesAds: true },

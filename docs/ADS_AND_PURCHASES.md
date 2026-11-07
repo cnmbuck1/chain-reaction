@@ -10,8 +10,8 @@ sending Claude the IDs. Never tap your own real ads: it can get an AdMob account
 |---|---|---|
 | **Rewarded ad** | Shop: *Watch a short ad*, 3 coins, 3 a day | Coins only if it's watched to the end. |
 | **Interstitial** | After every 3rd clean solve, from level 10 | Never after a miss, a hint or the daily. None after Remove ads or the 150-coin pack. Pacing lives in `src/monetize/prices.ts`. |
-| **Coin packs** | Shop | `coins_30` and `coins_150`, consumable. |
-| **Remove ads** | Shop, $2.99 | `remove_ads`, non-consumable. **Restore purchases** in the shop brings it back on a new phone, and the app checks quietly at launch too. |
+| **Coin packs** | Shop | `coins_30` and `coins_150` in the game and on Play; `Coins_30` and `Coins_150` in App Store Connect. Consumable. |
+| **Remove ads** | Shop, $2.99 | `remove_ads` (`Remove_ads` in App Store Connect), non-consumable. **Restore purchases** in the shop brings it back on a new phone, and the app checks quietly at launch too. |
 
 Consent: the first time ads start, players in the EU/UK see Google's consent form, then iPhone players
 see Apple's "Allow tracking?" question. Saying no still shows ads, just less personalised ones.
@@ -47,12 +47,12 @@ as the store listings give `https://cnmbuck1.github.io` as the developer website
 
    | Type | Reference name | Product ID | Price |
    |---|---|---|---|
-   | Consumable | 30 coins | `coins_30` | $0.99 |
-   | Consumable | 150 coins | `coins_150` | $2.99 |
-   | Non-Consumable | Remove ads | `remove_ads` | $2.99 |
+   | Consumable | 30 coins | `Coins_30` | $0.99 |
+   | Consumable | 150 coins | `Coins_150` | $2.99 |
+   | Non-Consumable | Remove ads | `Remove_ads` | $2.99 |
 
    For each one, add an English display name and description, then a review screenshot (a phone screenshot
-   of the shop works; Claude makes one with the store pack). The product IDs must match exactly.
+   of the shop works; Claude makes one with the store pack). The product IDs above are what App Store Connect has, capitals included (`APP_STORE_IDS` in `src/monetize/prices.ts`). Play IDs must be lowercase.
 3. To try purchases in TestFlight, you don't need a sandbox account: TestFlight purchases are free.
 
 ## 3. Google Play Console
