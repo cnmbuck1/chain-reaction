@@ -31,8 +31,8 @@ describe('nativeShop purchases', () => {
   it('shows the store prices once they load', async () => {
     purchases.getProducts.mockResolvedValue({
       products: [
-        { identifier: 'coins_30', priceString: '0,99 €' },
-        { identifier: 'remove_ads', priceString: '2,99 €' },
+        { identifier: 'Coins_30', priceString: '0,99 €' },
+        { identifier: 'Remove_ads', priceString: '2,99 €' },
       ],
     });
     const shop = nativeShop({ startEarly: false });
@@ -45,7 +45,7 @@ describe('nativeShop purchases', () => {
     const shop = nativeShop({ startEarly: false });
     expect(await shop.buy('coins_150')).toBe(150);
     expect(purchases.purchaseProduct).toHaveBeenCalledWith({
-      productIdentifier: 'coins_150',
+      productIdentifier: 'Coins_150',
       productType: 'inapp',
       isConsumable: true,
     });
@@ -60,7 +60,7 @@ describe('nativeShop purchases', () => {
   });
 
   it('finds Remove ads bought before, by restoring or quietly', async () => {
-    purchases.getPurchases.mockResolvedValue({ purchases: [{ productIdentifier: 'remove_ads' }] });
+    purchases.getPurchases.mockResolvedValue({ purchases: [{ productIdentifier: 'Remove_ads' }] });
     const shop = nativeShop({ startEarly: false });
     expect(await shop.adFreeOwned()).toBe(true);
     expect(purchases.restorePurchases).not.toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe('nativeShop purchases', () => {
 
   it('reports no Remove ads when the store has none or fails', async () => {
     purchases.getPurchases.mockResolvedValueOnce({
-      purchases: [{ productIdentifier: 'coins_30' }],
+      purchases: [{ productIdentifier: 'Coins_30' }],
     });
     const shop = nativeShop({ startEarly: false });
     expect(await shop.adFreeOwned()).toBe(false);
