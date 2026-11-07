@@ -12,7 +12,7 @@ as soon as the first build is up, since it sets the soft launch date.
 |---|---|
 | App name | `Chain Reaction` (or `Chain Reaction: Logic Puzzle` if taken) |
 | Package name | `com.cnmbuckstudios.chainreaction` (fixed for good once the first build is uploaded) |
-| Products | `coins_100`, `coins_600`, `remove_ads` ($2.99) |
+| Products | `coins_30`, `coins_150`, `remove_ads` ($2.99) |
 
 ## 1. The upload key (GitHub secrets)
 

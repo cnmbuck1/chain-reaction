@@ -552,11 +552,16 @@ test('hints cost coins or a short ad, and coins come from the shop', async ({ pa
   await shop.getByRole('button', { name: /^Watch a short ad/ }).click();
   await expect(shop.getByText('3 coins added.')).toBeVisible();
   await expect(shop).toContainText('2 left today');
-  await shop.getByRole('button', { name: /100 coins/ }).click();
-  await expect(shop.getByText('100 coins added.')).toBeVisible();
-  await expect(shop).toContainText('103 coins');
+  await shop.getByRole('button', { name: /^30 coins/ }).click();
+  await expect(shop.getByText('30 coins added.')).toBeVisible();
+  await expect(shop).toContainText('33 coins');
+  // Only the big pack also removes ads.
+  await expect(shop.getByRole('button', { name: /^Remove ads/ })).not.toContainText('Owned');
+  await shop.getByRole('button', { name: /^150 coins/ }).click();
+  await expect(shop.getByText('150 coins added.')).toBeVisible();
+  await expect(shop.getByRole('button', { name: /^Remove ads/ })).toContainText('Owned');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Shop, 103 coins' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Shop, 183 coins' })).toBeVisible();
 });
 
 test('two free retries per level, then one costs coins or an ad, and solving refills them', async ({

@@ -288,7 +288,7 @@ One currency, coins, pays for hints and extra retries. Every price and reward li
 
 | Item  | Free                                | Rewarded ad               | Coins | Real money                   |
 | ----- | ----------------------------------- | ------------------------- | ----- | ---------------------------- |
-| Coins | 20 to start, 1 per new star         | +3, up to 3 ads a UTC day | n/a   | 100 for $0.99, 600 for $3.99 |
+| Coins | 20 to start, 1 per new star         | +3, up to 3 ads a UTC day | n/a   | 30 for $0.99, 150 for $2.99 |
 | Hint  | Levels 1 to 3                       | One hint                  | 10    | Through coins                |
 | Retry | 2 per level, refilled on solving it | One retry                 | 5     | Through coins                |
 
@@ -313,7 +313,7 @@ After every third solved campaign level, an ad plays once the player leaves the 
 - straight after a solve with a missed Run or a hint, so it never lands on a frustrated
   player (the due ad waits for the next clean solve);
 - after a daily puzzle;
-- for anyone who bought Remove ads ($2.99) or any coin pack.
+- for anyone who bought Remove ads ($2.99) or the 150-coin pack.
 
 Rewarded ads for coins, hints and retries stay optional for everyone. Until AdMob is wired
 in, a demo "Ad break" card stands in, closable after 3 seconds.

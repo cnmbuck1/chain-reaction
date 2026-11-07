@@ -11,7 +11,7 @@ import {
 
 export interface AdState {
   version: 1;
-  /** Remove ads, or any coin pack, was bought: no ads between levels, ever. */
+  /** Remove ads, or the big coin pack, was bought: no ads between levels, ever. */
   adFree: boolean;
   /** Levels solved since the last ad, counted from INTERSTITIAL_FROM_LEVEL on. */
   solves: number;
@@ -93,5 +93,5 @@ export function afterSolve(
     : { ads: { ...ads, solves }, show };
 }
 
-/** Remove ads or a coin pack was bought. */
+/** Remove ads or the big coin pack was bought. */
 export const goAdFree = (ads: AdState): AdState => (ads.adFree ? ads : { ...ads, adFree: true });
