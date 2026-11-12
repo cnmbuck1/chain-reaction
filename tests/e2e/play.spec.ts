@@ -555,11 +555,10 @@ test('hints cost coins or a short ad, and coins come from the shop', async ({ pa
   await shop.getByRole('button', { name: /^30 coins/ }).click();
   await expect(shop.getByText('30 coins added.')).toBeVisible();
   await expect(shop).toContainText('33 coins');
-  // Only the big pack also removes ads.
-  await expect(shop.getByRole('button', { name: /^Remove ads/ })).not.toContainText('Owned');
+  // Coin packs are coins only: ads go only with Remove ads, which the store can restore.
   await shop.getByRole('button', { name: /^150 coins/ }).click();
   await expect(shop.getByText('150 coins added.')).toBeVisible();
-  await expect(shop.getByRole('button', { name: /^Remove ads/ })).toContainText('Owned');
+  await expect(shop.getByRole('button', { name: /^Remove ads/ })).not.toContainText('Owned');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Shop, 183 coins' })).toBeVisible();
 });
