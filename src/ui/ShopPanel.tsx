@@ -101,7 +101,6 @@ export function ShopPanel({
             >
               <span className="shop-name">
                 <CoinIcon /> {pack.coins} coins
-                {pack.removesAds && <span className="shop-sub">Also removes ads for good</span>}
               </span>
               <span className="shop-price">{pack.price}</span>
             </button>

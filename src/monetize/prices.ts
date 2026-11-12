@@ -39,8 +39,6 @@ export interface CoinPack {
   id: string;
   coins: number;
   price: string;
-  /** Also turns off ads between levels for good, like Remove ads. */
-  removesAds?: boolean;
 }
 
 /**
@@ -55,5 +53,5 @@ export const APP_STORE_IDS: Readonly<Record<string, string>> = {
 
 export const COIN_PACKS: readonly CoinPack[] = [
   { id: 'coins_30', coins: 30, price: '$0.99' },
-  { id: 'coins_150', coins: 150, price: '$2.99', removesAds: true },
+  { id: 'coins_150', coins: 150, price: '$2.99' },
 ];
