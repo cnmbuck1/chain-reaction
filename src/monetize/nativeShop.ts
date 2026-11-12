@@ -61,6 +61,8 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
   let interstitialLoaded = false;
   let rewardedLoaded = false;
   let rewardedLoading: Promise<void> | null = null;
+  /** False when consent couldn't be checked: then only non-personalised ads are asked for. */
+  let personalised = true;
   /** Why the last rewarded ad couldn't be shown, for testers. */
   let problem: string | null = null;
 
@@ -72,16 +74,22 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
     ready ??= (async () => {
       try {
         await decideTestAds();
-        let info = await AdMob.requestConsentInfo();
-        if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
-          info = await AdMob.showConsentForm();
-        }
-        privacyOptions = (info.privacyOptionsRequirementStatus as string) === 'REQUIRED';
-        if (!info.canRequestAds) {
-          // Asked again next time, so an answer given later in Settings takes effect.
-          ready = null;
-          problem = 'ads not allowed by the privacy choices';
-          return false;
+        try {
+          let info = await AdMob.requestConsentInfo();
+          if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
+            info = await AdMob.showConsentForm();
+          }
+          privacyOptions = (info.privacyOptionsRequirementStatus as string) === 'REQUIRED';
+          if (!info.canRequestAds) {
+            // Asked again next time, so an answer given later in Settings takes effect.
+            ready = null;
+            problem = 'ads not allowed by the privacy choices';
+            return false;
+          }
+        } catch {
+          // Google's consent service couldn't be reached or isn't set up for this app. Ads
+          // still run, but never personalised, and the next launch asks again.
+          personalised = false;
         }
         if (!android) {
           const tracking = await AdMob.trackingAuthorizationStatus();
@@ -102,7 +110,11 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
 
   async function loadInterstitial() {
     try {
-      await AdMob.prepareInterstitial({ adId: units.interstitial, isTesting: testAds });
+      await AdMob.prepareInterstitial({
+        adId: units.interstitial,
+        isTesting: testAds,
+        npa: !personalised,
+      });
       interstitialLoaded = true;
     } catch {
       interstitialLoaded = false;
@@ -112,7 +124,11 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
   function loadRewarded() {
     rewardedLoading ??= (async () => {
       try {
-        await AdMob.prepareRewardVideoAd({ adId: units.rewarded, isTesting: testAds });
+        await AdMob.prepareRewardVideoAd({
+          adId: units.rewarded,
+          isTesting: testAds,
+          npa: !personalised,
+        });
         rewardedLoaded = true;
       } catch (e) {
         rewardedLoaded = false;

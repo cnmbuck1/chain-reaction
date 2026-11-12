@@ -151,4 +151,17 @@ describe('nativeShop rewarded ads', () => {
     expect(shop.adProblem()).toBe('ads not allowed by the privacy choices');
     expect(AdMob.initialize).not.toHaveBeenCalled();
   });
+
+  it('still shows non-personalised ads when the consent check fails', async () => {
+    AdMob.requestConsentInfo.mockRejectedValue('Request consent info failed');
+    AdMob.showRewardVideoAd.mockImplementation(async () => {
+      ads.emit('onRewardedVideoAdReward');
+      setTimeout(() => ads.emit('onRewardedVideoAdDismissed'), 0);
+      return {};
+    });
+    const shop = nativeShop({ startEarly: false });
+    expect(await shop.watchAd()).toBe('earned');
+    expect(AdMob.prepareRewardVideoAd).toHaveBeenCalledWith(expect.objectContaining({ npa: true }));
+    expect(shop.privacyOptionsNeeded()).toBe(false);
+  });
 });
