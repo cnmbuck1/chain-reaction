@@ -1,6 +1,6 @@
 import { FREE_RETRIES, RETRY_PRICE } from '../monetize/prices';
 import type { Payment, Shop } from '../monetize/shop';
-import { CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
+import { adMissedText, CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
 
 interface Props {
   coins: number;
@@ -53,7 +53,8 @@ export function RetryPanel({ coins, shop, onRetry, onShop, onClose }: Props) {
             disabled={busy}
             onClick={() =>
               void run(async () => {
-                if (!(await shop.watchAd())) return 'The ad didn’t finish. Try again.';
+                const ad = await shop.watchAd();
+                if (ad !== 'earned') return adMissedText(shop, ad);
                 onRetry('ad');
                 return null;
               })

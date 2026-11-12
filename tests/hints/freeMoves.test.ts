@@ -65,7 +65,7 @@ describe('demo shop', () => {
   it('finishes every ad and grants the pack size per purchase', async () => {
     const shop = demoShop(0);
     expect(shop.demo).toBe(true);
-    expect(await shop.watchAd()).toBe(true);
+    expect(await shop.watchAd()).toBe('earned');
     expect(await shop.buy('coins_30')).toBe(30);
     expect(await shop.buy('nope')).toBe(0);
     expect(await shop.buyRemoveAds()).toBe(true);

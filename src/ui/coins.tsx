@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import type { AdOutcome, Shop } from '../monetize/shop';
 
 /** The coin mark: a minted gold coin with a raised rim and a lightning bolt struck in the face. */
 export function CoinIcon({ size = 16 }: { size?: number }) {
@@ -40,6 +41,20 @@ export function CoinIcon({ size = 16 }: { size?: number }) {
 }
 
 export const coinsText = (n: number) => `${n} ${n === 1 ? 'coin' : 'coins'}`;
+
+/**
+ * The notice when a rewarded ad gave nothing. `closedText` is for an ad closed early; an ad
+ * that never showed says so, with the ad SDK's reason in test copies.
+ */
+export function adMissedText(
+  shop: Pick<Shop, 'adProblem'>,
+  outcome: Exclude<AdOutcome, 'earned'>,
+  closedText = 'The ad didn’t finish. Try again.',
+) {
+  if (outcome === 'closed') return closedText;
+  const problem = shop.adProblem();
+  return `No ad is ready right now. Try again in a minute.${problem ? ` (${problem})` : ''}`;
+}
 
 /** Shown on every panel while ads and purchases only pretend. */
 export function DemoNote() {
