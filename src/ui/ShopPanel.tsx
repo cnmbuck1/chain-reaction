@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AD_COINS, HINT_PRICE, RETRY_PRICE } from '../monetize/prices';
 import type { Shop } from '../monetize/shop';
-import { CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
+import { adMissedText, CoinIcon, coinsText, DemoNote, useShopAction } from './coins';
 
 interface Props {
   coins: number;
@@ -67,7 +67,10 @@ export function ShopPanel({
             disabled={busy || adsLeft === 0}
             onClick={() =>
               void run(async () => {
-                if (!(await shop.watchAd())) return 'The ad didn’t finish, so no coins this time.';
+                const ad = await shop.watchAd();
+                if (ad !== 'earned') {
+                  return adMissedText(shop, ad, 'The ad didn’t finish, so no coins this time.');
+                }
                 onAdWatched();
                 return `${coinsText(AD_COINS)} added.`;
               })

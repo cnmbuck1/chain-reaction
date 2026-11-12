@@ -16,7 +16,7 @@ import { NativePurchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { AD_UNITS_ANDROID, AD_UNITS_IOS, ADS_TESTING, isSampleUnit } from './ads.config';
 import { isStoreRelease } from '../platform/release';
 import { APP_STORE_IDS, COIN_PACKS, REMOVE_ADS, type CoinPack } from './prices';
-import type { Shop } from './shop';
+import type { AdOutcome, Shop } from './shop';
 
 export interface NativeShopOptions {
   /** Start ads shortly after launch instead of on first use (players past the tutorial). */
@@ -60,28 +60,40 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
   let privacyOptions = false;
   let interstitialLoaded = false;
   let rewardedLoaded = false;
+  let rewardedLoading: Promise<void> | null = null;
+  /** Why the last rewarded ad couldn't be shown, for testers. */
+  let problem: string | null = null;
+
+  const reason = (e: unknown) =>
+    (e instanceof Error ? e.message : typeof e === 'string' ? e : '') || 'unknown error';
 
   /** Consent, the tracking question and the SDK start, once; true when ads may be requested. */
   function start() {
     ready ??= (async () => {
       try {
+        await decideTestAds();
         let info = await AdMob.requestConsentInfo();
         if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
           info = await AdMob.showConsentForm();
         }
         privacyOptions = (info.privacyOptionsRequirementStatus as string) === 'REQUIRED';
-        if (!info.canRequestAds) return false;
+        if (!info.canRequestAds) {
+          // Asked again next time, so an answer given later in Settings takes effect.
+          ready = null;
+          problem = 'ads not allowed by the privacy choices';
+          return false;
+        }
         if (!android) {
           const tracking = await AdMob.trackingAuthorizationStatus();
           if (tracking.status === 'notDetermined') await AdMob.requestTrackingAuthorization();
         }
-        await decideTestAds();
         await AdMob.initialize({ initializeForTesting: testAds });
         void loadRewarded();
         void loadInterstitial();
         return true;
-      } catch {
+      } catch (e) {
         ready = null;
+        problem = `ads didn’t start: ${reason(e)}`;
         return false;
       }
     })();
@@ -96,21 +108,30 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
       interstitialLoaded = false;
     }
   }
-  async function loadRewarded() {
-    try {
-      await AdMob.prepareRewardVideoAd({ adId: units.rewarded, isTesting: testAds });
-      rewardedLoaded = true;
-    } catch {
-      rewardedLoaded = false;
-    }
+  /** Loads the next rewarded ad; a second call while one is loading waits for the same one. */
+  function loadRewarded() {
+    rewardedLoading ??= (async () => {
+      try {
+        await AdMob.prepareRewardVideoAd({ adId: units.rewarded, isTesting: testAds });
+        rewardedLoaded = true;
+      } catch (e) {
+        rewardedLoaded = false;
+        problem = `no ad loaded: ${reason(e)}`;
+      } finally {
+        rewardedLoading = null;
+      }
+    })();
+    return rewardedLoading;
   }
+
+  const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
   /**
    * Shows a loaded full-screen ad and waits for it to close. The plugin's own call settles
    * early (when the ad appears) or never (closed before the reward), so this goes by its
-   * events. Resolves whether the reward was earned (always false for an interstitial).
+   * events. For a rewarded ad, resolves how it went.
    */
-  async function present(kind: 'rewarded' | 'interstitial') {
+  async function present(kind: 'rewarded' | 'interstitial'): Promise<AdOutcome> {
     const ev =
       kind === 'rewarded'
         ? { dismissed: RewardAdPluginEvents.Dismissed, failed: RewardAdPluginEvents.FailedToShow }
@@ -119,39 +140,50 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
             failed: InterstitialAdPluginEvents.FailedToShow,
           };
     let earned = false;
+    let failed = false;
     const handles: Promise<{ remove: () => Promise<void> }>[] = [];
     const closed = new Promise<void>((resolve) => {
       handles.push(AdMob.addListener(ev.dismissed as never, () => resolve()));
-      handles.push(AdMob.addListener(ev.failed as never, () => resolve()));
-    });
-    if (kind === 'rewarded') {
       handles.push(
-        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
-          earned = true;
+        AdMob.addListener(ev.failed as never, (err?: { message?: string }) => {
+          failed = true;
+          problem = `the ad couldn’t show: ${err?.message || 'unknown error'}`;
+          resolve();
         }),
       );
+    });
+    let rewarded: () => void = () => {};
+    const reward = new Promise<void>((resolve) => (rewarded = resolve));
+    const earn = () => {
+      earned = true;
+      rewarded();
+    };
+    if (kind === 'rewarded') {
+      handles.push(AdMob.addListener(RewardAdPluginEvents.Rewarded, earn));
     }
     try {
       const shown =
-        kind === 'rewarded'
-          ? AdMob.showRewardVideoAd().then(() => {
-              earned = true;
-            })
-          : AdMob.showInterstitial();
+        kind === 'rewarded' ? AdMob.showRewardVideoAd().then(earn) : AdMob.showInterstitial();
       // A refusal to show at all ends it at once; otherwise wait for the ad to close.
       await Promise.race([
         closed,
         shown.then(
           () => closed,
-          () => undefined,
+          (e: unknown) => {
+            failed = true;
+            problem = `the ad couldn’t show: ${reason(e)}`;
+          },
         ),
       ]);
-    } catch {
-      // Not shown.
+      // The reward can reach the game a moment after the close: give it that moment.
+      if (kind === 'rewarded' && !earned && !failed) await Promise.race([reward, pause(1500)]);
+    } catch (e) {
+      failed = true;
+      problem = `the ad couldn’t show: ${reason(e)}`;
     } finally {
       for (const h of handles) void (await h).remove();
     }
-    return earned;
+    return earned ? 'earned' : failed ? 'unavailable' : 'closed';
   }
 
   if (startEarly) setTimeout(() => void start(), 4000);
@@ -185,14 +217,21 @@ export function nativeShop({ startEarly }: NativeShopOptions): Shop {
   return {
     demo: false,
     async watchAd() {
-      if (!(await start())) return false;
-      if (!rewardedLoaded) await loadRewarded();
-      if (!rewardedLoaded) return false;
+      problem = null;
+      if (!(await start())) return 'unavailable';
+      // Usually loaded long before; if not, wait a little for one.
+      if (!rewardedLoaded) await Promise.race([loadRewarded(), pause(10000)]);
+      if (!rewardedLoaded) {
+        problem ??= 'still loading';
+        return 'unavailable';
+      }
       rewardedLoaded = false;
-      const earned = await present('rewarded');
+      const outcome = await present('rewarded');
       void loadRewarded();
-      return earned;
+      return outcome;
     },
+    // Only test copies say why: store players just see "try again in a minute".
+    adProblem: () => (testAds ? problem : null),
     packs: () => COIN_PACKS.map(withPrice),
     async buy(packId) {
       const pack = COIN_PACKS.find((p) => p.id === packId);

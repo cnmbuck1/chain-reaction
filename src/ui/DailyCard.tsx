@@ -1,7 +1,7 @@
 import { STREAK_REPAIR_PRICE } from '../monetize/prices';
 import type { Payment, Shop } from '../monetize/shop';
 import type { DailyResult, Streak } from '../storage/daily';
-import { CoinIcon, DemoNote, useShopAction } from './coins';
+import { adMissedText, CoinIcon, DemoNote, useShopAction } from './coins';
 
 interface Props {
   number: number;
@@ -114,7 +114,8 @@ export function DailyCard({
               disabled={busy}
               onClick={() =>
                 void run(async () => {
-                  if (!(await shop.watchAd())) return 'The ad didn’t finish. Try again.';
+                  const ad = await shop.watchAd();
+                  if (ad !== 'earned') return adMissedText(shop, ad);
                   return onRepair('ad') ? 'Streak saved.' : null;
                 })
               }
