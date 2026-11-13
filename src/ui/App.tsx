@@ -16,6 +16,8 @@ import {
   TUTORIAL_LEVELS,
 } from '../monetize/prices';
 import { afterSolve, goAdFree, loadAds, saveAds, type AdState } from '../storage/ads';
+import { loadReview, reviewAfterSolve, saveReview } from '../storage/review';
+import { requestReview } from '../platform/review';
 import {
   loadDaily,
   recordDailyWin,
@@ -129,6 +131,8 @@ export function App() {
   }, []);
   const unlockAll = settings.unlockAll && testTools;
   const [ads, setAds] = useState(loadAds);
+  // When the App Store rating prompt last asked; read only on a solve, so a ref will do.
+  const review = useRef(loadReview());
   const changeAds = (edit: (a: AdState) => AdState) =>
     setAds((a) => {
       const next = edit(a);
@@ -499,9 +503,23 @@ export function App() {
           changeWallet((w) => grantCoins(refillRuns(w, level.id), coins));
           change((p) => recordWin(p, level.id, { ...win, at: new Date().toISOString() }));
           const clean = win.attempts === 1 && freeMovesUsed(wallet, level.id) === 0;
-          const paced = afterSolve(ads, { level: screen.index + 1, clean, now: Date.now() });
+          const now = Date.now();
+          const paced = afterSolve(ads, { level: screen.index + 1, clean, now });
           changeAds(() => paced.ads);
           if (paced.show) setAdDue(true);
+          // A happy moment on the result card, with no ad coming: ask for a rating, rarely.
+          const rating = reviewAfterSolve(review.current, {
+            level: screen.index + 1,
+            firstSolve: before === 0,
+            clean,
+            adDue: paced.show,
+            now,
+          });
+          if (rating.ask) {
+            review.current = rating.review;
+            saveReview(rating.review);
+            requestReview();
+          }
           return { coins };
         }}
         onNext={() => {

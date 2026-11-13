@@ -55,3 +55,12 @@ export const COIN_PACKS: readonly CoinPack[] = [
   { id: 'coins_30', coins: 30, price: '$0.99' },
   { id: 'coins_150', coins: 150, price: '$2.99' },
 ];
+
+/** The App Store rating prompt: first asked on a clean first solve from this level on... */
+export const REVIEW_FROM_LEVEL = 5;
+/** ...then again only after this many more new levels... */
+export const REVIEW_LEVEL_GAP = 20;
+/** ...and this long since the last ask... */
+export const REVIEW_GAP_MS = 30 * 24 * 60 * 60 * 1000;
+/** ...and never more than this many times (Apple shows it at most 3 times a year anyway). */
+export const REVIEW_MAX_ASKS = 3;
