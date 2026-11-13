@@ -14,6 +14,7 @@ import {
   type Point,
 } from './geometry';
 import {
+  BOARD_WIDTH,
   boardHeight,
   boardPoint,
   forkExits,
@@ -109,7 +110,11 @@ export class Board {
       await this.app.init({
         backgroundAlpha: 0,
         antialias: true,
-        resizeTo: host,
+        // Sized from the level, never measured from the page: the board is laid out at a
+        // fixed size, and on an iPhone's first launch the host can be measured before its
+        // styles apply, which left the canvas a short strip (no ball, track or gates).
+        width: BOARD_WIDTH,
+        height: this.level ? boardHeight(this.level) : BOARD_WIDTH,
         autoDensity: true,
         resolution: Math.min(window.devicePixelRatio || 1, 2),
       });
@@ -142,6 +147,14 @@ export class Board {
     this.dirty = true;
   }
 
+  /** Makes the canvas exactly the level's board size, BOARD_WIDTH by its height. */
+  private fitLevel(level: LevelDef) {
+    const height = boardHeight(level);
+    const { width, height: now } = this.app.screen;
+    if (width === BOARD_WIDTH && now === height) return;
+    this.app.renderer.resize(BOARD_WIDTH, height, this.app.renderer.resolution);
+  }
+
   private setSignals(level: LevelDef, signals: ReadonlyMap<NodeId, boolean>) {
     this.signals = signals;
     this.forks = forkExits(level, signals);
@@ -149,6 +162,7 @@ export class Board {
 
   setLevel(level: LevelDef) {
     this.level = level;
+    this.fitLevel(level);
     this.layoutDirty = true;
   }
 
