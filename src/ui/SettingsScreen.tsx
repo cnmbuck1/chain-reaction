@@ -149,6 +149,12 @@ export function SettingsScreen({
               on={settings.unlockAll}
               onChange={(unlockAll) => onChange({ ...settings, unlockAll })}
             />
+            <Toggle
+              label="Show ads anyway"
+              detail="For testing: ads between levels play even if Remove ads is owned. Not in the App Store copy."
+              on={settings.adsAnyway}
+              onChange={(adsAnyway) => onChange({ ...settings, adsAnyway })}
+            />
             <div className="setting">
               <div className="setting-text">
                 <span className="setting-label">Play stats</span>

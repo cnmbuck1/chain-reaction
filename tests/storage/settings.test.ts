@@ -58,5 +58,8 @@ describe('settings storage', () => {
     expect(defaultSettings().unlockAll).toBe(false);
     expect(migrateSettings({ version: 1, unlockAll: true }).unlockAll).toBe(true);
     expect(migrateSettings({ version: 1, unlockAll: 'yes' }).unlockAll).toBe(false);
+    expect(defaultSettings().adsAnyway).toBe(false);
+    expect(migrateSettings({ version: 1, adsAnyway: true }).adsAnyway).toBe(true);
+    expect(migrateSettings({ version: 1, adsAnyway: 1 }).adsAnyway).toBe(false);
   });
 });

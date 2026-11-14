@@ -139,6 +139,9 @@ export function App() {
       if (next !== a) saveAds(next);
       return next;
     });
+  // Testing aid: with Remove ads owned (a TestFlight purchase sticks to the Apple ID), testers can
+  // still see ads between levels. Ownership itself is untouched, so the Shop still says Owned.
+  const adsAnyway = settings.adsAnyway && testTools;
   // Remove ads bought on another phone, or before a reinstall, comes back from the store.
   useEffect(() => {
     void shop.adFreeOwned().then((owned) => owned && changeAds(goAdFree));
@@ -504,8 +507,12 @@ export function App() {
           change((p) => recordWin(p, level.id, { ...win, at: new Date().toISOString() }));
           const clean = win.attempts === 1 && freeMovesUsed(wallet, level.id) === 0;
           const now = Date.now();
-          const paced = afterSolve(ads, { level: screen.index + 1, clean, now });
-          changeAds(() => paced.ads);
+          const paced = afterSolve(adsAnyway ? { ...ads, adFree: false } : ads, {
+            level: screen.index + 1,
+            clean,
+            now,
+          });
+          changeAds(() => ({ ...paced.ads, adFree: ads.adFree }));
           if (paced.show) setAdDue(true);
           // A happy moment on the result card, with no ad coming: ask for a rating, rarely.
           const rating = reviewAfterSolve(review.current, {

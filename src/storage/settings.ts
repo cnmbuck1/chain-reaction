@@ -13,6 +13,8 @@ export interface Settings {
   motion: MotionSetting;
   /** Testing aid: every level is open, whatever has been solved. */
   unlockAll: boolean;
+  /** Testing aid: ads between levels play even though Remove ads is owned (TestFlight and web only). */
+  adsAnyway: boolean;
   ball: BallStyle;
   /** The Orb has been awarded and switched on once (after that the player picks freely). */
   orbAwarded: boolean;
@@ -31,6 +33,7 @@ export const defaultSettings = (): Settings => ({
   haptics: true,
   motion: 'system',
   unlockAll: TEST_BUILD,
+  adsAnyway: false,
   ball: 'steel',
   orbAwarded: false,
 });
@@ -64,15 +67,14 @@ export function saveSettings(settings: Settings, store: KeyValueStore | null = d
 export function migrateSettings(data: unknown): Settings {
   const out = defaultSettings();
   if (typeof data !== 'object' || data === null) return out;
-  const { version, sound, haptics, motion, unlockAll, ball, orbAwarded } = data as Record<
-    string,
-    unknown
-  >;
+  const { version, sound, haptics, motion, unlockAll, adsAnyway, ball, orbAwarded } =
+    data as Record<string, unknown>;
   if (version !== 1) return out;
   if (typeof sound === 'boolean') out.sound = sound;
   if (typeof haptics === 'boolean') out.haptics = haptics;
   if (motion === 'system' || motion === 'reduce') out.motion = motion;
   if (typeof unlockAll === 'boolean') out.unlockAll = unlockAll;
+  if (typeof adsAnyway === 'boolean') out.adsAnyway = adsAnyway;
   if (ball === 'steel' || ball === 'orb') out.ball = ball;
   if (typeof orbAwarded === 'boolean') out.orbAwarded = orbAwarded;
   return out;
