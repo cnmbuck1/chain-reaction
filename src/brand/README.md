@@ -11,5 +11,8 @@ Check the copy against the brand repo's checksum (copied alongside it):
 ```
 
 The game imports it as `@cnmbuck/orb` (a Vite alias), with types from `src/cnmbuck-orb.d.ts`, because
-this project's stricter TypeScript settings would flag two lines in the kit. The board uses
-`drawOrbIcon` with its `spin` argument for the rolling ball (`OrbBall` in `src/render/board.ts`).
+this project's stricter TypeScript settings would flag two lines in the kit. The ball is the kit's 3D Orb
+(`createOrbMaterial` and `OrbFx`, lit as in the kit's `tools/render.ts`), drawn by three.js into a small
+canvas in `src/render/orb3d.ts` and shown on the board by `OrbBall` in `src/render/board.ts`, which rolls it
+as it moves. three.js loads as its own chunk the first time the Orb is shown; `drawOrbIcon` stands in if
+WebGL isn't there.
