@@ -2,6 +2,7 @@ import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 
 import { evaluate } from '../engine/evaluate';
 import { indexLevel, stageStart } from '../engine/graph';
 import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
+import { drawOrbIcon, ORB } from '@cnmbuck/orb';
 import { keyColor, signalColor, toHex } from './colors';
 import {
   GATE_HALF_HEIGHT,
@@ -84,6 +85,7 @@ export class Board {
   private fixed = new Graphics();
   private moving = new Graphics();
   private glow = new Graphics();
+  private orb = new OrbBall();
   private gradients = makeGradients();
   private level: LevelDef | null = null;
   private timeline: Timeline | null = null;
@@ -123,7 +125,7 @@ export class Board {
       host.prepend(this.app.canvas);
       this.glow.blendMode = 'add';
       const stage = new Container();
-      stage.addChild(this.panel, this.fixed, this.moving, this.glow);
+      stage.addChild(this.panel, this.fixed, this.moving, this.orb.sprite, this.glow);
       this.app.stage.addChild(stage);
       this.app.renderer.on('resize', () => (this.layoutDirty = true));
       // Draw only when something changed. Pixi's own loop re-renders every frame, which
@@ -162,6 +164,7 @@ export class Board {
 
   setLevel(level: LevelDef) {
     this.level = level;
+    this.orb.reset();
     this.fitLevel(level);
     this.layoutDirty = true;
   }
@@ -245,6 +248,7 @@ export class Board {
       .then(() => {
         try {
           this.app.destroy(true, { children: true });
+          this.orb.destroy();
         } catch {
           // A failed init leaves nothing to tear down.
         }
@@ -644,16 +648,9 @@ export class Board {
     const approach = finish && trackLinks(level).find(([, to]) => to === finish.nodeId)?.[0];
     const route = (from: NodeId, to: NodeId) => trackRoute(level, from, to);
     const before = approach ? route(approach, finish.nodeId).at(-2)! : null;
-    drawBall(
-      g,
-      glow,
-      visual,
-      at,
-      route,
-      before,
-      ballStyle === 'orb' ? this.gradients.orb : this.gradients.ball,
-      ballStyle === 'orb',
-    );
+    const orb = ballStyle === 'orb';
+    const pos = drawBall(g, glow, visual, at, route, before, this.gradients.ball, orb);
+    this.orb.place(orb ? pos : null, this.app.renderer.resolution);
   }
 }
 
@@ -694,20 +691,6 @@ function makeGradients() {
         { offset: 0, color: 0x4a5266 },
         { offset: 0.45, color: 0xa7afc0 },
         { offset: 1, color: 0x3f4759 },
-      ],
-      textureSpace: 'local',
-    }),
-    // The Cnmbuck Orb's deep blue glass (see drawOrb)
-    orb: new FillGradient({
-      type: 'radial',
-      center: { x: 0.35, y: 0.3 },
-      innerRadius: 0,
-      outerCenter: { x: 0.5, y: 0.5 },
-      outerRadius: 0.5,
-      colorStops: [
-        { offset: 0, color: 0x2a62e8 },
-        { offset: 0.55, color: 0x0a2470 },
-        { offset: 1, color: 0x020a1e },
       ],
       textureSpace: 'local',
     }),
@@ -847,9 +830,9 @@ function drawBall(
   approach: Point | null,
   fill: FillGradient,
   orb = false,
-) {
+): Point | null {
   const pos = ballPosition(visual, at, route);
-  if (!pos) return;
+  if (!pos) return null;
   let { x, y } = pos;
   const finish = visual.finish;
   if (finish?.result === 'blocked' || finish?.result === 'deadEnd' || finish?.result === 'locked') {
@@ -875,52 +858,95 @@ function drawBall(
     }
   }
   if (orb) {
-    drawOrb(g, glow, x, y, fill);
-    return;
+    // The Orb itself is a sprite drawn by the brand kit (see OrbBall); its shadow goes here.
+    g.circle(x + 2, y + 3, ORB_BALL_RADIUS).fill({ color: 0x000000, alpha: 0.4 });
+    return { x, y };
   }
   g.circle(x + 2, y + 3, 11).fill({ color: 0x000000, alpha: 0.4 });
   g.circle(x, y, 11).fill(fill);
   g.circle(x - 3.5, y - 4, 2.6).fill({ color: 0xffffff, alpha: 0.95 });
+  return { x, y };
 }
 
-const ORB_CYAN = 0x00e5ff;
+const ORB_CYAN = ORB.band;
+/** drawOrbIcon fills a square and makes the ball 0.38 of its side, so this keeps the ball 11 across. */
+const ORB_ICON_SIZE = 29;
+const ORB_BALL_RADIUS = ORB_ICON_SIZE * 0.38;
+/** A jump longer than this between frames is a new run or a reset, not rolling. */
+const ORB_MAX_STEP = 40;
 
 /**
- * The Cnmbuck Orb, Cnmbuck Studios' signature ball (the same in every Cnmbuck game; see the brand kit in
- * cnmbuck1/poolgolf brand/cnmbuck-orb): deep blue glass, a neon band, blue and orange rim light, a halo.
+ * The Cnmbuck Orb as the ball: the brand kit's flat Orb (drawOrbIcon, unchanged), drawn to a small
+ * canvas and shown as a sprite. It rolls: the band turns by the distance travelled over the radius,
+ * clockwise when the ball heads right and back the other way when it heads left.
  */
-function drawOrb(g: Graphics, glow: Graphics, x: number, y: number, fill: FillGradient) {
-  const r = 11;
-  glow.circle(x, y, r + 9).fill({ color: ORB_CYAN, alpha: 0.12 });
-  glow.circle(x, y, r + 5).fill({ color: ORB_CYAN, alpha: 0.2 });
-  g.circle(x + 2, y + 3, r).fill({ color: 0x000000, alpha: 0.4 });
-  g.circle(x, y, r + 1.2).fill({ color: 0x3a7aff });
-  // Each arc starts its own path (an arc alone would join on from the last point drawn)
-  const arc = (from: number, to: number, color: number) =>
-    g
-      .moveTo(x + Math.cos(from) * (r + 0.6), y + Math.sin(from) * (r + 0.6))
-      .arc(x, y, r + 0.6, from, to)
-      .stroke({ width: 1.6, color });
-  arc(Math.PI * 0.55, Math.PI * 1.45, 0x00d8ff);
-  arc(-Math.PI * 0.45, Math.PI * 0.45, 0xff9a1a);
-  g.circle(x, y, r).fill(fill);
-  // The band: the front of a tilted ring round the ball, with a gentle ripple
-  const pts: Point[] = [];
-  for (let i = 0; i <= 16; i++) {
-    const t = Math.PI * (0.06 + 0.88 * (i / 16));
-    const bx = -Math.cos(t),
-      by = Math.sin(t) * (0.26 + 0.05 * Math.sin(t * 3));
-    const rot = -0.42;
-    pts.push({
-      x: x + (bx * Math.cos(rot) - by * Math.sin(rot)) * r * 0.97,
-      y: y + (bx * Math.sin(rot) + by * Math.cos(rot)) * r * 0.97,
-    });
+class OrbBall {
+  readonly sprite = new Sprite();
+  private canvas: HTMLCanvasElement | null = null;
+  private texture: Texture | null = null;
+  private spin = 0;
+  private drawn: { spin: number; px: number } | null = null;
+  private last: Point | null = null;
+  private dir = 1;
+
+  constructor() {
+    this.sprite.anchor.set(0.5);
+    this.sprite.visible = false;
   }
-  line(glow, pts, 6, ORB_CYAN, 0.45);
-  line(g, pts, 3.4, 0x00a8ff, 0.95);
-  line(g, pts, 1.8, ORB_CYAN);
-  line(g, pts, 0.8, 0xffffff);
-  g.circle(x - 3.6, y - 4.2, 2.3).fill({ color: 0xffffff, alpha: 0.9 });
+
+  /** Forget where the ball was, so the next position doesn't count as rolling. */
+  reset() {
+    this.last = null;
+    this.spin = 0;
+  }
+
+  destroy() {
+    this.texture?.destroy(true);
+    this.texture = null;
+    this.canvas = null;
+  }
+
+  place(pos: Point | null, resolution: number) {
+    if (!pos) {
+      this.sprite.visible = false;
+      this.last = null;
+      return;
+    }
+    if (this.last) {
+      const dx = pos.x - this.last.x;
+      const dy = pos.y - this.last.y;
+      const step = Math.hypot(dx, dy);
+      if (step > ORB_MAX_STEP) {
+        this.spin = 0;
+      } else if (step > 0) {
+        if (Math.abs(dx) > 0.01) this.dir = Math.sign(dx);
+        this.spin = (this.spin + (this.dir * step) / ORB_BALL_RADIUS) % (Math.PI * 2);
+      }
+    }
+    this.last = pos;
+    this.paint(resolution);
+    this.sprite.position.set(pos.x, pos.y);
+    this.sprite.visible = true;
+  }
+
+  private paint(resolution: number) {
+    const px = Math.ceil(ORB_ICON_SIZE * Math.max(resolution, 1));
+    if (this.drawn && this.drawn.px === px && Math.abs(this.drawn.spin - this.spin) < 0.005) return;
+    if (!this.canvas || this.canvas.width !== px) {
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = this.canvas.height = px;
+      this.texture?.destroy(true);
+      this.texture = Texture.from(this.canvas);
+      this.sprite.texture = this.texture;
+      this.sprite.width = this.sprite.height = ORB_ICON_SIZE;
+    }
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, px, px);
+    drawOrbIcon(ctx, px, 0, 0, this.spin);
+    this.texture!.source.update();
+    this.drawn = { spin: this.spin, px };
+  }
 }
 
 function drawFinish(g: Graphics, glow: Graphics, visual: VisualState, at: (id: NodeId) => Point) {
