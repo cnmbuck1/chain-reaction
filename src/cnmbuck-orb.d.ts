@@ -5,6 +5,8 @@
 // the game imports it as '@cnmbuck/orb' (a Vite alias to the real file) and type-checks against these
 // declarations instead. They mirror the kit's own signatures; keep them in step if the kit changes.
 declare module '@cnmbuck/orb' {
+  import type * as THREE from 'three';
+
   /** The Orb's colours. */
   export const ORB: {
     readonly glassDeep: 0x020818;
@@ -24,4 +26,28 @@ declare module '@cnmbuck/orb' {
     spin?: number,
     halo?: boolean,
   ): void;
+
+  /** The Orb's material (built once and shared). Put it on a THREE.SphereGeometry. */
+  export function createOrbMaterial(): THREE.MeshPhysicalMaterial;
+  export interface OrbFxOptions {
+    groundGlow?: boolean;
+    trailLength?: number;
+    trailLife?: number;
+  }
+  /** The Orb's extras: rim glow, halo, optional ground glow and light trail. */
+  export class OrbFx {
+    readonly group: THREE.Group;
+    constructor(radius: number, opts?: OrbFxOptions);
+    set on(v: boolean);
+    get on(): boolean;
+    update(
+      pos: THREE.Vector3,
+      groundY: number | null,
+      moving: boolean,
+      visible: boolean,
+      dt: number,
+      camera: THREE.PerspectiveCamera,
+      renderer: THREE.WebGLRenderer,
+    ): void;
+  }
 }

@@ -2,7 +2,6 @@ import { Application, Container, FillGradient, Graphics, Sprite, Texture } from 
 import { evaluate } from '../engine/evaluate';
 import { indexLevel, stageStart } from '../engine/graph';
 import type { LevelDef, NodeId, RunEvent, SwitchStates } from '../engine/types';
-import { drawOrbIcon, ORB } from '@cnmbuck/orb';
 import { keyColor, signalColor, toHex } from './colors';
 import {
   GATE_HALF_HEIGHT,
@@ -126,6 +125,7 @@ export class Board {
       this.glow.blendMode = 'add';
       const stage = new Container();
       stage.addChild(this.panel, this.fixed, this.moving, this.orb.sprite, this.glow);
+      this.orb.onReady = () => (this.dirty = true);
       this.app.stage.addChild(stage);
       this.app.renderer.on('resize', () => (this.layoutDirty = true));
       // Draw only when something changed. Pixi's own loop re-renders every frame, which
@@ -868,26 +868,41 @@ function drawBall(
   return { x, y };
 }
 
-const ORB_CYAN = ORB.band;
-/** drawOrbIcon fills a square and makes the ball 0.38 of its side, so this keeps the ball 11 across. */
-const ORB_ICON_SIZE = 29;
-const ORB_BALL_RADIUS = ORB_ICON_SIZE * 0.38;
+/** The Orb's neon band colour (ORB.band in the brand kit), for its trail. */
+const ORB_CYAN = 0x00e5ff;
+/** The Orb is as big as the steel ball. */
+const ORB_BALL_RADIUS = 11;
+/** The flat Orb (drawOrbIcon) fills a square and makes the ball 0.38 of its side. */
+const ORB_ICON_SIZE = ORB_BALL_RADIUS / 0.38;
 /** A jump longer than this between frames is a new run or a reset, not rolling. */
 const ORB_MAX_STEP = 40;
 
+type Orb3dModule = typeof import('./orb3d');
+
 /**
- * The Cnmbuck Orb as the ball: the brand kit's flat Orb (drawOrbIcon, unchanged), drawn to a small
- * canvas and shown as a sprite. It rolls: the band turns by the distance travelled over the radius,
- * clockwise when the ball heads right and back the other way when it heads left.
+ * The Cnmbuck Orb as the ball, as Gravitor shows it: the brand kit's 3D ball and rim glow (see
+ * orb3d.ts), drawn to a small canvas and shown as a sprite. It rolls: each move turns the ball about the
+ * axis at right angles to it, by the distance over the radius. three.js loads (as its own chunk) the first
+ * time the Orb is shown. If WebGL isn't there, the kit's flat Orb (drawOrbIcon) stands in, its band
+ * turning as it moves.
  */
 class OrbBall {
   readonly sprite = new Sprite();
-  private canvas: HTMLCanvasElement | null = null;
+  /** Asked to draw again once the 3D Orb has loaded. */
+  onReady: (() => void) | null = null;
+  private loading = false;
+  private kit: Orb3dModule | null = null;
+  private orb3d: InstanceType<Orb3dModule['Orb3d']> | null = null;
+  private spritePerRadius = 0;
+  private flat: HTMLCanvasElement | null = null;
   private texture: Texture | null = null;
+  private textureOf: HTMLCanvasElement | null = null;
   private spin = 0;
-  private drawn: { spin: number; px: number } | null = null;
   private last: Point | null = null;
+  private lastAt = 0;
   private dir = 1;
+  private drawn = '';
+  private destroyed = false;
 
   constructor() {
     this.sprite.anchor.set(0.5);
@@ -898,12 +913,16 @@ class OrbBall {
   reset() {
     this.last = null;
     this.spin = 0;
+    this.orb3d?.reset();
+    this.drawn = '';
   }
 
   destroy() {
+    this.destroyed = true;
     this.texture?.destroy(true);
     this.texture = null;
-    this.canvas = null;
+    this.orb3d?.dispose();
+    this.orb3d = null;
   }
 
   place(pos: Point | null, resolution: number) {
@@ -912,40 +931,92 @@ class OrbBall {
       this.last = null;
       return;
     }
+    this.load();
+    const now = performance.now();
     if (this.last) {
       const dx = pos.x - this.last.x;
       const dy = pos.y - this.last.y;
       const step = Math.hypot(dx, dy);
       if (step > ORB_MAX_STEP) {
-        this.spin = 0;
+        this.reset();
       } else if (step > 0) {
+        this.orb3d?.roll(dx, dy, ORB_BALL_RADIUS);
         if (Math.abs(dx) > 0.01) this.dir = Math.sign(dx);
         this.spin = (this.spin + (this.dir * step) / ORB_BALL_RADIUS) % (Math.PI * 2);
+        this.drawn = '';
       }
     }
+    const dt = this.last ? Math.min(0.1, (now - this.lastAt) / 1000) : 1 / 60;
     this.last = pos;
-    this.paint(resolution);
+    this.lastAt = now;
+    this.paint(resolution, dt);
     this.sprite.position.set(pos.x, pos.y);
     this.sprite.visible = true;
   }
 
-  private paint(resolution: number) {
-    const px = Math.ceil(ORB_ICON_SIZE * Math.max(resolution, 1));
-    if (this.drawn && this.drawn.px === px && Math.abs(this.drawn.spin - this.spin) < 0.005) return;
-    if (!this.canvas || this.canvas.width !== px) {
-      this.canvas = document.createElement('canvas');
-      this.canvas.width = this.canvas.height = px;
+  private load() {
+    if (this.loading) return;
+    this.loading = true;
+    import('./orb3d')
+      .then((m) => {
+        if (this.destroyed) return;
+        this.kit = m;
+        try {
+          this.orb3d = new m.Orb3d();
+        } catch {
+          // No WebGL for a second canvas: the flat Orb stands in.
+        }
+        this.spritePerRadius = m.ORB3D_SPRITE_PER_RADIUS;
+        this.drawn = '';
+        this.onReady?.();
+      })
+      .catch(() => {
+        // The module didn't load (offline web build): try again next time.
+        this.loading = false;
+      });
+  }
+
+  private show(canvas: HTMLCanvasElement, size: number) {
+    if (this.textureOf !== canvas) {
       this.texture?.destroy(true);
-      this.texture = Texture.from(this.canvas);
+      this.texture = Texture.from(canvas);
+      this.textureOf = canvas;
       this.sprite.texture = this.texture;
-      this.sprite.width = this.sprite.height = ORB_ICON_SIZE;
     }
-    const ctx = this.canvas.getContext('2d');
+    this.texture!.source.update();
+    this.sprite.width = this.sprite.height = size;
+  }
+
+  private paint(resolution: number, dt: number) {
+    const scale = Math.max(resolution, 1);
+    if (this.orb3d) {
+      const size = ORB_BALL_RADIUS * this.spritePerRadius;
+      const px = Math.ceil(size * scale);
+      const key = `3d:${px}`;
+      if (this.drawn === key) return;
+      try {
+        this.orb3d.render(px, dt);
+        this.show(this.orb3d.canvas, size);
+        this.drawn = key;
+        return;
+      } catch {
+        this.orb3d = null;
+      }
+    }
+    if (!this.kit) return;
+    const px = Math.ceil(ORB_ICON_SIZE * scale);
+    const key = `flat:${px}`;
+    if (this.drawn === key) return;
+    if (!this.flat || this.flat.width !== px) {
+      this.flat = document.createElement('canvas');
+      this.flat.width = this.flat.height = px;
+    }
+    const ctx = this.flat.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, px, px);
-    drawOrbIcon(ctx, px, 0, 0, this.spin);
-    this.texture!.source.update();
-    this.drawn = { spin: this.spin, px };
+    this.kit.drawOrbIcon(ctx, px, 0, 0, this.spin);
+    this.show(this.flat, ORB_ICON_SIZE);
+    this.drawn = key;
   }
 }
 
