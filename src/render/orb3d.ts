@@ -90,3 +90,15 @@ export class Orb3d {
     this.renderer.forceContextLoss();
   }
 }
+
+let shared: Orb3d | null = null;
+
+/**
+ * The one 3D Orb every board draws with. Setting up a WebGL renderer and its lighting (the PMREM
+ * environment) is the slow part, so it happens once, the first time a ball is shown, and not again
+ * each time a level opens. Only one board shows at a time; a new board resets the ball's turn.
+ */
+export function sharedOrb3d(): Orb3d {
+  shared ??= new Orb3d();
+  return shared;
+}

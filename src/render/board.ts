@@ -921,7 +921,7 @@ class OrbBall {
     this.destroyed = true;
     this.texture?.destroy(true);
     this.texture = null;
-    this.orb3d?.dispose();
+    // The 3D Orb is shared by every board (sharedOrb3d), so it stays for the next one.
     this.orb3d = null;
   }
 
@@ -962,7 +962,8 @@ class OrbBall {
         if (this.destroyed) return;
         this.kit = m;
         try {
-          this.orb3d = new m.Orb3d();
+          this.orb3d = m.sharedOrb3d();
+          this.orb3d.reset();
         } catch {
           // No WebGL for a second canvas: the flat Orb stands in.
         }
@@ -979,7 +980,8 @@ class OrbBall {
   private show(canvas: HTMLCanvasElement, size: number) {
     if (this.textureOf !== canvas) {
       this.texture?.destroy(true);
-      this.texture = Texture.from(canvas);
+      // Not from the cache: the shared 3D Orb's canvas outlives each board and its texture.
+      this.texture = Texture.from(canvas, true);
       this.textureOf = canvas;
       this.sprite.texture = this.texture;
     }
