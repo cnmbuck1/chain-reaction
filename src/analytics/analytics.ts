@@ -1,12 +1,12 @@
 // Level events for Firebase Analytics, so progress across all players shows in the Firebase
 // console: how far players get, where they quit, and how much help each level needs.
-// Only the phone apps send them, and only once ANALYTICS_READY is set; the web build and
+// Only the phone apps listed in ANALYTICS_PLATFORMS send them; the web build and
 // unconfigured apps send nothing. No player ID or advertising ID is attached.
 
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { statsKey, type MetricEvent } from '../storage/metrics';
-import { ANALYTICS_READY } from './config';
+import { ANALYTICS_PLATFORMS } from './config';
 
 export interface AnalyticsEvent {
   name: string;
@@ -73,7 +73,8 @@ export function furthestLevel(
   return furthest;
 }
 
-const enabled = () => ANALYTICS_READY && Capacitor.isNativePlatform();
+const enabled = () =>
+  Capacitor.isNativePlatform() && ANALYTICS_PLATFORMS.includes(Capacitor.getPlatform());
 
 /** Sends one event. Never throws: analytics must not get in the way of play. */
 export function logEvent(event: AnalyticsEvent | null) {

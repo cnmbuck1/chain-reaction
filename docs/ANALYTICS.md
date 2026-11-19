@@ -7,8 +7,9 @@ update of 20 levels is needed.
 
 The Settings > Play stats screen is still there, but it only ever shows the phone it's on.
 
-Nothing is sent until the Firebase config files are in the repo and `ANALYTICS_READY` in
-`src/analytics/config.ts` is on. The web build never sends anything.
+iOS sends events (Firebase project `chain-reaction-6dde2`, `ios/App/App/GoogleService-Info.plist`).
+Android sends nothing until `google-services.json` is added and `'android'` is added to
+`ANALYTICS_PLATFORMS` in `src/analytics/config.ts`. The web build never sends anything.
 
 ## What is sent
 
@@ -40,7 +41,7 @@ account that owns AdMob:
 3. **Add app → Android**. Package name `com.cnmbuckstudios.chainreaction`. Download
    **`google-services.json`**. Skip the remaining steps.
 4. Send both files to Claude (upload them in the project). They aren't secret: they only say which
-   Firebase project the app reports to. Claude commits them and turns `ANALYTICS_READY` on.
+   Firebase project the app reports to. Claude commits them and adds the platform to `ANALYTICS_PLATFORMS`.
 5. Optional: in AdMob, **Settings → Linked services → Firebase**, link both apps. Then ad revenue
    shows next to play data.
 
