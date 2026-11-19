@@ -94,8 +94,9 @@ h2 {
 }
 .topbar {
   display: grid;
-  /* Equal side columns keep the level title centred on the screen. */
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Equal side columns keep the level title centred on the screen; a long title takes the
+     room it needs from them first, so it shifts off centre rather than being cut off. */
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
   align-items: center;
   gap: 12px;
 }
@@ -800,15 +801,6 @@ button:disabled {
 .ghost.icon[aria-pressed='true'] {
   color: var(--energy);
 }
-@media (max-width: 360px) {
-  .title h1 {
-    font-size: 1.2rem;
-  }
-  /* Too narrow to centre the title and still fit both sides: let it take the middle. */
-  .topbar {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-}
 @media (max-width: 380px) {
   .back-text {
     display: none;
@@ -818,8 +810,11 @@ button:disabled {
     padding: 0;
     font-size: 1.3rem;
   }
+}
+/* Most phones: small enough that the longest level names fit on one line. */
+@media (max-width: 420px) {
   .title h1 {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
 }
 
@@ -840,15 +835,32 @@ button:disabled {
   }
   .title h1 {
     font-size: 1.2rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .status {
     font-size: 0.9rem;
   }
   .controls button {
     min-height: 44px;
+  }
+}
+
+/* iPhone SE and mini widths: one size smaller, so the longest names still fit on one line. */
+@media (max-width: 380px) {
+  .title h1 {
+    font-size: 1.1rem;
+  }
+}
+/* The narrowest phones (iPhone SE 1st gen): a long level name wraps onto a second line,
+   in smaller type, instead of being cut off. */
+@media (max-width: 360px) {
+  .title h1 {
+    font-size: 1.05rem;
+    line-height: 1.1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
 }
 

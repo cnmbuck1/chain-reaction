@@ -12,6 +12,7 @@ dependencies {
     implementation project(':capacitor-community-admob')
     implementation project(':capacitor-community-in-app-review')
     implementation project(':capacitor-haptics')
+    implementation project(':capacitor-firebase-analytics')
     implementation project(':capgo-native-purchases')
     implementation project(':capacitor-plugin-safe-area')
 
